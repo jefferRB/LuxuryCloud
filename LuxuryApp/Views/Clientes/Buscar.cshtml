@@ -1,0 +1,1046 @@
+﻿@model LuxuryApp.Models.DataBase.BuscarClienteViewModel
+
+@{
+    var isInitialState = string.IsNullOrWhiteSpace(Model.Criterio);
+    var hasSingleResult = Model.ClienteSeleccionado != null;
+    var hasMultipleResults = !hasSingleResult && Model.ClientesEncontrados.Count > 1;
+    var isNoResults = !isInitialState && !hasSingleResult && !hasMultipleResults;
+
+    string badgeText;
+    string pageTitle;
+    string pageSubtitle;
+
+    if (hasSingleResult)
+    {
+        badgeText   = "PERFIL DEL CLIENTE";
+        pageTitle   = "Detalle del Cliente";
+        pageSubtitle = "Consulta y gestiona la información completa y el historial del cliente.";
+    }
+    else if (hasMultipleResults || isNoResults)
+    {
+        badgeText   = "BÚSQUEDA DE CLIENTES";
+        pageTitle   = "Resultados de búsqueda";
+        pageSubtitle = hasMultipleResults
+            ? "Se encontraron clientes que coinciden con tu búsqueda."
+            : "No se encontraron clientes que coincidan con tu búsqueda.";
+    }
+    else
+    {
+        badgeText   = "BÚSQUEDA DE CLIENTES";
+        pageTitle   = "Buscar Cliente";
+        pageSubtitle = "Encuentra clientes por teléfono o nombre y continúa su flujo de atención.";
+    }
+}
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+<link rel="stylesheet" href="~/css/crm-shared.css" asp-append-version="true">
+<link rel="stylesheet" href="~/css/clientes.css" asp-append-version="true">
+
+<div class="clt-shell">
+
+    <!-- ── CABECERA ── -->
+    <div class="clt-header-section" style="padding-bottom:@(hasSingleResult ? "1.5rem" : "1.25rem")">
+        <div class="clt-header-left module-heading">
+            <span class="module-eyebrow">@badgeText</span>
+            <h1 class="module-title"><i class="bi bi-@(hasSingleResult ? "person-badge-fill" : "search") module-title-icon" aria-hidden="true"></i>@pageTitle</h1>
+            <p class="module-subtitle">@pageSubtitle</p>
+        </div>
+    </div>
+
+    <!-- ── ALERTAS ── -->
+    @if (TempData["Mensaje"] != null)
+    {
+        <div class="clt-alert-success" style="margin:0 2rem 0.5rem;" role="alert">
+            <i class="bi bi-check-circle-fill"></i>
+            @TempData["Mensaje"]
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="clt-alert-error" style="margin:0 2rem 0.5rem;" role="alert">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            @TempData["Error"]
+        </div>
+    }
+
+    <!-- ════════════════════════════════════════════════════
+         ESTADO 1 — Búsqueda inicial (sin criterio)
+         ════════════════════════════════════════════════════ -->
+    @if (isInitialState)
+    {
+        <div class="clt-body-section">
+            <p class="clt-search-card-title">
+                <i class="bi bi-person-search"></i>
+                Buscar cliente
+            </p>
+
+            <form asp-action="Buscar" method="post" id="clt-search-form">
+                @Html.AntiForgeryToken()
+                <div class="clt-field" style="margin-bottom:0.35rem;">
+                    <label for="clt-search-input" class="clt-label">Teléfono o Nombre</label>
+                </div>
+                <div class="clt-search-row">
+                    <div class="clt-search-input-wrap">
+                        <div class="clt-input-wrap">
+                            <span class="clt-input-icon"><i class="bi bi-search"></i></span>
+                            <input asp-for="Criterio"
+                                   id="clt-search-input"
+                                   class="clt-input"
+                                   placeholder="Ej: 88889999 o Juan Pérez"
+                                   autocomplete="off"
+                                   aria-label="Buscar por teléfono o nombre" />
+                        </div>
+                    </div>
+                    <div class="clt-search-btns">
+                        <button type="submit" class="crm-btn crm-btn--primary">
+                            <i class="bi bi-search"></i> Buscar
+                        </button>
+                        <a asp-action="Index" class="crm-btn crm-btn--outline">
+                            <i class="bi bi-list-ul"></i> Volver al listado
+                        </a>
+                    </div>
+                </div>
+                <p class="clt-search-hint">
+                    <i class="bi bi-stars"></i>
+                    Empieza a escribir para ver sugerencias automáticas.
+                </p>
+            </form>
+        </div>
+
+        <!-- Búsquedas recientes -->
+        <div class="clt-body-section" id="clt-recents-section" style="display:none;">
+            <div class="clt-recents-header-row">
+                <p class="clt-recents-title">
+                    <i class="bi bi-clock-history"></i>
+                    Búsquedas recientes
+                </p>
+                <button type="button" class="crm-btn crm-btn--outline" id="clt-clear-history"
+                        style="font-size:0.78rem;padding:0.35rem 0.85rem;" aria-label="Limpiar historial">
+                    <i class="bi bi-trash3"></i> Limpiar historial
+                </button>
+            </div>
+            <p class="clt-recents-subtitle">Accede rápidamente a tus últimas búsquedas</p>
+            <div class="clt-recents-grid" id="clt-recents-grid"></div>
+        </div>
+
+        <!-- Info box -->
+        <div class="clt-body-section">
+            <div class="clt-info-box">
+                <i class="bi bi-lightning-charge-fill"></i>
+                <div>
+                    <strong>Acceso rápido y eficiente.</strong><br />
+                    Busca por número de teléfono o nombre para encontrar al cliente y continuar con su historial, citas, pagos y servicios.
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- ════════════════════════════════════════════════════
+         ESTADO 2 y 4 — Múltiples resultados o sin resultados
+         (siempre muestro barra de búsqueda arriba)
+         ════════════════════════════════════════════════════ -->
+    @if (hasMultipleResults || isNoResults)
+    {
+        <div class="clt-body-section">
+            <form asp-action="Buscar" method="post" id="clt-search-form">
+                @Html.AntiForgeryToken()
+                <div class="clt-search-row">
+                    <div class="clt-search-input-wrap">
+                        <div class="clt-input-wrap">
+                            <span class="clt-input-icon"><i class="bi bi-search"></i></span>
+                            <input asp-for="Criterio"
+                                   id="clt-search-input"
+                                   class="clt-input"
+                                   placeholder="Ej: 88889999 o Juan Pérez"
+                                   autocomplete="off"
+                                   aria-label="Buscar por teléfono o nombre" />
+                        </div>
+                    </div>
+                    <div class="clt-search-btns">
+                        <button type="submit" class="crm-btn crm-btn--primary">
+                            <i class="bi bi-search"></i> Buscar
+                        </button>
+                        <a asp-action="Index" class="crm-btn crm-btn--outline">
+                            <i class="bi bi-list-ul"></i> Volver al listado
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Búsquedas recientes (oculto si no hay) -->
+        <div class="clt-body-section" id="clt-recents-section" style="display:none;">
+            <div class="clt-recents-header-row">
+                <p class="clt-recents-title">
+                    <i class="bi bi-clock-history"></i>
+                    Búsquedas recientes
+                </p>
+                <button type="button" class="crm-btn crm-btn--outline" id="clt-clear-history"
+                        style="font-size:0.78rem;padding:0.35rem 0.85rem;">
+                    <i class="bi bi-trash3"></i> Limpiar historial
+                </button>
+            </div>
+            <div class="clt-recents-grid" id="clt-recents-grid"></div>
+        </div>
+    }
+
+    @if (hasMultipleResults)
+    {
+        <!-- Contador -->
+        <div class="clt-results-count-row">
+            <span class="clt-results-count">
+                <i class="bi bi-people-fill"></i>
+                @Model.ClientesEncontrados.Count resultado@(Model.ClientesEncontrados.Count != 1 ? "s" : "") encontrado@(Model.ClientesEncontrados.Count != 1 ? "s" : "")
+                @if (Model.ResultadosLimitados)
+                {
+                    <span style="font-weight:400;color:var(--private-muted-text,#64748b);font-size:0.8rem;">(limitado)</span>
+                }
+            </span>
+        </div>
+
+        <!-- Grid de cards -->
+        <div class="clt-results-grid">
+            @foreach (var cliente in Model.ClientesEncontrados)
+            {
+                var ini = cliente.Nombre.Length > 0 ? char.ToUpper(cliente.Nombre[0]).ToString() : "?";
+                var colorIdx = cliente.Id % 8;
+                <div class="clt-result-card">
+                    <div class="clt-result-card-header">
+                        <div class="clt-result-avatar clientes-avatar--color-@colorIdx">@ini</div>
+                        <div class="clt-result-card-meta">
+                            <span class="clt-result-name">@cliente.Nombre</span>
+                            <span class="clt-result-field">
+                                <i class="bi bi-telephone"></i>
+                                @cliente.NumeroTelefono
+                            </span>
+                        </div>
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(cliente.CorreoElectronico))
+                    {
+                        <span class="clt-result-field">
+                            <i class="bi bi-envelope"></i>
+                            @cliente.CorreoElectronico
+                        </span>
+                    }
+                    <span class="clt-result-field">
+                        <i class="bi bi-calendar3"></i>
+                        Última visita: @(cliente.UltimaVisita.HasValue ? cliente.UltimaVisita.Value.ToString("dd/MM/yyyy") : "Sin visitas")
+                    </span>
+
+                    <form asp-action="Buscar" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="criterio" value="@cliente.NumeroTelefono" />
+                        <button type="submit" class="crm-btn crm-btn--outline" style="width:100%;justify-content:center;">
+                            <i class="bi bi-eye"></i> Ver detalle
+                        </button>
+                    </form>
+                </div>
+            }
+        </div>
+    }
+
+    @if (isNoResults)
+    {
+        <div class="clt-section">
+            <div class="clt-empty-state">
+                <i class="bi bi-person-x"></i>
+                <span class="clt-empty-title">No se encontraron clientes</span>
+                <span class="clt-empty-text">
+                    @Model.Mensaje
+                </span>
+                <div style="margin-top:0.75rem;">
+                    <a asp-action="Create" class="crm-btn crm-btn--primary">
+                        <i class="bi bi-person-plus"></i> Registrar nuevo cliente
+                    </a>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- ════════════════════════════════════════════════════
+         ESTADO 3 — Detalle del cliente (1 resultado)
+         ════════════════════════════════════════════════════ -->
+    @if (hasSingleResult)
+    {
+        var c = Model.ClienteSeleccionado!;
+        var ini = c.Nombre.Length > 0 ? char.ToUpper(c.Nombre[0]).ToString() : "?";
+        var colorIdx = c.Id % 8;
+        var totalCitasHistorial = Model.TotalCitasHistorial;
+        var totalPagos = Model.HistorialPagos.Count;
+
+        // Métricas CRM: derivadas del historial real de atenciones, no de los campos que se
+        // capturan a mano en el formulario del cliente.
+        var m = Model.Metricas;
+        var totalVisitas = m.AttendedVisits;
+
+        var textoFrecuencia = m.EffectiveFrequencyDays == 1
+            ? "1 día"
+            : $"{m.EffectiveFrequencyDays} días";
+        var tituloFrecuencia = m.AverageVisitFrequencyDays.HasValue
+            ? "Promedio real entre visitas atendidas."
+            : "Frecuencia inicial del cliente. Se ajusta sola a partir de la segunda visita.";
+
+        var textoUltimaVisita = m.LastVisitDate?.ToString("dd/MM/yyyy") ?? "Sin visitas";
+        var tituloUltimaVisita = m.LastVisitDate.HasValue
+            ? "Fecha más reciente en la que el cliente fue atendido."
+            : "Todavía no hay una atención registrada.";
+
+        var textoDiasSinVisitar = m.DaysSinceLastVisit switch
+        {
+            null => "—",
+            0 => "Hoy",
+            1 => "1 día",
+            var dias => $"{dias} días"
+        };
+        var tituloDiasSinVisitar = m.DaysSinceLastVisit.HasValue
+            ? "Días transcurridos desde la última visita atendida."
+            : "Todavía no hay una atención registrada.";
+
+        <!-- Banda de perfil -->
+        <div class="clt-profile-band">
+            <div class="clt-profile-avatar clientes-avatar--color-@colorIdx">@ini</div>
+
+            <div class="clt-profile-identity">
+                <p class="clt-profile-name">@c.Nombre</p>
+                <span class="clt-profile-contact">
+                    <i class="bi bi-telephone"></i> @c.NumeroTelefono
+                </span>
+                @if (!string.IsNullOrWhiteSpace(c.CorreoElectronico))
+                {
+                    <span class="clt-profile-contact">
+                        <i class="bi bi-envelope"></i> @c.CorreoElectronico
+                    </span>
+                }
+            </div>
+
+            <div class="clt-profile-kpis">
+                <div class="clt-profile-kpi" title="@tituloFrecuencia">
+                    <i class="bi bi-arrow-repeat clt-profile-kpi-icon"></i>
+                    <span class="clt-profile-kpi-val">@textoFrecuencia</span>
+                    <span class="clt-profile-kpi-label">Frecuencia</span>
+                    <span class="visually-hidden">@tituloFrecuencia</span>
+                </div>
+                <div class="clt-profile-kpi" title="@tituloUltimaVisita">
+                    <i class="bi bi-calendar3 clt-profile-kpi-icon"></i>
+                    <span class="clt-profile-kpi-val">@textoUltimaVisita</span>
+                    <span class="clt-profile-kpi-label">Última visita</span>
+                    <span class="visually-hidden">@tituloUltimaVisita</span>
+                </div>
+                <div class="clt-profile-kpi" title="@tituloDiasSinVisitar">
+                    <i class="bi bi-hourglass-split clt-profile-kpi-icon"></i>
+                    <span class="clt-profile-kpi-val">@textoDiasSinVisitar</span>
+                    <span class="clt-profile-kpi-label">Días sin visitar</span>
+                    <span class="visually-hidden">@tituloDiasSinVisitar</span>
+                </div>
+                <div class="clt-profile-kpi" title="Días distintos en los que el cliente fue atendido.">
+                    <i class="bi bi-graph-up-arrow clt-profile-kpi-icon"></i>
+                    <span class="clt-profile-kpi-val">@totalVisitas</span>
+                    <span class="clt-profile-kpi-label">Visitas atendidas</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Barra de acciones / tabs -->
+        <div class="clt-tab-row">
+            <div class="clt-tab-left">
+                <a asp-action="Editar" asp-route-id="@c.Id" class="crm-btn crm-btn--primary">
+                    <i class="bi bi-pencil-square"></i> Editar Cliente
+                </a>
+                <button type="button" class="crm-btn crm-btn--outline" data-bs-toggle="collapse" data-bs-target="#clt-sec-citas" aria-expanded="false" aria-controls="clt-sec-citas">
+                    <i class="bi bi-calendar-week"></i> Citas (@totalCitasHistorial)
+                </button>
+                @if (totalPagos > 0)
+                {
+                    <button type="button" class="crm-btn crm-btn--outline" data-bs-toggle="collapse" data-bs-target="#clt-sec-pagos" aria-expanded="false" aria-controls="clt-sec-pagos">
+                        <i class="bi bi-receipt"></i> Pagos (@totalPagos)
+                    </button>
+                }
+                <button type="button" class="crm-btn crm-btn--outline" data-bs-toggle="collapse" data-bs-target="#clt-sec-notas" aria-expanded="false" aria-controls="clt-sec-notas">
+                    <i class="bi bi-clipboard-check"></i> Notas de Servicios
+                </button>
+            </div>
+
+
+        </div>
+
+        <!-- ── HISTORIAL DE CITAS ── -->
+        <div class="clt-section collapse" id="clt-sec-citas">
+            <p class="clt-section-title">
+                <i class="bi bi-calendar-week"></i>
+                Historial de citas
+            </p>
+
+            @if (Model.HistorialVisitas.Any())
+            {
+                <!-- Desktop -->
+                <div class="clt-history-table-wrap d-none d-md-block">
+                    <table class="clt-history-table">
+                        <thead>
+                            <tr>
+                                <th>FECHA</th>
+                                <th>HORA</th>
+                                <th>SERVICIO</th>
+                                <th>FUNCIONARIO</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var cita in Model.HistorialVisitas)
+                            {
+                                <tr>
+                                    <td>@cita.FechaHoraCita.ToString("dd/MM/yyyy")</td>
+                                    <td>@cita.FechaHoraCita.ToString("hh:mm tt")</td>
+                                    <td>@(cita.NombreServicio ?? "—")</td>
+                                    <td>@(cita.NombreFuncionario ?? "—")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Mobile -->
+                <div class="clt-history-cards d-md-none">
+                    @foreach (var cita in Model.HistorialVisitas)
+                    {
+                        <div class="clt-history-card">
+                            <div class="clt-history-card-header">
+                                <span class="clt-history-card-label">FECHA</span>
+                                <strong>@cita.FechaHoraCita.ToString("dd/MM/yyyy") — @cita.FechaHoraCita.ToString("hh:mm tt")</strong>
+                            </div>
+                            <div class="clt-history-card-row">
+                                <div class="clt-history-card-field">
+                                    <span class="clt-history-card-label">SERVICIO</span>
+                                    <span class="clt-history-card-val">@(cita.NombreServicio ?? "—")</span>
+                                </div>
+                                <div class="clt-history-card-field">
+                                    <span class="clt-history-card-label">FUNCIONARIO</span>
+                                    <span class="clt-history-card-val">@(cita.NombreFuncionario ?? "—")</span>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="clt-empty-state" style="padding:2rem 1rem;">
+                    <i class="bi bi-calendar3"></i>
+                    <span class="clt-empty-title">Sin citas registradas</span>
+                    <span class="clt-empty-text">Este cliente no tiene citas en el historial.</span>
+                </div>
+            }
+        </div>
+
+        <!-- ── HISTORIAL DE PAGOS ── -->
+        @if (Model.HistorialPagos.Any())
+        {
+            <div class="clt-section collapse" id="clt-sec-pagos">
+                <p class="clt-section-title">
+                    <i class="bi bi-receipt"></i>
+                    Historial de pagos
+                </p>
+
+                <!-- Desktop -->
+                <div class="clt-history-table-wrap d-none d-md-block">
+                    <table class="clt-history-table">
+                        <thead>
+                            <tr>
+                                <th>FECHA</th>
+                                <th>TIPO</th>
+                                <th>DETALLE</th>
+                                <th>FUNCIONARIO</th>
+                                <th>MÉTODO</th>
+                                <th style="text-align:right;">MONTO</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var pago in Model.HistorialPagos)
+                            {
+                                <tr>
+                                    <td>@pago.FechaCobro.ToString("dd/MM/yyyy")</td>
+                                    <td>
+                                        <span class="clt-badge-servicio @(pago.EsServicio ? "clt-badge-servicio--s" : "clt-badge-servicio--p")">
+                                            @(pago.EsServicio ? "Servicio" : "Producto")
+                                        </span>
+                                    </td>
+                                    <td>@(pago.Detalle ?? "—")</td>
+                                    <td>@(pago.NombreFuncionario ?? "—")</td>
+                                    <td>@pago.MetodoPago</td>
+                                    <td style="text-align:right;" class="clt-amount-green">
+                                        ₡ @pago.Monto.ToString("N0")
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                        <tfoot>
+                            <tr style="border-top:2px solid var(--private-table-border,rgba(15,23,42,0.1));">
+                                <td colspan="5" style="text-align:right;font-weight:700;font-size:0.82rem;padding:0.65rem 0.75rem;color:var(--private-muted-text,#64748b);">TOTAL</td>
+                                <td style="text-align:right;padding:0.65rem 0.75rem;" class="clt-amount-green">
+                                    ₡ @Model.HistorialPagos.Sum(p => p.Monto).ToString("N0")
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                <!-- Mobile -->
+                <div class="clt-history-cards d-md-none">
+                    @foreach (var pago in Model.HistorialPagos)
+                    {
+                        <div class="clt-history-card">
+                            <div class="clt-history-card-header">
+                                <span class="clt-badge-servicio @(pago.EsServicio ? "clt-badge-servicio--s" : "clt-badge-servicio--p")">
+                                    @(pago.EsServicio ? "Servicio" : "Producto")
+                                </span>
+                                <strong class="clt-amount-green">₡ @pago.Monto.ToString("N0")</strong>
+                            </div>
+                            <div class="clt-history-card-row">
+                                <div class="clt-history-card-field">
+                                    <span class="clt-history-card-label">FECHA</span>
+                                    <span class="clt-history-card-val">@pago.FechaCobro.ToString("dd/MM/yyyy")</span>
+                                </div>
+                                <div class="clt-history-card-field">
+                                    <span class="clt-history-card-label">MÉTODO</span>
+                                    <span class="clt-history-card-val">@pago.MetodoPago</span>
+                                </div>
+                            </div>
+                            <div class="clt-history-card-row">
+                                <div class="clt-history-card-field">
+                                    <span class="clt-history-card-label">DETALLE</span>
+                                    <span class="clt-history-card-val">@(pago.Detalle ?? "—")</span>
+                                </div>
+                                <div class="clt-history-card-field">
+                                    <span class="clt-history-card-label">FUNCIONARIO</span>
+                                    <span class="clt-history-card-val">@(pago.NombreFuncionario ?? "—")</span>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        <!-- ── NOTAS DE SERVICIOS ── -->
+        var hayNotaHeredada = !string.IsNullOrWhiteSpace(Model.NotasServicio);
+        var hayNotas = Model.Notas.Count > 0 || hayNotaHeredada;
+
+        <div class="clt-section collapse" id="clt-sec-notas">
+            <p class="clt-section-title">
+                <i class="bi bi-clipboard-check"></i>
+                Notas de Servicios
+            </p>
+
+            <!-- Editor inline: no navega, no abre otra página -->
+            <div class="clt-note-editor" id="clt-note-editor" hidden>
+                <label for="clt-note-text" class="visually-hidden">Nota sobre este cliente</label>
+                <textarea id="clt-note-text"
+                          class="clt-note-textarea"
+                          rows="3"
+                          maxlength="@LuxuryApp.Services.Clientes.IClienteNotasService.NotaMaxLength"
+                          placeholder="Escribe una nota sobre este cliente..."
+                          aria-describedby="clt-note-counter"></textarea>
+                <div class="clt-note-editor-foot">
+                    <span class="clt-note-counter" id="clt-note-counter" aria-live="polite">0/@LuxuryApp.Services.Clientes.IClienteNotasService.NotaMaxLength</span>
+                    <div class="clt-note-editor-actions">
+                        <button type="button" class="crm-btn crm-btn--outline" id="clt-note-cancel">Cancelar</button>
+                        <button type="button" class="crm-btn crm-btn--primary" id="clt-note-save">Guardar nota</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="clt-note-list" id="clt-note-list">
+                @foreach (var nota in Model.Notas)
+                {
+                    <div class="clt-note-item" data-nota-id="@nota.Id">
+                        <p class="clt-note-text">@nota.Notas</p>
+                        <p class="clt-note-meta">
+                            <i class="bi bi-clock"></i>
+                            <span>@nota.FechaHora.ToString("dd/MM/yyyy") · @nota.FechaHora.ToString("hh:mm tt")</span>
+                            @if (!string.IsNullOrWhiteSpace(nota.NombreFuncionario))
+                            {
+                                <span class="clt-note-author"><i class="bi bi-person"></i> @nota.NombreFuncionario</span>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(nota.NombreServicio))
+                            {
+                                <span class="clt-note-author"><i class="bi bi-scissors"></i> @nota.NombreServicio</span>
+                            }
+                            <span class="clt-note-actions">
+                                <button type="button" class="clt-note-action" data-nota-editar aria-label="Editar nota">
+                                    <i class="bi bi-pencil"></i> Editar
+                                </button>
+                                <button type="button" class="clt-note-action clt-note-action--danger" data-nota-eliminar aria-label="Eliminar nota">
+                                    <i class="bi bi-trash3"></i> Eliminar
+                                </button>
+                            </span>
+                        </p>
+                    </div>
+                }
+
+                @if (hayNotaHeredada)
+                {
+                    <div class="clt-note-item clt-note-item--legacy">
+                        <p class="clt-note-text">@Model.NotasServicio</p>
+                        <p class="clt-note-meta">
+                            <i class="bi bi-archive"></i>
+                            <span>Nota general del cliente</span>
+                        </p>
+                    </div>
+                }
+            </div>
+
+            <div class="clt-empty-state" id="clt-note-empty" style="padding:1.5rem 1rem;" @(hayNotas ? "hidden" : null)>
+                <i class="bi bi-clipboard"></i>
+                <span class="clt-empty-title">Sin notas de servicios</span>
+                <span class="clt-empty-text">No hay notas de servicios registradas para este cliente.</span>
+            </div>
+
+            <div style="margin-top:0.85rem;">
+                <button type="button" class="crm-btn crm-btn--outline" id="clt-note-add">
+                    <i class="bi bi-plus-lg"></i> Agregar nota
+                </button>
+            </div>
+
+            @* El id del cliente y el token viajan desde el servidor; el servidor revalida ambos. *@
+            <form id="clt-note-form" hidden
+                  data-url="@Url.Action("AgregarNota", "Clientes")"
+                  data-url-actualizar="@Url.Action("ActualizarNota", "Clientes")"
+                  data-url-eliminar="@Url.Action("EliminarNota", "Clientes")">
+                @Html.AntiForgeryToken()
+                <input type="hidden" id="clt-note-cliente-id" value="@c.Id" />
+            </form>
+        </div>
+
+        <!-- Confirmación de borrado de nota: mismo patrón que Eliminar Cliente -->
+        <div class="modal fade clt-modal" id="modalEliminarNota" tabindex="-1" aria-labelledby="modalEliminarNotaLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title clt-modal-title clt-modal-title--danger" id="modalEliminarNotaLabel">
+                            <i class="bi bi-trash3-fill"></i> ¿Eliminar esta nota?
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="clt-notes-display" id="clt-note-delete-preview"></div>
+                        <div class="clt-modal-warning-box clt-modal-warning-box--amber" style="margin-top:0.85rem;">
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                            <span>Esta acción no se puede deshacer.</span>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="clt-modal-btn--ghost" data-bs-dismiss="modal">
+                            <i class="bi bi-x-lg"></i> Cancelar
+                        </button>
+                        <button type="button" class="clt-modal-btn--danger" id="clt-note-delete-confirm">
+                            <i class="bi bi-trash3-fill"></i> Eliminar nota
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var STORAGE_KEY = "lux_recent_searches_v1";
+            var MAX_RECENTS = 6;
+
+            function loadRecents() {
+                try {
+                    return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+                } catch (e) {
+                    return [];
+                }
+            }
+
+            function saveRecents(list) {
+                try {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+                } catch (e) {}
+            }
+
+            function addRecent(text) {
+                if (!text || text.trim().length < 2) return;
+                text = text.trim();
+                var isPhone = /^[\d\s\+\-\(\)\.\/]{4,}$/.test(text.replace(/[^\d\s\+\-\(\)\.\/]/g, "")) && /\d{4}/.test(text);
+                var type = isPhone ? "phone" : "name";
+                var recents = loadRecents().filter(function (r) { return r.text !== text; });
+                recents.unshift({ text: text, type: type, ts: Date.now() });
+                recents = recents.slice(0, MAX_RECENTS);
+                saveRecents(recents);
+            }
+
+            function formatTime(ts) {
+                var d = new Date(ts);
+                var now = new Date();
+                var diffMs = now - d;
+                var diffDays = Math.floor(diffMs / 86400000);
+                if (diffDays === 0) return "Hoy, " + d.toLocaleTimeString("es-CR", { hour: "2-digit", minute: "2-digit" });
+                if (diffDays === 1) return "Ayer, " + d.toLocaleTimeString("es-CR", { hour: "2-digit", minute: "2-digit" });
+                return d.toLocaleDateString("es-CR", { day: "2-digit", month: "2-digit", year: "numeric" });
+            }
+
+            function renderRecents() {
+                var section = document.getElementById("clt-recents-section");
+                var grid = document.getElementById("clt-recents-grid");
+                if (!section || !grid) return;
+
+                var recents = loadRecents();
+                if (recents.length === 0) { section.style.display = "none"; return; }
+
+                section.style.display = "";
+                grid.innerHTML = "";
+
+                recents.forEach(function (r) {
+                    var btn = document.createElement("button");
+                    btn.type = "button";
+                    btn.className = "clt-recent-chip";
+                    var isPhone = r.type === "phone";
+                    btn.innerHTML =
+                        '<span class="clt-recent-chip-icon clt-recent-chip-icon--' + (isPhone ? "phone" : "name") + '">' +
+                            '<i class="bi bi-' + (isPhone ? "telephone" : "person") + '"></i>' +
+                        '</span>' +
+                        '<span class="clt-recent-chip-body">' +
+                            '<span class="clt-recent-chip-text">' + escapeHtml(r.text) + '</span>' +
+                            '<span class="clt-recent-chip-meta">' + (isPhone ? "Teléfono" : "Nombre") + " · " + formatTime(r.ts) + '</span>' +
+                        '</span>';
+
+                    btn.addEventListener("click", function () {
+                        var input = document.getElementById("clt-search-input");
+                        if (input) {
+                            input.value = r.text;
+                            var form = document.getElementById("clt-search-form");
+                            if (form) form.submit();
+                        }
+                    });
+                    grid.appendChild(btn);
+                });
+            }
+
+            function escapeHtml(str) {
+                return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+            }
+
+            // Guardar búsqueda actual si hay criterio
+            var criterio = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Criterio ?? ""));
+            if (criterio && criterio.length >= 2) {
+                addRecent(criterio);
+            }
+
+            renderRecents();
+
+            // Limpiar historial
+            var btnClear = document.getElementById("clt-clear-history");
+            if (btnClear) {
+                btnClear.addEventListener("click", function () {
+                    saveRecents([]);
+                    renderRecents();
+                });
+            }
+        })();
+
+        // ── Notas: crear, editar y eliminar sin salir del perfil ──────────────
+        (function () {
+            var form = document.getElementById("clt-note-form");
+            var editor = document.getElementById("clt-note-editor");
+            if (!form || !editor) return;
+
+            var addBtn = document.getElementById("clt-note-add");
+            var textarea = document.getElementById("clt-note-text");
+            var counter = document.getElementById("clt-note-counter");
+            var saveBtn = document.getElementById("clt-note-save");
+            var cancelBtn = document.getElementById("clt-note-cancel");
+            var list = document.getElementById("clt-note-list");
+            var empty = document.getElementById("clt-note-empty");
+            var clienteIdEl = document.getElementById("clt-note-cliente-id");
+            var maxLength = parseInt(textarea.getAttribute("maxlength"), 10) || 500;
+
+            var deleteModalEl = document.getElementById("modalEliminarNota");
+            var deletePreview = document.getElementById("clt-note-delete-preview");
+            var deleteConfirmBtn = document.getElementById("clt-note-delete-confirm");
+            var pendingDelete = null;
+
+            function toast(msg, isError) {
+                var t = document.createElement("div");
+                t.textContent = msg;
+                t.className = "clt-toast " + (isError ? "clt-toast--error" : "clt-toast--success");
+                t.setAttribute("role", "status");
+                document.body.appendChild(t);
+                setTimeout(function () { t.classList.add("is-hiding"); }, 2600);
+                setTimeout(function () { t.remove(); }, 3000);
+            }
+
+            // Un solo POST para las tres operaciones: mismo token, mismas credenciales y
+            // mismo manejo del error que devuelve el servidor.
+            function post(url, fields) {
+                var tokenEl = form.querySelector('input[name="__RequestVerificationToken"]');
+                var body = new URLSearchParams();
+                body.set("clienteId", clienteIdEl.value);
+                Object.keys(fields).forEach(function (k) { body.set(k, fields[k]); });
+                if (tokenEl) body.set("__RequestVerificationToken", tokenEl.value);
+
+                return fetch(url, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded",
+                        "X-Requested-With": "XMLHttpRequest"
+                    },
+                    credentials: "same-origin",
+                    body: body.toString()
+                }).then(function (r) {
+                    return r.json().then(function (data) {
+                        if (!r.ok) throw new Error(data && data.error ? data.error : "No fue posible completar la acción.");
+                        return data;
+                    });
+                });
+            }
+
+            function refreshEmptyState() {
+                if (!empty) return;
+                empty.hidden = list.querySelector(".clt-note-item") !== null;
+            }
+
+            // ── Alta ──────────────────────────────────────────────────────────
+            function updateCounter() {
+                counter.textContent = textarea.value.length + "/" + maxLength;
+            }
+
+            function openEditor() {
+                editor.hidden = false;
+                addBtn.hidden = true;
+                updateCounter();
+                textarea.focus();
+            }
+
+            function closeEditor() {
+                editor.hidden = true;
+                addBtn.hidden = false;
+                textarea.value = "";
+                updateCounter();
+                addBtn.focus();
+            }
+
+            function buildActions() {
+                var wrap = document.createElement("span");
+                wrap.className = "clt-note-actions";
+
+                var specs = [
+                    { attr: "data-nota-editar", icon: "pencil", label: "Editar", extra: "" },
+                    { attr: "data-nota-eliminar", icon: "trash3", label: "Eliminar", extra: " clt-note-action--danger" }
+                ];
+
+                specs.forEach(function (spec) {
+                    var b = document.createElement("button");
+                    b.type = "button";
+                    b.className = "clt-note-action" + spec.extra;
+                    b.setAttribute(spec.attr, "");
+                    b.setAttribute("aria-label", spec.label + " nota");
+                    var i = document.createElement("i");
+                    i.className = "bi bi-" + spec.icon;
+                    b.appendChild(i);
+                    b.appendChild(document.createTextNode(" " + spec.label));
+                    wrap.appendChild(b);
+                });
+
+                return wrap;
+            }
+
+            function renderNota(nota) {
+                var item = document.createElement("div");
+                item.className = "clt-note-item";
+                item.setAttribute("data-nota-id", nota.id);
+
+                var text = document.createElement("p");
+                text.className = "clt-note-text";
+                text.textContent = nota.texto;
+
+                var meta = document.createElement("p");
+                meta.className = "clt-note-meta";
+
+                var icon = document.createElement("i");
+                icon.className = "bi bi-clock";
+                meta.appendChild(icon);
+
+                var when = document.createElement("span");
+                when.textContent = nota.fecha + " · " + nota.hora;
+                meta.appendChild(when);
+
+                if (nota.funcionario) {
+                    var author = document.createElement("span");
+                    author.className = "clt-note-author";
+                    var authorIcon = document.createElement("i");
+                    authorIcon.className = "bi bi-person";
+                    author.appendChild(authorIcon);
+                    author.appendChild(document.createTextNode(" " + nota.funcionario));
+                    meta.appendChild(author);
+                }
+
+                meta.appendChild(buildActions());
+
+                item.appendChild(text);
+                item.appendChild(meta);
+                list.insertBefore(item, list.firstChild);
+                refreshEmptyState();
+            }
+
+            addBtn.addEventListener("click", openEditor);
+            cancelBtn.addEventListener("click", closeEditor);
+            textarea.addEventListener("input", updateCounter);
+
+            textarea.addEventListener("keydown", function (e) {
+                if (e.key === "Escape") { e.preventDefault(); closeEditor(); }
+            });
+
+            saveBtn.addEventListener("click", function () {
+                var texto = textarea.value.trim();
+                if (!texto) {
+                    toast("Escribe la nota antes de guardar.", true);
+                    textarea.focus();
+                    return;
+                }
+
+                saveBtn.disabled = true;
+                post(form.dataset.url, { texto: texto })
+                    .then(function (nota) {
+                        renderNota(nota);
+                        closeEditor();
+                        toast("Nota guardada correctamente.", false);
+                    })
+                    .catch(function (err) { toast(err.message, true); })
+                    .finally(function () { saveBtn.disabled = false; });
+            });
+
+            // ── Edición inline: la nota se convierte en textarea en su sitio ───
+            function openInlineEdit(item) {
+                if (!item || item.querySelector(".clt-note-inline-edit")) return;
+
+                var textEl = item.querySelector(".clt-note-text");
+                var metaEl = item.querySelector(".clt-note-meta");
+
+                var box = document.createElement("div");
+                box.className = "clt-note-inline-edit";
+
+                var ta = document.createElement("textarea");
+                ta.className = "clt-note-textarea";
+                ta.rows = 3;
+                ta.maxLength = maxLength;
+                ta.value = textEl.textContent;
+
+                var foot = document.createElement("div");
+                foot.className = "clt-note-editor-foot";
+
+                var count = document.createElement("span");
+                count.className = "clt-note-counter";
+                count.setAttribute("aria-live", "polite");
+
+                var actions = document.createElement("div");
+                actions.className = "clt-note-editor-actions";
+
+                var cancel = document.createElement("button");
+                cancel.type = "button";
+                cancel.className = "crm-btn crm-btn--outline";
+                cancel.textContent = "Cancelar";
+
+                var save = document.createElement("button");
+                save.type = "button";
+                save.className = "crm-btn crm-btn--primary";
+                save.textContent = "Guardar cambios";
+
+                actions.appendChild(cancel);
+                actions.appendChild(save);
+                foot.appendChild(count);
+                foot.appendChild(actions);
+                box.appendChild(ta);
+                box.appendChild(foot);
+
+                function sync() { count.textContent = ta.value.length + "/" + maxLength; }
+                sync();
+
+                // Cancelar no toca el texto original: solo vuelve a mostrarlo.
+                function close() {
+                    box.remove();
+                    textEl.hidden = false;
+                    if (metaEl) metaEl.hidden = false;
+                }
+
+                textEl.hidden = true;
+                if (metaEl) metaEl.hidden = true;
+                item.insertBefore(box, item.firstChild);
+                ta.focus();
+                ta.setSelectionRange(ta.value.length, ta.value.length);
+
+                ta.addEventListener("input", sync);
+                ta.addEventListener("keydown", function (e) {
+                    if (e.key === "Escape") { e.preventDefault(); close(); }
+                });
+                cancel.addEventListener("click", close);
+
+                save.addEventListener("click", function () {
+                    var texto = ta.value.trim();
+                    if (!texto) {
+                        toast("Escribe la nota antes de guardar.", true);
+                        ta.focus();
+                        return;
+                    }
+
+                    save.disabled = true;
+                    post(form.dataset.urlActualizar, {
+                        notaId: item.getAttribute("data-nota-id"),
+                        texto: texto
+                    })
+                        .then(function (nota) {
+                            textEl.textContent = nota.texto;
+                            close();
+                            toast("Nota actualizada correctamente.", false);
+                        })
+                        .catch(function (err) { toast(err.message, true); })
+                        .finally(function () { save.disabled = false; });
+                });
+            }
+
+            // ── Eliminación con confirmación ──────────────────────────────────
+            function askDelete(item) {
+                if (!item) return;
+                pendingDelete = item;
+                var textEl = item.querySelector(".clt-note-text");
+                if (deletePreview) deletePreview.textContent = textEl ? textEl.textContent : "";
+                if (!deleteModalEl || !window.bootstrap) return;
+                bootstrap.Modal.getOrCreateInstance(deleteModalEl).show();
+            }
+
+            if (deleteConfirmBtn) {
+                deleteConfirmBtn.addEventListener("click", function () {
+                    if (!pendingDelete) return;
+                    var item = pendingDelete;
+
+                    deleteConfirmBtn.disabled = true;
+                    post(form.dataset.urlEliminar, { notaId: item.getAttribute("data-nota-id") })
+                        .then(function () {
+                            item.remove();
+                            refreshEmptyState();
+                            toast("Nota eliminada correctamente.", false);
+                        })
+                        .catch(function (err) { toast(err.message, true); })
+                        .finally(function () {
+                            deleteConfirmBtn.disabled = false;
+                            pendingDelete = null;
+                            if (deleteModalEl && window.bootstrap) {
+                                bootstrap.Modal.getOrCreateInstance(deleteModalEl).hide();
+                            }
+                        });
+                });
+            }
+
+            // Delegación: cubre las notas que vienen del servidor y las recién creadas.
+            list.addEventListener("click", function (e) {
+                var editBtn = e.target.closest("[data-nota-editar]");
+                if (editBtn) { openInlineEdit(editBtn.closest(".clt-note-item")); return; }
+
+                var delBtn = e.target.closest("[data-nota-eliminar]");
+                if (delBtn) { askDelete(delBtn.closest(".clt-note-item")); }
+            });
+        })();
+    </script>
+}

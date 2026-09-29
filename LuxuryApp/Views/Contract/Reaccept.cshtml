@@ -1,0 +1,96 @@
+@model ContractReacceptViewModel
+
+@{
+    Layout = "_PublicLayout";
+    ViewData["Title"] = "Reaceptacion de contrato";
+    ViewData["PublicBodyClass"] = "public-contract-page";
+}
+
+<section class="contract-page-section">
+    <div class="container">
+        <div class="section-heading text-center" data-aos="fade-up">
+            <span class="section-kicker">Accion requerida</span>
+            <h2>Debes aceptar la version vigente del contrato para continuar usando LuxuryCloud.</h2>
+            <p>
+                Si el documento cambia, el sistema exige una nueva aceptacion antes de devolver el acceso a la plataforma.
+            </p>
+        </div>
+
+        <div class="contract-reaccept-layout">
+            <div class="contract-reaccept-copy" data-aos="fade-right">
+                <div class="auth-story-card">
+                    <span class="section-kicker">Cumplimiento y trazabilidad</span>
+                    <h3>La reaceptacion queda auditada con evidencia legal.</h3>
+                    <p>
+                        Guardamos la version aceptada, hash del contenido, fecha UTC, direccion IP, user agent
+                        y origen del evento para mantener trazabilidad completa.
+                    </p>
+
+                    <ul class="auth-benefit-list">
+                        <li>Bloqueo automatico cuando existe una version vigente no aceptada</li>
+                        <li>Registro de evidencia con source = reaccept</li>
+                        <li>Reanudacion segura del flujo justo despues de aceptar</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="contract-reaccept-main" data-aos="fade-left">
+                @if (!Model.HasActiveDocument)
+                {
+                    <div class="status-card">
+                        <span class="status-kicker">Contrato no disponible</span>
+                        <h2>No hay un contrato vigente configurado.</h2>
+                        <p>Contacta soporte antes de continuar. Mientras no exista una version activa, la aplicacion mantendra el bloqueo legal.</p>
+                    </div>
+                }
+                else
+                {
+                    <partial name="_ContractDocumentContent" model="new ContractPageViewModel
+                    {
+                        HasActiveDocument = true,
+                        ContractDocumentId = Model.ContractDocumentId,
+                        Title = Model.Title,
+                        VersionNumber = Model.VersionNumber,
+                        EffectiveFromUtc = Model.EffectiveFromUtc,
+                        ContentHtml = Model.ContentHtml
+                    }" />
+
+                    <div class="contract-consent-card contract-consent-card-block" data-aos="fade-up">
+                        <form asp-action="Reaccept" method="post">
+                            @Html.AntiForgeryToken()
+                            <input asp-for="ContractDocumentId" type="hidden" />
+                            <input asp-for="ReturnUrl" type="hidden" />
+
+                            <div class="text-danger auth-validation" asp-validation-summary="All"></div>
+
+                            <div class="form-check contract-check">
+                                <input asp-for="AcceptCurrentContract" type="checkbox" class="form-check-input" value="true" required />
+                                <label asp-for="AcceptCurrentContract" class="form-check-label">
+                                    He leido y acepto la version vigente del Contrato de Uso del Servicio.
+                                </label>
+                            </div>
+                            <span asp-validation-for="AcceptCurrentContract" class="text-danger d-block mt-2"></span>
+
+                            <div class="contract-consent-meta">
+                                <span>Version @Model.VersionNumber</span>
+                                @if (Model.EffectiveFromUtc.HasValue)
+                                {
+                                    <span>Vigente desde @Model.EffectiveFromUtc.Value.ToString("yyyy-MM-dd") UTC</span>
+                                }
+                            </div>
+
+                            <div class="contract-page-actions">
+                                <button type="submit" class="btn public-btn public-btn-primary">Aceptar y continuar</button>
+                            </div>
+                        </form>
+
+                        <form method="post" asp-controller="Accounts" asp-action="SalirAplicacion" class="contract-secondary-form">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn public-btn public-btn-ghost">Salir</button>
+                        </form>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</section>

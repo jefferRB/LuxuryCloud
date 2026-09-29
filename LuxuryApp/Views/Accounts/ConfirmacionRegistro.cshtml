@@ -1,0 +1,28 @@
+@{
+    ViewData["Title"] = "Confirma tu correo";
+    ViewData["PublicBodyClass"] = "public-auth-page";
+    Layout = "_PublicLayout";
+}
+
+<section class="auth-section">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6 col-xl-5" data-aos="fade-up">
+                <div class="auth-form-card text-center">
+                    <i class="bi bi-envelope-check fs-1 mb-3 d-block"></i>
+                    <span class="section-kicker">Registro recibido</span>
+                    <h2>Revisa tu correo</h2>
+                    <p class="text-muted mb-3">
+                        Si los datos son validos, enviaremos un enlace para confirmar tu correo y continuar con el plan.
+                    </p>
+                    <p class="text-muted small mb-4">
+                        Revisa tambien la carpeta de spam o correo no deseado.
+                    </p>
+                    <a asp-controller="Accounts" asp-action="Acceso" class="btn public-btn public-btn-primary w-100">
+                        Volver a iniciar sesion
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

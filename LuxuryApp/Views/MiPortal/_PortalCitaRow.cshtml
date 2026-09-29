@@ -1,0 +1,81 @@
+@model LuxuryApp.Models.Funcionarios.PortalCitaItem
+@using System.Globalization
+@{
+    var cr = new CultureInfo("es-CR");
+    var esBloqueo = !string.Equals(Model.Tipo, "CITA", System.StringComparison.OrdinalIgnoreCase);
+    var puedeCobrar = (ViewData["PuedeRegistrarCobros"] as bool?) ?? false;
+    var puedeEditar = (ViewData["PuedeEditarCitas"] as bool?) ?? false;
+    var puedeCancelar = (ViewData["PuedeCancelarCitas"] as bool?) ?? false;
+    var calFecha = ViewData["CalFecha"] as string ?? "";
+    var tieneAcciones = !esBloqueo && (puedeEditar || puedeCancelar || (puedeCobrar && Model.EsCobrable) || Model.YaCobrada);
+}
+<div class="lp-row">
+    <div class="lp-row-ic @(esBloqueo ? "lp-ic-amber" : "lp-ic-blue")">
+        <i class="bi @(esBloqueo ? "bi-pause-circle" : "bi-person")"></i>
+    </div>
+    <div class="lp-row-main">
+        <div class="lp-row-title">@(esBloqueo ? Model.Servicio : Model.Cliente)</div>
+        <div class="lp-row-meta">
+            <span><i class="bi bi-clock"></i> @Model.FechaHora.ToString("hh:mm tt", cr)</span>
+            @if (esBloqueo)
+            {
+                <span><i class="bi bi-pause-circle"></i> Bloqueo de agenda</span>
+            }
+            else
+            {
+                <span><i class="bi bi-scissors"></i> @Model.Servicio · @Model.DuracionEfectiva min</span>
+                @if (!string.IsNullOrWhiteSpace(Model.Telefono))
+                {
+                    <span><i class="bi bi-telephone"></i> <a href="tel:@Model.Telefono" style="color:inherit;text-decoration:none;">@Model.Telefono</a></span>
+                }
+            }
+        </div>
+    </div>
+
+    @if (tieneAcciones)
+    {
+        <div class="lp-row-right">
+            @if (Model.YaCobrada)
+            {
+                <span class="lp-badge lp-badge--ok"><i class="bi bi-check2-circle"></i> Cobrada</span>
+            }
+            else if (puedeCobrar && Model.EsCobrable)
+            {
+                <button type="button" class="lp-btn lp-btn--gold js-cobrar-btn" style="padding:.45rem .8rem;font-size:.8rem;"
+                        data-cita-id="@Model.Id"
+                        data-cliente="@Model.Cliente"
+                        data-servicio="@Model.Servicio"
+                        data-email="@Model.CorreoCliente"
+                        data-precio="@(Model.PrecioServicio?.ToString("0.##", CultureInfo.InvariantCulture) ?? "")">
+                    <i class="bi bi-cash-coin"></i> Cobrar
+                </button>
+            }
+            @if (puedeEditar)
+            {
+                <button type="button" class="lp-icon-btn js-editar-cita" title="Editar cita"
+                        data-cita-id="@Model.Id"
+                        data-fecha="@Model.FechaHoraInput"
+                        data-nombre="@(Model.NombreClienteRaw ?? Model.Cliente)"
+                        data-telefono="@(Model.Telefono ?? "")"
+                        data-cliente-id="@(Model.ClienteId?.ToString() ?? "")"
+                        data-servicio-id="@(Model.ServicioId?.ToString() ?? "")"
+                        data-servicio-personalizado="@(Model.ServicioPersonalizado ?? "")"
+                        data-duracion="@(Model.DuracionMinutos?.ToString() ?? "")">
+                    <i class="bi bi-pencil"></i>
+                </button>
+            }
+            @if (puedeCancelar)
+            {
+                <form method="post" action="/MiPortal/Calendario/CancelarCita" class="m-0"
+                      onsubmit="return confirm('¿Cancelar esta cita? Esta acción no se puede deshacer.');">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="citaId" value="@Model.Id" />
+                    <input type="hidden" name="fecha" value="@calFecha" />
+                    <button type="submit" class="lp-icon-btn lp-icon-btn--danger" title="Cancelar cita">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </form>
+            }
+        </div>
+    }
+</div>

@@ -1,0 +1,42 @@
+@{
+    Layout = "_PublicLayout";
+    ViewData["Title"] = "Renovación requerida";
+    ViewData["PublicBodyClass"] = "public-status-page";
+
+    var heading = ViewData["ExpiredHeading"] as string ?? "Tu suscripción finalizó";
+    var message = ViewData["ExpiredMessage"] as string
+        ?? "Renueva tu suscripción para continuar usando LuxuryCloud.";
+    var isPaymentRecovery = ViewData["IsPaymentRecoverySuspended"] is true;
+}
+
+<section class="status-section">
+    <div class="container">
+        <div class="status-card status-card-warning" data-aos="zoom-in">
+            <span class="status-kicker">@(isPaymentRecovery ? "Pago pendiente" : "Renovación requerida")</span>
+            <h1>@heading</h1>
+            <p>@message</p>
+
+            <div class="status-benefits">
+                <span>Recupera tu agenda, clientes y dashboard</span>
+                <span>Retoma el control de tus ingresos y gastos</span>
+                <span>Vuelve a operar con la experiencia completa</span>
+            </div>
+
+            <div class="status-actions">
+                @if (isPaymentRecovery)
+                {
+                    @* Suscriptor recurrente con cobro rechazado: se regulariza el MISMO suscriptor desde
+                       Suscripción. Mandarlo a Planes abriría un checkout nuevo (riesgo de doble cobro). *@
+                    <a class="btn public-btn public-btn-primary" asp-controller="Billing" asp-action="Suscripcion">Regularizar pago</a>
+                }
+                else
+                {
+                    <a class="btn public-btn public-btn-primary" asp-controller="Billing" asp-action="Planes">Renovar suscripción</a>
+                    <a class="btn public-btn public-btn-secondary" asp-controller="Billing" asp-action="Planes">Ver planes</a>
+                }
+            </div>
+
+            <p class="status-footnote">Tus datos siguen guardados. Al renovar, recuperas el acceso de inmediato.</p>
+        </div>
+    </div>
+</section>

@@ -1,0 +1,156 @@
+﻿@model LuxuryApp.Models.DataBase.ClientesModel
+
+@{
+    var tenantWhatsAppEnabled = ViewData["TenantWhatsAppEnabled"] as bool? == true;
+    var totalFields = tenantWhatsAppEnabled ? 7 : 6;
+}
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+<link rel="stylesheet" href="~/css/crm-shared.css" asp-append-version="true">
+<link rel="stylesheet" href="~/css/clientes.css" asp-append-version="true">
+
+<div class="clt-shell">
+
+    <!-- ── CABECERA ── -->
+    <div class="clt-header-section">
+        <div class="clt-header-left module-heading">
+            <span class="module-eyebrow">GESTIÓN DE CLIENTES</span>
+            <h1 class="module-title"><i class="bi bi-people-fill module-title-icon" aria-hidden="true"></i>Registrar Cliente</h1>
+            <p class="module-subtitle">Agrega un nuevo cliente y define su información de contacto.</p>
+        </div>
+    </div>
+
+    <!-- ── FORMULARIO ── -->
+    <div class="clt-body-section">
+        <form asp-action="Create" method="post">
+
+            @if (!ViewData.ModelState.IsValid && ViewData.ModelState.Values.Any(v => v.Errors.Count > 0))
+            {
+                @* "All" y no "ModelOnly": si un campo falla y no tiene su propio span visible,
+                   ModelOnly deja el recuadro rojo vacío y el usuario no sabe qué corregir. *@
+                <div class="clt-validation-summary" role="alert">
+                    <div asp-validation-summary="All"></div>
+                </div>
+            }
+
+            <div class="clt-form-grid">
+
+                <!-- Nombre -->
+                <div class="clt-field">
+                    <label asp-for="Nombre" class="clt-label">
+                        Nombre <span class="clt-required">*</span>
+                    </label>
+                    <div class="clt-input-wrap">
+                        <span class="clt-input-icon"><i class="bi bi-person"></i></span>
+                        <input asp-for="Nombre" class="clt-input" placeholder="Nombre del cliente" autocomplete="off" />
+                    </div>
+                    <span asp-validation-for="Nombre" class="clt-field-error"></span>
+                </div>
+
+                <!-- Teléfono -->
+                <div class="clt-field">
+                    <label asp-for="NumeroTelefono" class="clt-label">
+                        Número de Teléfono <span class="clt-required">*</span>
+                    </label>
+                    <div class="clt-input-wrap">
+                        <span class="clt-input-icon"><i class="bi bi-telephone"></i></span>
+                        <input asp-for="NumeroTelefono" class="clt-input" placeholder="Ejemplo: 88889999" inputmode="tel" />
+                    </div>
+                    <span asp-validation-for="NumeroTelefono" class="clt-field-error"></span>
+                </div>
+
+                <!-- Correo -->
+                <div class="clt-field">
+                    <label asp-for="CorreoElectronico" class="clt-label">Correo Electrónico (opcional)</label>
+                    <div class="clt-input-wrap">
+                        <span class="clt-input-icon"><i class="bi bi-envelope"></i></span>
+                        <input asp-for="CorreoElectronico" class="clt-input" placeholder="cliente@correo.com" type="email" autocomplete="off" />
+                    </div>
+                    <span asp-validation-for="CorreoElectronico" class="clt-field-error"></span>
+                </div>
+
+                <!-- Cumpleaños -->
+                <div class="clt-field">
+                    <label asp-for="FechaCumpleaños" class="clt-label">Fecha de Cumpleaños (opcional)</label>
+                    <div class="clt-input-wrap">
+                        <span class="clt-input-icon"><i class="bi bi-gift"></i></span>
+                        <input asp-for="FechaCumpleaños" class="clt-input" type="date" />
+                    </div>
+                    <span asp-validation-for="FechaCumpleaños" class="clt-field-error"></span>
+                </div>
+
+                <!-- Frecuencia inicial de visita -->
+                <div class="clt-field">
+                    <label asp-for="FrecuenciaVisita" class="clt-label">
+                        Frecuencia inicial de visita (días) <span class="clt-required">*</span>
+                    </label>
+                    <div class="clt-input-wrap">
+                        <span class="clt-input-icon"><i class="bi bi-arrow-repeat"></i></span>
+                        <input asp-for="FrecuenciaVisita" class="clt-input" type="number" min="1" max="365" placeholder="Ejemplo: 15" inputmode="numeric" />
+                    </div>
+                    <span asp-validation-for="FrecuenciaVisita" class="clt-field-error"></span>
+                    <small style="font-size:0.75rem;color:var(--private-muted-text,#64748b);margin-top:0.3rem;display:block;">
+                        <i class="bi bi-info-circle"></i>
+                        LuxuryCloud la ajustará automáticamente según el historial de visitas.
+                    </small>
+                </div>
+
+                @if (tenantWhatsAppEnabled)
+                {
+                    <!-- WhatsApp Consent -->
+                    <div class="clt-field clt-form-full">
+                        <div style="display:flex;align-items:flex-start;gap:0.75rem;padding:0.9rem 1rem;border-radius:0.75rem;border:1px solid rgba(var(--private-accent-rgb), 0.2);background:var(--private-row-bg,rgba(15,23,42,0.03));">
+                            <input asp-for="AceptaMensajesWhatsApp" class="form-check-input flex-shrink-0" style="margin-top:0.15rem;" />
+                            <label asp-for="AceptaMensajesWhatsApp" style="font-size:0.82rem;color:var(--private-muted-text,#64748b);line-height:1.5;cursor:pointer;">
+                                El cliente autorizó recibir mensajes de WhatsApp enviados por LuxuryCloud en nombre de este negocio para confirmaciones, cancelaciones y recordatorios de citas. No se usará para promociones.
+                            </label>
+                        </div>
+                    </div>
+                }
+
+            </div>
+
+            <!-- Acciones -->
+            <div class="clt-actions" style="margin-top:1.5rem;">
+                <button type="submit" class="crm-btn crm-btn--primary">
+                    <i class="bi bi-floppy2-fill"></i>
+                    Guardar Cliente
+                </button>
+                <a asp-action="Index" class="crm-btn crm-btn--outline">
+                    <i class="bi bi-list-ul"></i>
+                    Volver al Listado
+                </a>
+                <button type="reset" class="clt-btn-link" id="clt-btn-clear">
+                    <i class="bi bi-arrow-counterclockwise"></i>
+                    Limpiar formulario
+                </button>
+            </div>
+
+        </form>
+    </div>
+
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        (function () {
+            // Limpiar formulario: solo limpiar inputs, no resetear valores predefinidos del server
+            var btnClear = document.getElementById("clt-btn-clear");
+            if (btnClear) {
+                btnClear.addEventListener("click", function (e) {
+                    e.preventDefault();
+                    var form = btnClear.closest("form");
+                    if (!form) return;
+                    form.querySelectorAll("input[type=text],input[type=email],input[type=number],input[type=date],textarea").forEach(function (el) {
+                        el.value = "";
+                    });
+                    form.querySelectorAll("input[type=checkbox]").forEach(function (el) {
+                        el.checked = false;
+                    });
+                });
+            }
+        })();
+    </script>
+}

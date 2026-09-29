@@ -1,0 +1,105 @@
+@model LuxuryApp.Models.Identity.AccesoViewModel
+
+@{
+    ViewData["Title"] = "Acceso";
+    ViewData["PublicBodyClass"] = "public-auth-page";
+    Layout = "_PublicLayout";
+    var returnUrl = ViewData["ReturnUrl"] as string;
+}
+
+<section class="auth-section">
+    <div class="container">
+        <div class="row align-items-center g-4">
+            <div class="col-lg-5" data-aos="fade-right">
+                <div class="auth-story-card">
+                    <span class="section-kicker">Acceso al SaaS</span>
+                    <h1>Entra a tu espacio y sigue operando desde donde lo dejaste.</h1>
+                    <p>
+                        Accede a tu negocio y continúa gestionando citas, clientes, pagos y reportes sin perder el ritmo.
+                    </p>
+
+                    <ul class="auth-feature-list">
+                        <li class="auth-feature-item">
+                            <span class="auth-feature-icon"><i class="bi bi-briefcase"></i></span>
+                            <div class="auth-feature-copy">
+                                <strong>Tu negocio siempre listo</strong>
+                                <span>Entramos directo al espacio de trabajo que corresponde a tu cuenta.</span>
+                            </div>
+                        </li>
+                        <li class="auth-feature-item">
+                            <span class="auth-feature-icon"><i class="bi bi-shield-check"></i></span>
+                            <div class="auth-feature-copy">
+                                <strong>Acceso seguro</strong>
+                                <span>Protegemos tu información y la de tus clientes en cada inicio de sesión.</span>
+                            </div>
+                        </li>
+                        <li class="auth-feature-item">
+                            <span class="auth-feature-icon"><i class="bi bi-arrow-clockwise"></i></span>
+                            <div class="auth-feature-copy">
+                                <strong>Continuidad para tu equipo</strong>
+                                <span>Retoma tus citas, cobros y agenda justo donde los dejaste.</span>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="col-lg-7 col-xl-5" data-aos="fade-left">
+                <div class="auth-form-card">
+                    <span class="section-kicker">Iniciar sesión</span>
+                    <h2>Accede a tu cuenta.</h2>
+
+                    <form asp-controller="Accounts" asp-action="Acceso" method="post" autocomplete="on" data-prevent-double-submit>
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="returnurl" value="@returnUrl" />
+
+                        <div class="text-danger auth-validation" asp-validation-summary="All"></div>
+
+                        <div class="mb-3">
+                            <label asp-for="Email" class="form-label"></label>
+                            <div class="auth-input-wrap">
+                                <i class="bi bi-envelope auth-input-icon"></i>
+                                <input asp-for="Email" class="form-control public-form-control" placeholder="correo@negocio.com" autocomplete="username" />
+                            </div>
+                            <span asp-validation-for="Email" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Password" class="form-label"></label>
+                            <div class="auth-input-wrap">
+                                <i class="bi bi-lock auth-input-icon"></i>
+                                <input asp-for="Password" type="password" class="form-control public-form-control has-pw-toggle" placeholder="Contraseña" autocomplete="current-password" />
+                                <button type="button" class="auth-pw-toggle" data-pw-toggle aria-label="Mostrar contraseña">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                            <span asp-validation-for="Password" class="text-danger small"></span>
+                        </div>
+
+                        <div class="form-check public-check mb-1">
+                            <input asp-for="RememberMe" class="form-check-input" />
+                            <label asp-for="RememberMe" class="form-check-label"></label>
+                        </div>
+                        <p class="auth-remember-hint text-muted small mb-4">
+                            Al iniciar sesión, tu navegador puede ofrecer guardar tus credenciales.
+                            No uses esta opción en equipos públicos o compartidos.
+                        </p>
+
+                        <button type="submit" class="btn public-btn public-btn-primary w-100">Entrar</button>
+
+                        <div class="auth-links-row">
+                            <a asp-action="Registro" asp-route-returnurl="@returnUrl">Crear cuenta</a>
+                            <a asp-action="OlvidoPassword">Olvidé mi contraseña</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

@@ -1,0 +1,86 @@
+@inject LuxuryApp.Services.Layout.IPrivateNavigationService NavigationService
+
+@{
+    var navigation = await NavigationService.BuildAsync(User);
+}
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - LuxuryCloud</title>
+    <partial name="_AppearanceBootstrap" />
+    <script type="importmap"></script>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.14.1/themes/base/jquery-ui.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
+    @* asp-append-version es OBLIGATORIO acá: UseStaticFiles no manda Cache-Control, así que sin
+       el hash de contenido en la URL el navegador sigue sirviendo la copia cacheada y los cambios
+       de estilo no se ven (el dropdown de clientes se quedó navy por esto). *@
+    <link rel="stylesheet" href="~/css/calendar.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/mensajes.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/Dashboard.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/private-layout.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/notification-center.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/LuxuryApp.styles.css" asp-append-version="true" />
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body class="layout-background private-shell theme-bg-marble surface-classic theme-marble @(ViewData["FullScreen"] as string)">
+    <div class="private-layout-frame">
+        <header class="private-header">
+            <partial name="_PrivateNavbar" model="navigation" />
+
+
+        </header>
+
+        <div class="container private-content-shell">
+            <main role="main" class="pb-4 private-main">
+                @RenderBody()
+            </main>
+        </div>
+
+        <partial name="_PrivateFooter" model="navigation" />
+    </div>
+
+    @if (navigation.IsAuthenticated)
+    {
+        <partial name="_AppearanceModal" />
+    }
+
+    @* Centro de Notificaciones: solo el dueño del negocio (Administrador). *@
+    @if (User.IsInRole("Administrador"))
+    {
+        <partial name="_NotificationCenter" />
+    }
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="~/js/servicios.js"></script>
+    <script src="~/js/categorias.js"></script>
+    <script src="~/js/mensajes.js" asp-append-version="true"></script>
+    <script src="~/js/puestos.js"></script>
+    <script src="~/js/finanzas.js" asp-append-version="true"></script>
+    @if (User.IsInRole("Administrador"))
+    {
+        <script src="~/js/notification-center.js" asp-append-version="true"></script>
+    }
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://code.jquery.com/ui/1.14.1/jquery-ui.js"></script>
+    <script>
+        $(function () {
+            $("#datepicker").datepicker({
+                changeMonth: true,
+                changeYear: true,
+                yearRange: "1930:2030",
+                dateFormat: "yy-mm-dd"
+            });
+        });
+    </script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

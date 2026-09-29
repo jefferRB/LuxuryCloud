@@ -1,0 +1,43 @@
+@model LuxuryApp.Models.Platform.MissionControl.MissionControlQueueViewModel
+
+@{
+    static string FormatAge(TimeSpan age)
+    {
+        if (age.TotalMinutes < 1) { return $"{age.TotalSeconds:0} s"; }
+        if (age.TotalHours < 1) { return $"{age.TotalMinutes:0} min"; }
+        if (age.TotalDays < 1) { return $"{age.TotalHours:0.#} h"; }
+        return $"{age.TotalDays:0.#} días";
+    }
+
+    string? ageText = null;
+    if (Model.OldestItemUtc.HasValue)
+    {
+        var delta = DateTime.UtcNow - Model.OldestItemUtc.Value;
+        ageText = delta >= TimeSpan.Zero
+            ? $"más antiguo: hace {FormatAge(delta)}"
+            : $"el primero vence en {FormatAge(-delta)}";
+    }
+
+    var countBadge = !Model.HasItems
+        ? "platform-badge-success"
+        : Model.IsMoneyRelated
+            ? "platform-badge-danger"
+            : "platform-badge-warning";
+}
+
+<a class="mc-queue @(Model.HasItems ? "has-items" : "is-empty")" href="@Model.LinkUrl">
+    <span class="mc-queue-label">
+        @if (Model.IsMoneyRelated)
+        {
+            <i class="bi bi-cash-coin"></i>
+        }
+        @Model.Label
+    </span>
+    <span class="mc-queue-meta">
+        @if (ageText is not null && Model.HasItems)
+        {
+            <span class="mc-queue-age">@ageText</span>
+        }
+        <span class="platform-badge @countBadge">@Model.Count</span>
+    </span>
+</a>

@@ -1,0 +1,38 @@
+﻿<div class="messaging-wrapper">
+
+    <div class="messaging-container">
+
+        <!-- Sidebar -->
+        <div class="chat-sidebar">
+            <div class="sidebar-header">
+                <h5 class="sidebar-title">Conversaciones</h5>
+
+                <input type="text" class="form-control chat-search" placeholder="Buscar cliente...">
+            </div>
+
+            <div class="chat-list" id="chatList"></div>
+        </div>
+
+        <!-- Chat Panel -->
+        <div class="chat-panel" >
+
+            <div class="chat-header" id="chatHeader">
+                Selecciona una conversación
+            </div>
+
+            <div class="chat-messages" id="chatMessages"></div>
+
+            <!-- ⭐ PREVIEW RESPUESTA -->
+            <div id="replyPreviewContainer"></div>
+
+            <div class="chat-input">
+
+                <input type="text" id="mensajeInput" placeholder="Escribe un mensaje..." />
+                <button class="btn btn-luxe" onclick="enviarMensaje()">Enviar</button>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>

@@ -1,0 +1,388 @@
+@model LuxuryApp.Models.SaaS.BillingPlanesViewModel
+
+@{
+    Layout = "_PublicLayout";
+    ViewData["Title"] = "Precios";
+    ViewData["PublicBodyClass"] = "public-pricing-page";
+
+    var hasBaseAccess = Model.CurrentSubscription?.CanAccessApp == true || Model.CurrentAccess?.CanAccessApp == true;
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/subscription.css" asp-append-version="true" />
+}
+
+<section class="pricing-hero-section">
+    <div class="container">
+        <div class="pricing-hero-card" data-aos="fade-up">
+            <span class="section-kicker">Precios LuxuryCloud</span>
+            <h1>Planes mensuales claros para operar con control y sin acceso permanente por un solo pago.</h1>
+            <p>
+                LuxuryCloud mantiene el tenant y la cuenta existente. El acceso comercial depende
+                de una suscripcion mensual vigente y su periodo activo.
+            </p>
+        </div>
+    </div>
+</section>
+
+@if (TempData["BillingError"] is string billingError)
+{
+    <div class="container">
+        <div class="alert alert-danger billing-alert" role="alert">
+            @billingError
+        </div>
+    </div>
+}
+
+@if (TempData["BillingSuccess"] is string billingSuccess)
+{
+    <div class="container">
+        <div class="alert alert-success billing-alert" role="alert">
+            @billingSuccess
+        </div>
+    </div>
+}
+
+<section class="pricing-grid-section">
+    <div class="container">
+        @if (Model.IsAuthenticated)
+        {
+            <div class="billing-state-banner" data-aos="fade-up">
+                <div>
+                    <span class="billing-state-kicker">Mi suscripcion</span>
+                    @if (Model.CurrentSubscription is not null)
+                    {
+                        <h2>@(Model.CurrentSubscription.PlanName ?? "Suscripcion activa")</h2>
+                        <p>
+                            Estado actual: <strong>@Model.CurrentSubscription.StatusLabel</strong>.
+                            @if (Model.CurrentSubscription.CurrentPeriodEndUtc.HasValue)
+                            {
+                                <span> Vigencia hasta <strong>@Model.CurrentSubscription.CurrentPeriodEndUtc.Value.ToString("dd/MM/yyyy")</strong>.</span>
+                            }
+                            @if (Model.CurrentSubscription.IsInGracePeriod && Model.CurrentSubscription.GracePeriodEndsUtc.HasValue)
+                            {
+                                <span> Periodo de gracia hasta <strong>@Model.CurrentSubscription.GracePeriodEndsUtc.Value.ToString("dd/MM/yyyy")</strong>.</span>
+                            }
+                        </p>
+                    }
+                    else if (Model.CurrentAccess?.CanAccessApp == true)
+                    {
+                        <h2>Tu cuenta tiene acceso comercial habilitado.</h2>
+                        <p>
+                            Fuente de acceso: <strong>@Model.CurrentAccess.AccessSource</strong>
+                            @if (!string.IsNullOrWhiteSpace(Model.CurrentAccess.EffectivePlanName))
+                            {
+                                <span>. Plan efectivo: <strong>@Model.CurrentAccess.EffectivePlanName</strong>.</span>
+                            }
+                        </p>
+                    }
+                    else
+                    {
+                        <h2>Tu tenant ya existe. Solo falta activar o regularizar la suscripcion.</h2>
+                        <p>La cuenta no pierde sus datos si un cobro falla; solo cambia su estado comercial y el acceso operativo.</p>
+                    }
+                </div>
+            </div>
+
+            @if (Model.CurrentSubscription is not null)
+            {
+                <div class="billing-code-card" data-aos="fade-up">
+                    <div>
+                        <span class="section-kicker">Resumen actual</span>
+                        <h3>Informacion clave de tu suscripcion mensual.</h3>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-lg-4">
+                            <div class="trust-card h-100">
+                                <i class="bi bi-credit-card-2-front"></i>
+                                <h3>Plan y estado</h3>
+                                <p>
+                                    <strong>@(Model.CurrentSubscription.PlanName ?? "Sin plan base")</strong><br />
+                                    Estado: @Model.CurrentSubscription.StatusLabel
+                                </p>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="trust-card h-100">
+                                <i class="bi bi-people"></i>
+                                <h3>Funcionarios</h3>
+                                <p>
+                                    Usados: <strong>@Model.CurrentSubscription.ActiveFuncionarios</strong><br />
+                                    Limite del plan: <strong>@(Model.CurrentSubscription.MaxFuncionarios?.ToString() ?? "Ilimitado")</strong>
+                                </p>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="trust-card h-100">
+                                <i class="bi bi-whatsapp"></i>
+                                <h3>WhatsApp</h3>
+                                @if (Model.CurrentSubscription.HasWhatsAppAddon)
+                                {
+                                    <p>
+                                        <strong>@Model.CurrentSubscription.WhatsAppAddonName</strong><br />
+                                        Estado: @Model.CurrentSubscription.WhatsAppAddonStatusLabel<br />
+                                        Confirmaciones: <strong>@(Model.CurrentSubscription.SendAppointmentConfirmations ? "Activas" : "Inactivas")</strong><br />
+                                        Recordatorios: <strong>@(Model.CurrentSubscription.SendAppointmentReminders ? "Activos" : "Inactivos")</strong>
+                                    </p>
+                                    <ul class="billing-metric-list">
+                                        <li>Usados del mes: <strong>@Model.CurrentSubscription.WhatsAppMessagesUsed</strong> de <strong>@(Model.CurrentSubscription.WhatsAppMonthlyLimit ?? 0)</strong></li>
+                                        <li>Restantes del mes: <strong>@(Model.CurrentSubscription.WhatsAppMessagesRemaining ?? 0)</strong></li>
+                                        <li>Usados hoy: <strong>@Model.CurrentSubscription.WhatsAppTodayUsage</strong> de <strong>@(Model.CurrentSubscription.WhatsAppDailyLimit ?? 0)</strong></li>
+                                    </ul>
+                                    @if (Model.CurrentSubscription.WhatsAppNextBillingDateUtc.HasValue)
+                                    {
+                                        <p class="mb-0">Proxima renovacion: <strong>@Model.CurrentSubscription.WhatsAppNextBillingDateUtc.Value.ToString("dd/MM/yyyy")</strong></p>
+                                    }
+                                }
+                                else
+                                {
+                                    <p>No tienes un add-on activo. Los recordatorios automaticos por WhatsApp requieren activar un paquete.</p>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-3">
+                        <p class="mb-1">
+                            Para cambiar tu plan, contacta a soporte.
+                        </p>
+                        @if (Model.CurrentSubscription.NextBillingDateUtc.HasValue)
+                        {
+                            <p class="mb-0">
+                                Proxima fecha de cobro estimada: <strong>@Model.CurrentSubscription.NextBillingDateUtc.Value.ToString("dd/MM/yyyy")</strong>
+                            </p>
+                        }
+                    </div>
+
+                </div>
+            }
+        }
+        else
+        {
+            <div class="billing-state-banner" data-aos="fade-up">
+                <div>
+                    <span class="billing-state-kicker">Sin registro obligatorio</span>
+                    <h2>Explora los planes primero. El registro y el tenant actual se conservan como flujo separado.</h2>
+                    <p>
+                        Despues del registro continuas con la activacion comercial y el acceso queda atado a la vigencia mensual,
+                        no a un pago unico permanente.
+                    </p>
+                </div>
+            </div>
+        }
+
+        <div class="section-heading text-center" data-aos="fade-up">
+            <span class="section-kicker">Planes</span>
+            <h2>Elegí tu plan según el tamaño de tu equipo.</h2>
+            <p>Ajustá la cantidad de funcionarios y el ciclo de facturación; el precio se actualiza al instante.</p>
+        </div>
+
+        @if (Model.Calculator is not null)
+        {
+            <div class="row justify-content-center" data-aos="fade-up">
+                <div class="col-lg-10">
+                    <partial name="_SubscriptionCalculator" model="Model.Calculator" />
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="status-card" data-aos="fade-up">
+                <span class="status-kicker">Planes no disponibles</span>
+                <h2>No hay planes activos configurados en este entorno.</h2>
+                <p>Cuando exista al menos un plan comercial activo, esta vista lo mostrará automáticamente.</p>
+            </div>
+        }
+
+        @if (Model.WhatsAppAddonCards.Any())
+        {
+            <div class="section-heading text-center mt-5" id="whatsapp" data-aos="fade-up">
+                <span class="section-kicker">WhatsApp add-on</span>
+                <h2>Agrega recordatorios y confirmaciones automáticas por WhatsApp desde ₡6.000 al mes.</h2>
+                <p>Los paquetes de WhatsApp se contratan por separado del plan base y se consumen por periodo mensual.</p>
+            </div>
+
+            <div class="row g-4 justify-content-center">
+                @foreach (var plan in Model.WhatsAppAddonCards)
+                {
+                    var isCurrentAddon = string.Equals(
+                        Model.CurrentSubscription?.WhatsAppAddonCode,
+                        plan.Code,
+                        StringComparison.OrdinalIgnoreCase);
+                    var isSelected = Model.SelectedPlanId == plan.Id;
+                    var planReturnUrl = Url.Action("Planes", "Billing", new { selectedPlanId = plan.Id }) ?? "/Billing/Planes";
+
+                    <div class="col-xl-4 col-md-6" data-aos="fade-up">
+                        <article class="pricing-card @(isCurrentAddon ? "pricing-card-current" : string.Empty) @(isSelected ? "pricing-card-selected" : string.Empty)" data-selected-plan="@(isSelected ? "true" : "false")">
+                            <div class="pricing-card-top">
+                                <span class="pricing-badge">@(!string.IsNullOrWhiteSpace(plan.BadgeText) ? plan.BadgeText : "Add-on")</span>
+                                <h3>@plan.Name</h3>
+                                <p>@plan.Summary</p>
+                            </div>
+
+                            <div class="pricing-amount">
+                                <strong>@plan.CurrencyCode @plan.MonthlyPrice.ToString("N0")</strong>
+                                <span>@plan.BillingLabel</span>
+                            </div>
+
+                            <div class="pricing-meta">
+                                <span>@plan.StaffLabel</span>
+                            </div>
+
+                            <ul class="pricing-highlight-list">
+                                @foreach (var highlight in plan.Highlights)
+                                {
+                                    <li>@highlight</li>
+                                }
+                            </ul>
+
+                            @if (!plan.CanStartCheckout && !string.IsNullOrWhiteSpace(plan.CheckoutAvailabilityMessage))
+                            {
+                                <p class="pricing-login-link text-danger mb-3">@plan.CheckoutAvailabilityMessage</p>
+                            }
+
+                            @if (Model.IsAuthenticated)
+                            {
+                                if (isCurrentAddon)
+                                {
+                                    <button type="button" class="btn public-btn public-btn-secondary w-100" disabled>Paquete actual</button>
+                                }
+                                else if (!hasBaseAccess)
+                                {
+                                    <button type="button" class="btn public-btn public-btn-secondary w-100" disabled>Activa un plan base primero</button>
+                                }
+                                else if (!plan.CanStartCheckout)
+                                {
+                                    <button type="button" class="btn public-btn public-btn-secondary w-100" disabled>Configuracion pendiente</button>
+                                }
+                                else
+                                {
+                                    <a class="btn public-btn public-btn-secondary w-100"
+                                       asp-action="ContinuarCheckout"
+                                       asp-route-planId="@plan.Id">
+                                        @(Model.CurrentSubscription?.HasWhatsAppAddon == true ? "Cambiar add-on" : "Activar add-on")
+                                    </a>
+                                }
+                            }
+                            else
+                            {
+                                if (plan.CanStartCheckout)
+                                {
+                                    <a class="btn public-btn public-btn-secondary w-100" asp-controller="Accounts" asp-action="Registro" asp-route-returnurl="@planReturnUrl">
+                                        Crear cuenta para activarlo
+                                    </a>
+                                }
+                                else
+                                {
+                                    <button type="button" class="btn public-btn public-btn-secondary w-100" disabled>Configuracion pendiente</button>
+                                }
+                            }
+                        </article>
+                    </div>
+                }
+            </div>
+        }
+
+        @if (Model.InternalPlanCards.Any())
+        {
+            <div class="section-heading text-center mt-5" data-aos="fade-up">
+                <span class="section-kicker">Validacion interna</span>
+                <h2>Plan TEST recurrente para validar el webhook y la activacion mensual.</h2>
+                <p>Este bloque no debe exponerse publicamente. Utilizalo solo para pruebas internas controladas.</p>
+            </div>
+
+            <div class="row g-4 justify-content-center">
+                @foreach (var plan in Model.InternalPlanCards)
+                {
+                    var isSelected = Model.SelectedPlanId == plan.Id;
+
+                    <div class="col-xl-4 col-md-6" data-aos="fade-up">
+                        <article class="pricing-card pricing-card-selected @(isSelected ? "pricing-card-current" : string.Empty)">
+                            <div class="pricing-card-top">
+                                <span class="pricing-badge">@plan.BadgeText</span>
+                                <h3>@plan.Name</h3>
+                                <p>@plan.Summary</p>
+                            </div>
+
+                            <div class="pricing-amount">
+                                <strong>@plan.CurrencyCode @plan.MonthlyPrice.ToString("N0")</strong>
+                                <span>@plan.BillingLabel</span>
+                            </div>
+
+                            <ul class="pricing-highlight-list">
+                                @foreach (var highlight in plan.Highlights)
+                                {
+                                    <li>@highlight</li>
+                                }
+                            </ul>
+
+                            @if (!plan.CanStartCheckout && !string.IsNullOrWhiteSpace(plan.CheckoutAvailabilityMessage))
+                            {
+                                <p class="pricing-login-link text-danger mb-3">@plan.CheckoutAvailabilityMessage</p>
+                            }
+
+                            @if (Model.IsAuthenticated)
+                            {
+                                if (plan.CanStartCheckout)
+                                {
+                                    <form asp-action="Checkout" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="planId" value="@plan.Id" />
+                                        <button class="btn public-btn public-btn-secondary w-100">Probar plan TEST</button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <button type="button" class="btn public-btn public-btn-secondary w-100" disabled>Configuracion pendiente</button>
+                                }
+                            }
+                            else
+                            {
+                                var internalPlanReturnUrl = Url.Action("Planes", "Billing", new { selectedPlanId = plan.Id }) ?? "/Billing/Planes";
+                                if (plan.CanStartCheckout)
+                                {
+                                    <a class="btn public-btn public-btn-secondary w-100" asp-controller="Accounts" asp-action="Registro" asp-route-selectedPlanId="@plan.Id" asp-route-returnurl="@internalPlanReturnUrl">
+                                        Crear cuenta y continuar
+                                    </a>
+                                }
+                                else
+                                {
+                                    <button type="button" class="btn public-btn public-btn-secondary w-100" disabled>Configuracion pendiente</button>
+                                }
+                            }
+                        </article>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</section>
+
+<section class="pricing-trust-section">
+    <div class="container">
+        <div class="row g-4 align-items-stretch">
+            <div class="col-lg-4" data-aos="fade-up">
+                <div class="trust-card">
+                    <i class="bi bi-shield-lock"></i>
+                    <h3>Acceso controlado</h3>
+                    <p>El acceso operativo depende de una suscripcion activa, su vigencia mensual y el periodo de gracia configurado.</p>
+                </div>
+            </div>
+            <div class="col-lg-4" data-aos="fade-up" data-aos-delay="80">
+                <div class="trust-card">
+                    <i class="bi bi-arrow-repeat"></i>
+                    <h3>Cobro recurrente</h3>
+                    <p>La logica comercial principal queda preparada para Tilopay recurrente sin eliminar el flujo legacy de pago unico.</p>
+                </div>
+            </div>
+            <div class="col-lg-4" data-aos="fade-up" data-aos-delay="160">
+                <div class="trust-card">
+                    <i class="bi bi-chat-dots"></i>
+                    <h3>WhatsApp por add-on</h3>
+                    <p>Los recordatorios automaticos se habilitan solo cuando existe un paquete activo y saldo disponible en el periodo mensual.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

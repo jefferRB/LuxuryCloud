@@ -1,0 +1,384 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Liquidación del inversionista: vista previa del corte y detalle del estado.
+
+   Reutiliza el LENGUAJE VISUAL de la liquidación de funcionarios (bloques de
+   ecuación con signos + − =, y un recuadro "Cómo se calculó" punteado), pero con
+   clases propias `inv-*`. No se enlaza funcionarios.css desde estas pantallas:
+   ese archivo es grande y específico de otro módulo, y acoplarlos haría que un
+   ajuste allá rompiera acá.
+
+   La base (page shell, cards, tablas, botones) viene de finance-modules.css.
+   Los colores salen de las variables --private-* para respetar claro y oscuro.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* ── Cabecera del corte ──────────────────────────────────────────────────── */
+.inv-cut-header {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 0.85rem;
+    margin-bottom: 1.25rem;
+}
+
+.inv-cut-card {
+    border: 1px solid var(--private-surface-border, rgba(15, 23, 42, 0.1));
+    border-radius: 0.9rem;
+    padding: 0.8rem 0.95rem;
+    background: rgba(148, 163, 184, 0.05);
+}
+
+.inv-cut-label {
+    display: block;
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--private-muted-text, #64748b);
+    margin-bottom: 0.3rem;
+}
+
+.inv-cut-value {
+    display: block;
+    font-size: 1.02rem;
+    font-weight: 800;
+    color: var(--private-surface-text, #111827);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.3;
+}
+
+/* ── Bloques de ecuación ─────────────────────────────────────────────────── */
+.inv-eq-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 0.9rem;
+    margin-bottom: 1.1rem;
+}
+
+.inv-eq {
+    padding: 0.9rem 1rem;
+    border: 1px solid var(--private-surface-border, rgba(15, 23, 42, 0.10));
+    border-radius: 12px;
+    background: var(--private-row-bg, rgba(15, 23, 42, 0.02));
+}
+
+/* El resultado es la conclusión de la pantalla: se destaca sin cambiar de idioma visual. */
+.inv-eq--resultado {
+    border-color: rgba(var(--private-accent-rgb), 0.35);
+    background: rgba(var(--private-accent-rgb), 0.06);
+}
+
+.inv-eq-head {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--private-muted-text, #64748b);
+    margin-bottom: 0.55rem;
+}
+
+.inv-eq-op {
+    display: grid;
+    grid-template-columns: 1.2rem 1fr auto;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.18rem 0;
+    font-size: 0.83rem;
+    color: var(--private-muted-text, #64748b);
+}
+
+.inv-eq-sign {
+    font-weight: 800;
+    color: var(--private-muted-text, #94a3b8);
+    text-align: center;
+}
+
+.inv-eq-op b {
+    font-weight: 700;
+    color: var(--private-surface-text, #111827);
+    font-variant-numeric: tabular-nums;
+}
+
+.inv-eq-total {
+    display: grid;
+    grid-template-columns: 1.2rem 1fr auto;
+    align-items: baseline;
+    gap: 0.4rem;
+    margin-top: 0.45rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--private-surface-border, rgba(15, 23, 42, 0.1));
+}
+
+.inv-eq-total > span:not(.inv-eq-sign) {
+    font-size: 0.83rem;
+    font-weight: 600;
+    color: var(--private-muted-text, #64748b);
+}
+
+.inv-eq-total strong {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--private-surface-text, #111827);
+    font-variant-numeric: tabular-nums;
+}
+
+.inv-amount--income { color: var(--private-chart-success, #16a34a); }
+.inv-amount--expense { color: var(--private-chart-danger, #dc2626); }
+.inv-amount--muted { color: var(--private-muted-text, #94a3b8); }
+
+/* Enlace de trazabilidad: "¿de dónde salió este número?" */
+.inv-eq-trace {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-top: 0.55rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-decoration: none;
+    color: var(--private-chart-accent, var(--private-accent));
+}
+
+.inv-eq-trace:hover { text-decoration: underline; }
+
+/* ── "Cómo se calculó" ───────────────────────────────────────────────────── */
+.inv-howto {
+    margin: 0 0 1.1rem;
+    padding: 0.9rem 1.05rem;
+    border: 1px dashed var(--private-surface-border, rgba(15, 23, 42, 0.16));
+    border-radius: 12px;
+    background: var(--private-row-bg, rgba(15, 23, 42, 0.02));
+}
+
+.inv-howto-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.74rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--private-muted-text, #64748b);
+    margin-bottom: 0.55rem;
+}
+
+.inv-howto-intro {
+    margin: 0 0 0.75rem;
+    font-size: 0.8rem;
+    line-height: 1.55;
+    color: var(--private-muted-text, #64748b);
+}
+
+/* Cada paso es una mini ecuación en lenguaje natural, con los montos reales. */
+.inv-howto-step {
+    margin: 0 0 0.7rem;
+    font-size: 0.84rem;
+    line-height: 1.75;
+    color: var(--private-surface-text, #111827);
+    font-variant-numeric: tabular-nums;
+}
+
+.inv-howto-step:last-child { margin-bottom: 0; }
+
+.inv-howto-step .inv-howto-line { display: block; }
+
+.inv-howto-step .inv-howto-result {
+    display: block;
+    font-weight: 800;
+    padding-top: 0.15rem;
+}
+
+.inv-howto-meta {
+    margin: 0.85rem 0 0;
+    padding-top: 0.6rem;
+    border-top: 1px solid var(--private-surface-border, rgba(15, 23, 42, 0.08));
+    font-size: 0.7rem;
+    color: var(--private-muted-text, #94a3b8);
+}
+
+
+/* ── Semántica de estado ─────────────────────────────────────────────────────
+   Azul/neutro = en curso · verde = cerrado sin saldo · ámbar = pendiente o
+   parcial · rojo = SOLO algo que requiere atención real (anulado).
+   Un período abierto NO se pinta de rojo: es comportamiento normal.
+   ─────────────────────────────────────────────────────────────────────────── */
+.inv-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.15rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    line-height: 1.6;
+    border: 1px solid transparent;
+    white-space: nowrap;
+}
+
+.inv-badge i { font-size: 0.5rem; }
+
+.inv-badge--neutral {
+    color: var(--private-accent-strong);
+    background: rgba(var(--private-accent-rgb), 0.10);
+    border-color: rgba(var(--private-accent-rgb), 0.25);
+}
+
+.inv-badge--success {
+    color: #15803d;
+    background: rgba(22, 163, 74, 0.10);
+    border-color: rgba(22, 163, 74, 0.25);
+}
+
+.inv-badge--warning {
+    color: #b45309;
+    background: rgba(217, 119, 6, 0.12);
+    border-color: rgba(217, 119, 6, 0.28);
+}
+
+.inv-badge--danger {
+    color: #b91c1c;
+    background: rgba(220, 38, 38, 0.10);
+    border-color: rgba(220, 38, 38, 0.25);
+}
+
+/* Aviso informativo del ciclo abierto. Deliberadamente NO usa el rojo de error. */
+.inv-callout {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    padding: 0.85rem 1rem;
+    border-radius: 0.85rem;
+    font-size: 0.85rem;
+    line-height: 1.55;
+    margin-bottom: 1.1rem;
+    border: 1px solid transparent;
+}
+
+.inv-callout i { margin-top: 0.15rem; flex-shrink: 0; }
+
+.inv-callout--info {
+    color: var(--private-surface-text, #1e293b);
+    background: rgba(var(--private-accent-rgb), 0.07);
+    border-color: rgba(var(--private-accent-rgb), 0.22);
+}
+
+.inv-callout--info i { color: var(--private-accent); }
+
+.inv-cut-sub {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: 0.72rem;
+    color: var(--private-muted-text, #64748b);
+}
+
+/* ── Resumen financiero del inversionista (3 tarjetas) ───────────────────────
+   Último corte EMITIDO · ciclo en curso (live) · saldo pendiente.
+   Se usa en la ficha del asociado; por eso vive acá y no en associates.css:
+   los tres bloques hablan del mismo dominio y comparten estados.
+   ─────────────────────────────────────────────────────────────────────────── */
+.inv-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 0.9rem;
+    margin: 0.9rem 0 1.2rem;
+}
+
+.inv-summary-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    padding: 1rem 1.05rem;
+    border-radius: 1rem;
+    border: 1px solid var(--private-surface-border, rgba(15, 23, 42, 0.1));
+    background: var(--private-row-bg, rgba(148, 163, 184, 0.05));
+}
+
+.inv-summary-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.inv-summary-title {
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--private-muted-text, #64748b);
+}
+
+.inv-summary-amount {
+    font-size: 1.45rem;
+    font-weight: 800;
+    line-height: 1.15;
+    color: var(--private-surface-text, #111827);
+    font-variant-numeric: tabular-nums;
+}
+
+.inv-summary-amount--pending { color: #b45309; }
+.inv-summary-amount--clear { color: var(--private-chart-success, #16a34a); }
+
+.inv-summary-caption {
+    font-size: 0.78rem;
+    color: var(--private-muted-text, #64748b);
+    line-height: 1.5;
+}
+
+.inv-summary-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin-top: 0.15rem;
+}
+
+.inv-summary-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
+    font-size: 0.8rem;
+}
+
+.inv-summary-row span { color: var(--private-muted-text, #64748b); }
+
+.inv-summary-row b {
+    font-weight: 700;
+    color: var(--private-surface-text, #111827);
+    font-variant-numeric: tabular-nums;
+}
+
+.inv-summary-empty {
+    font-size: 0.85rem;
+    line-height: 1.55;
+    color: var(--private-muted-text, #64748b);
+}
+
+.inv-summary-link {
+    margin-top: auto;
+    padding-top: 0.35rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.inv-summary-link:hover { text-decoration: underline; }
+
+/* ── Navegación entre cortes ─────────────────────────────────────────────── */
+.inv-nav {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1.1rem;
+}
+
+.inv-nav-spacer { flex: 1 1 auto; }
+
+@media (max-width: 575.98px) {
+    .inv-eq-grid { grid-template-columns: 1fr; }
+    .inv-summary { grid-template-columns: 1fr; }
+    .inv-summary-amount { font-size: 1.25rem; }
+    .inv-eq-total strong { font-size: 1.05rem; }
+    .inv-howto-step { font-size: 0.8rem; }
+}

@@ -1,0 +1,471 @@
+@model LuxuryApp.Models.SaaS.ResultadoCheckoutViewModel
+
+@{
+    Layout = "_CheckoutReturnLayout";
+    ViewData["Title"] = "Estado del pago";
+
+    @* Revisión manual y correlación fallida se evalúan ANTES del éxito: nunca deben pintarse en
+       verde. Un retorno que dice "confirmado" cuando el cambio no se aplicó es peor que un error. *@
+    var statusClass = Model.AccesoRestringido || Model.CorrelacionFallida
+        ? "checkout-state-restricted"
+        : Model.EnRevisionManual
+            ? "checkout-state-pending"
+            : Model.SuscripcionActiva
+                ? "checkout-state-success"
+                : Model.PagoAprobadoPorProveedor
+                    ? "checkout-state-processing"
+                    : "checkout-state-pending";
+
+    var statusEyebrow = Model.AccesoRestringido
+        ? "Acceso restringido"
+        : Model.CorrelacionFallida
+            ? "No identificamos el pago"
+            : Model.EnRevisionManual
+                ? "Pago en revisión manual"
+                : Model.SuscripcionActiva
+                    ? "Acceso habilitado"
+                    : Model.PagoAprobadoPorProveedor
+                        ? "Activando acceso"
+                        : "Esperando confirmacion";
+
+    var paymentState = Model.EstadoPago switch
+    {
+        LuxuryApp.Models.SaaS.EstadoPagoProveedor.ManualReview => "En revisión manual",
+        null => "Sin registro local",
+        _ => Model.EstadoPago.ToString()
+    };
+    var subscriptionState = Model.EstadoSuscripcion?.ToString() ?? "Sin suscripcion asociada";
+    var primaryActionLabel = Model.PrimaryActionLabel
+        ?? (Model.AccesoRestringido
+            ? "Ingresar con la cuenta correcta"
+            : Model.SuscripcionActiva
+                ? "Ir al panel"
+                : !string.IsNullOrWhiteSpace(Model.UrlActualizacion)
+                    ? "Actualizar estado"
+                    : "Ir a mi suscripcion");
+    var primaryActionUrl = Model.PrimaryActionUrl
+        ?? (Model.AccesoRestringido
+            ? "/Accounts/Acceso"
+            : Model.SuscripcionActiva
+                ? "/Dashboard"
+                : !string.IsNullOrWhiteSpace(Model.UrlActualizacion)
+                    ? Model.UrlActualizacion
+                    : "/Billing/Planes");
+}
+
+<style>
+    .checkout-return {
+        --checkout-ink: #1f2937;
+        --checkout-ink-soft: #475569;
+        --checkout-line: rgba(15, 23, 42, 0.08);
+        --checkout-accent: #b58b57;
+        --checkout-accent-soft: #f7f0e7;
+        --checkout-success: #1f6b4f;
+        --checkout-success-bg: #edf7f1;
+        --checkout-info: #245c8c;
+        --checkout-info-bg: #eef5fb;
+        --checkout-warning: #8a6a2f;
+        --checkout-warning-bg: #fdf7ea;
+        --checkout-danger: #8a2742;
+        --checkout-danger-bg: #fdf0f3;
+        color: var(--checkout-ink);
+    }
+
+    .checkout-card {
+        background: #ffffff;
+        border: 1px solid var(--checkout-line);
+        border-radius: 24px;
+        box-shadow: 0 24px 60px rgba(15, 23, 42, 0.12);
+        overflow: hidden;
+    }
+
+    .checkout-hero {
+        background: linear-gradient(135deg, #111827 0%, #243244 70%, #b58b57 160%);
+        color: #f8fafc;
+        padding: 2.5rem;
+    }
+
+    .checkout-kicker {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.45rem 0.85rem;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.12);
+        font-size: 0.85rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .checkout-hero h1 {
+        margin-top: 1.25rem;
+        margin-bottom: 0.75rem;
+        font-size: clamp(2rem, 4vw, 2.75rem);
+        font-weight: 700;
+    }
+
+    .checkout-hero p {
+        max-width: 42rem;
+        margin-bottom: 0;
+        color: rgba(248, 250, 252, 0.82);
+    }
+
+    .checkout-body {
+        padding: 2rem;
+    }
+
+    .checkout-status {
+        border-radius: 20px;
+        border: 1px solid transparent;
+        padding: 1.5rem;
+        display: flex;
+        gap: 1rem;
+        align-items: flex-start;
+        margin-bottom: 1.5rem;
+    }
+
+    .checkout-status-mark {
+        width: 3rem;
+        height: 3rem;
+        flex: 0 0 3rem;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 1.1rem;
+        background: rgba(255, 255, 255, 0.7);
+    }
+
+    .checkout-status h2 {
+        margin-bottom: 0.4rem;
+        font-size: 1.3rem;
+        font-weight: 700;
+    }
+
+    .checkout-status p:last-child {
+        margin-bottom: 0;
+    }
+
+    .checkout-status-eyebrow {
+        margin-bottom: 0.35rem;
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .checkout-status-detail {
+        color: var(--checkout-ink-soft);
+    }
+
+    .checkout-state-success {
+        background: var(--checkout-success-bg);
+        border-color: rgba(31, 107, 79, 0.15);
+        color: var(--checkout-success);
+    }
+
+    .checkout-state-processing {
+        background: var(--checkout-info-bg);
+        border-color: rgba(36, 92, 140, 0.15);
+        color: var(--checkout-info);
+    }
+
+    .checkout-state-pending {
+        background: var(--checkout-warning-bg);
+        border-color: rgba(138, 106, 47, 0.18);
+        color: var(--checkout-warning);
+    }
+
+    .checkout-state-restricted {
+        background: var(--checkout-danger-bg);
+        border-color: rgba(138, 39, 66, 0.18);
+        color: var(--checkout-danger);
+    }
+
+    .checkout-meta {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .checkout-meta-card {
+        background: #f8fafc;
+        border: 1px solid rgba(15, 23, 42, 0.06);
+        border-radius: 18px;
+        padding: 1rem 1.1rem;
+    }
+
+    .checkout-meta-card dt {
+        margin-bottom: 0.35rem;
+        color: var(--checkout-ink-soft);
+        font-size: 0.8rem;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+
+    .checkout-meta-card dd {
+        margin-bottom: 0;
+        color: var(--checkout-ink);
+        font-weight: 600;
+        word-break: break-word;
+    }
+
+    .checkout-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.9rem;
+        align-items: center;
+    }
+
+    .checkout-btn-primary {
+        background: #212529;
+        border-color: #212529;
+        color: #ffffff;
+        padding-inline: 1.25rem;
+    }
+
+    .checkout-btn-primary:hover,
+    .checkout-btn-primary:focus {
+        background: #111827;
+        border-color: #111827;
+        color: #ffffff;
+    }
+
+    .checkout-btn-accent {
+        background: var(--checkout-accent);
+        border-color: var(--checkout-accent);
+        color: #ffffff;
+        padding-inline: 1.25rem;
+    }
+
+    .checkout-btn-accent:hover,
+    .checkout-btn-accent:focus {
+        background: #a17847;
+        border-color: #a17847;
+        color: #ffffff;
+    }
+
+    .checkout-refresh-note {
+        margin-top: 1rem;
+        margin-bottom: 0;
+        color: var(--checkout-ink-soft);
+    }
+
+    .checkout-progress {
+        margin-top: 1rem;
+        height: 0.45rem;
+        background: rgba(36, 92, 140, 0.12);
+        border-radius: 999px;
+        overflow: hidden;
+    }
+
+    .checkout-progress-bar {
+        height: 100%;
+        width: 38%;
+        background: linear-gradient(90deg, #245c8c 0%, #8fb4d8 100%);
+        border-radius: 999px;
+        animation: checkout-progress 1.2s ease-in-out infinite alternate;
+    }
+
+    @@keyframes checkout-progress {
+        from { transform: translateX(-8%); }
+        to { transform: translateX(115%); }
+    }
+
+    @@media (max-width: 767.98px) {
+        .checkout-hero,
+        .checkout-body {
+            padding: 1.5rem;
+        }
+
+        .checkout-status {
+            flex-direction: column;
+        }
+
+        .checkout-status-mark {
+            width: 2.75rem;
+            height: 2.75rem;
+        }
+    }
+</style>
+
+<div class="checkout-return container">
+    <div class="row justify-content-center">
+        <div class="col-xl-9 col-lg-10">
+            <section class="checkout-card">
+                <header class="checkout-hero">
+                    <span class="checkout-kicker">LuxuryCloud Billing</span>
+                    <h1>Estado del pago</h1>
+                    <p>Validamos este retorno dentro de tu tenant actual y actualizamos la experiencia segun el estado real de tu suscripcion.</p>
+                </header>
+
+                <div class="checkout-body">
+                    <section class="checkout-status @statusClass" aria-live="polite">
+                        <div class="checkout-status-mark">
+                            @(Model.AccesoRestringido || Model.CorrelacionFallida
+                                ? "!"
+                                : Model.EnRevisionManual
+                                    ? "!"
+                                    : Model.SuscripcionActiva ? "OK" : Model.PagoAprobadoPorProveedor ? "..." : "?")
+                        </div>
+                        <div>
+                            <div class="checkout-status-eyebrow">@statusEyebrow</div>
+                            <h2>@Model.MensajePrincipal</h2>
+
+                            @if (!string.IsNullOrWhiteSpace(Model.MensajeSecundario))
+                            {
+                                <p class="checkout-status-detail">@Model.MensajeSecundario</p>
+                            }
+
+                            @if (Model.DebeAutoActualizar)
+                            {
+                                <div class="checkout-progress" aria-hidden="true">
+                                    <div class="checkout-progress-bar"></div>
+                                </div>
+                            }
+                        </div>
+                    </section>
+
+                    <dl class="checkout-meta">
+                        @if (!string.IsNullOrWhiteSpace(Model.Referencia))
+                        {
+                            <div class="checkout-meta-card">
+                                <dt>Referencia</dt>
+                                <dd>@Model.Referencia</dd>
+                            </div>
+                        }
+
+                        @if (!string.IsNullOrWhiteSpace(Model.NombrePlan))
+                        {
+                            <div class="checkout-meta-card">
+                                <dt>Plan</dt>
+                                <dd>@Model.NombrePlan</dd>
+                            </div>
+                        }
+
+                        <div class="checkout-meta-card">
+                            <dt>Estado del pago</dt>
+                            <dd>@paymentState</dd>
+                        </div>
+
+                        <div class="checkout-meta-card">
+                            <dt>Estado de suscripcion</dt>
+                            <dd>@subscriptionState</dd>
+                        </div>
+
+                        @if (Model.VigenciaHastaUtc.HasValue)
+                        {
+                            <div class="checkout-meta-card">
+                                <dt>Vigencia hasta</dt>
+                                <dd>@Model.VigenciaHastaUtc.Value.ToString("dd/MM/yyyy")</dd>
+                            </div>
+                        }
+
+                        @if (Model.ProximoCobroUtc.HasValue)
+                        {
+                            <div class="checkout-meta-card">
+                                <dt>Proximo cobro</dt>
+                                <dd>@Model.ProximoCobroUtc.Value.ToString("dd/MM/yyyy")</dd>
+                            </div>
+                        }
+
+                        @* Límite de funcionarios: SOLO para el plan base, nunca para un add-on de WhatsApp. *@
+                        @if (!Model.EsAddon && Model.MaxFuncionarios.HasValue)
+                        {
+                            <div class="checkout-meta-card">
+                                <dt>Limite de funcionarios</dt>
+                                <dd>@Model.MaxFuncionarios.Value</dd>
+                            </div>
+                        }
+
+                        @if (Model.EsAddon && Model.MensajesMensuales.HasValue)
+                        {
+                            <div class="checkout-meta-card">
+                                <dt>Mensajes por mes</dt>
+                                <dd>@Model.MensajesMensuales.Value</dd>
+                            </div>
+                        }
+
+                        @if (!string.IsNullOrWhiteSpace(Model.CodigoProveedor))
+                        {
+                            <div class="checkout-meta-card">
+                                <dt>Codigo proveedor</dt>
+                                <dd>@Model.CodigoProveedor</dd>
+                            </div>
+                        }
+
+                        @if (!string.IsNullOrWhiteSpace(Model.DescripcionProveedor))
+                        {
+                            <div class="checkout-meta-card">
+                                <dt>Detalle del proveedor</dt>
+                                <dd>@Model.DescripcionProveedor</dd>
+                            </div>
+                        }
+                    </dl>
+
+                    @* Revisión manual: se dice explícitamente que NO se aplicó el cambio. *@
+                    @if (Model.EnRevisionManual)
+                    {
+                        <div class="checkout-status checkout-state-pending" role="alert">
+                            <div class="checkout-status-mark">!</div>
+                            <div>
+                                <div class="checkout-status-eyebrow">No se aplicó el cambio</div>
+                                <p class="checkout-status-detail mb-0">
+                                    Detectamos una diferencia entre lo que cobró el proveedor y lo que esperábamos cobrar,
+                                    así que no activamos nada automáticamente. Soporte ya tiene el caso.
+                                    @if (!string.IsNullOrWhiteSpace(Model.Referencia))
+                                    {
+                                        <span>Referencia: <strong>@Model.Referencia</strong>.</span>
+                                    }
+                                </p>
+                            </div>
+                        </div>
+                    }
+
+                    @* Plan base con impago: sección SEPARADA del comprobante del add-on (no se mezcla). *@
+                    @if (Model.EsAddon && Model.BaseRequiereAtencion)
+                    {
+                        <div class="checkout-status checkout-state-pending" role="alert">
+                            <div class="checkout-status-mark">!</div>
+                            <div>
+                                <div class="checkout-status-eyebrow">Tu plan base requiere atención</div>
+                                <p class="checkout-status-detail mb-2">@(Model.BaseAtencionMensaje ?? "Tu plan base tiene un pago pendiente.")</p>
+                                <a class="btn btn-sm checkout-btn-accent" href="/Billing/Suscripcion">Ir a mi suscripción</a>
+                            </div>
+                        </div>
+                    }
+
+                    <div class="checkout-actions">
+                        @if (!string.IsNullOrWhiteSpace(primaryActionUrl))
+                        {
+                            <a class="btn @(Model.SuscripcionActiva || Model.AccesoRestringido ? "checkout-btn-primary" : "checkout-btn-accent")" href="@primaryActionUrl">@primaryActionLabel</a>
+                        }
+
+                        @if (!string.IsNullOrWhiteSpace(Model.SecondaryActionUrl))
+                        {
+                            <a class="btn btn-outline-secondary" href="@Model.SecondaryActionUrl">@(Model.SecondaryActionLabel ?? "Ver detalle")</a>
+                        }
+                    </div>
+
+                    @if (Model.DebeAutoActualizar && !string.IsNullOrWhiteSpace(Model.UrlActualizacion))
+                    {
+                        <p class="checkout-refresh-note">Consultaremos de nuevo en @Model.SegundosAutoActualizacion segundos para reflejar el estado final sin que tengas que salir de esta pantalla.</p>
+
+                        <script>
+                            (() => {
+                                const refreshUrl = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.UrlActualizacion));
+                                const refreshDelay = @(Model.SegundosAutoActualizacion * 1000);
+
+                                window.setTimeout(() => {
+                                    window.location.href = refreshUrl;
+                                }, refreshDelay);
+                            })();
+                        </script>
+                    }
+                </div>
+            </section>
+        </div>
+    </div>
+</div>

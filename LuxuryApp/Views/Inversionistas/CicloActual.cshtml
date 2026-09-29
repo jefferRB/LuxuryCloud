@@ -1,0 +1,145 @@
+@using LuxuryApp.Models.Inversionistas
+@model InvestorFinancialSummaryViewModel
+
+@*
+    CICLO EN CURSO.
+
+    Esta pantalla NO es un corte: el período sigue abierto y los montos son un estimado al día de
+    hoy. Por eso:
+      · el badge es neutro ("En curso"), no rojo: un período abierto es comportamiento normal;
+      · no existe el botón "Generar estado de cuenta" (cerrar antes de tiempo congelaría números
+        que todavía van a cambiar);
+      · la navegación es por ciclos reales (último corte / historial), no escribiendo fechas.
+*@
+
+@{
+    ViewData["Title"] = $"Ciclo en curso — {Model.InvestorNombre}";
+    var ciclo = Model.CicloActual;
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/finance-modules.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/investor-settlement.css" asp-append-version="true" />
+}
+
+<div class="finance-page-shell">
+
+    <div class="finance-hero">
+        <div class="finance-hero-left module-heading">
+            <span class="module-eyebrow">Participación en el negocio</span>
+            <h1 class="module-title"><i class="bi bi-hourglass-split module-title-icon" aria-hidden="true"></i>Ciclo en curso</h1>
+            <p class="module-subtitle">
+                @Model.InvestorNombre
+                @if (Model.PorcentajeVigente.HasValue)
+                {
+                    <text>· @Model.PorcentajeVigente.Value.ToString("0.##") %</text>
+                }
+                · @Model.CorteTexto
+            </p>
+        </div>
+    </div>
+
+    @if (TempData["Error"] is string error)
+    {
+        <div class="svc-alert svc-alert--danger" role="alert">@error</div>
+    }
+
+    @if (ciclo is null || !ciclo.TieneAcuerdoVigente)
+    {
+        <div class="finance-form-info-box">
+            <i class="bi bi-info-circle-fill"></i>
+            @Model.InvestorNombre no tiene un acuerdo de participación vigente hoy, así que no hay
+            un ciclo abierto que mostrar. Configurá su participación desde su ficha de asociado.
+        </div>
+    }
+    else
+    {
+        <div class="inv-cut-header">
+            <div class="inv-cut-card">
+                <span class="inv-cut-label">Período contractual</span>
+                <span class="inv-cut-value">
+                    @ciclo.PeriodoInicio.ToString("dd/MM/yyyy") &rarr; @ciclo.PeriodoFin.ToString("dd/MM/yyyy")
+                </span>
+                <span class="inv-cut-sub">
+                    <span class="inv-badge inv-badge--neutral">
+                        <i class="bi bi-circle-fill"></i> En curso
+                    </span>
+                </span>
+            </div>
+
+            <div class="inv-cut-card">
+                <span class="inv-cut-label">Calculado al</span>
+                <span class="inv-cut-value">@ciclo.CalculadoAl.ToString("dd/MM/yyyy")</span>
+                <span class="inv-cut-sub">Sin incluir días futuros</span>
+            </div>
+
+            <div class="inv-cut-card">
+                <span class="inv-cut-label">Próximo corte</span>
+                <span class="inv-cut-value">@ciclo.ProximoCorte.ToString("dd/MM/yyyy")</span>
+                <span class="inv-cut-sub">
+                    @if (ciclo.DiasParaElCorte == 0)
+                    {
+                        <text>Cierra hoy al terminar el día</text>
+                    }
+                    else
+                    {
+                        <text>Faltan @ciclo.DiasParaElCorte @(ciclo.DiasParaElCorte == 1 ? "día" : "días")</text>
+                    }
+                </span>
+            </div>
+
+            <div class="inv-cut-card">
+                <span class="inv-cut-label">Estimado actual (@ciclo.ParticipacionPorcentaje.ToString("0.##") %)</span>
+                <span class="inv-cut-value">₡ @ciclo.ParticipacionEstimada.ToString("N2")</span>
+                <span class="inv-cut-sub">
+                    Sobre ₡ @ciclo.GananciaDistribuible.ToString("N2") de ganancia acumulada
+                </span>
+            </div>
+        </div>
+
+        @* Callout informativo, NUNCA rojo: que el período esté abierto no es un problema. *@
+        <div class="inv-callout inv-callout--info">
+            <i class="bi bi-info-circle-fill"></i>
+            <div>
+                <strong>Estimado al día de hoy.</strong>
+                El período sigue abierto y los valores pueden cambiar hasta el cierre del
+                @ciclo.ProximoCorte.ToString("dd/MM/yyyy"). Cuando ese día termine se emite el
+                estado de cuenta y el monto queda congelado.
+            </div>
+        </div>
+
+        @if (ciclo.EstadoExistenteId.HasValue)
+        {
+            <div class="finance-form-info-box">
+                <i class="bi bi-file-earmark-text"></i>
+                Ya existe un estado de cuenta generado para este período.
+                <a asp-action="Estado" asp-route-id="@ciclo.EstadoExistenteId.Value">Abrirlo</a>
+            </div>
+        }
+
+        <partial name="_DesgloseCalculo" model="ciclo.Desglose" />
+    }
+
+    @* ── Navegación por ciclos reales ── *@
+    <div class="finance-actions">
+        <a asp-controller="Asociados" asp-action="Index" class="finance-btn-back">
+            <i class="bi bi-arrow-left"></i> Volver
+        </a>
+
+        @if (Model.UltimoCorte is not null)
+        {
+            <a asp-action="Estado" asp-route-id="@Model.UltimoCorte.StatementId" class="finance-btn-secondary">
+                <i class="bi bi-file-earmark-check"></i>
+                Ver último corte (@Model.UltimoCorte.FechaCorte.ToString("dd/MM/yyyy"))
+            </a>
+        }
+
+        <a asp-action="Estados" asp-route-inversionistaId="@Model.InvestorId" class="finance-btn-secondary">
+            <i class="bi bi-clock-history"></i> Historial de cortes
+        </a>
+
+        <a asp-action="VistaPrevia" asp-route-id="@Model.InvestorId" class="finance-btn-clear">
+            <i class="bi bi-sliders"></i> Consulta avanzada
+        </a>
+    </div>
+</div>

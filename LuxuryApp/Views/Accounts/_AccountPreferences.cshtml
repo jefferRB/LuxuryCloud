@@ -1,0 +1,58 @@
+@*
+    Sección "Preferencias" de Mi cuenta.
+
+    OJO — comportamiento EXISTENTE, conservado tal cual: estos interruptores son informativos.
+    No se persisten (no hay columnas en AppUsuario ni endpoint que los guarde) y por eso tampoco
+    hay botón "Guardar preferencias": ponerlo sería prometer algo que el backend no hace. Darles
+    persistencia real implica migración, que está fuera del alcance de este trabajo visual.
+    Se marcan como sólo lectura para que la pantalla no mienta.
+*@
+
+<section class="finance-section" id="@LuxuryApp.Models.Identity.AccountSettingsSections.Preferencias">
+    <div class="finance-section-head">
+        <h2 class="finance-section-title"><i class="bi bi-sliders"></i> Preferencias</h2>
+        <p class="finance-section-sub">
+            Avisos que LuxuryCloud te envía sobre tu cuenta. Hoy están activos para todas las cuentas.
+        </p>
+    </div>
+
+    <div class="finance-minigrid">
+        <div class="finance-toggle-row">
+            <div class="finance-toggle-body">
+                <p class="finance-toggle-name">Notificaciones por correo</p>
+                <p class="finance-toggle-desc">Actualizaciones y novedades de la plataforma.</p>
+            </div>
+            <label class="finance-switch">
+                <input type="checkbox" checked disabled aria-label="Notificaciones por correo (activo)" />
+                <span class="finance-switch-track" aria-hidden="true"></span>
+            </label>
+        </div>
+
+        <div class="finance-toggle-row">
+            <div class="finance-toggle-body">
+                <p class="finance-toggle-name">Recordatorios importantes</p>
+                <p class="finance-toggle-desc">Avisos sobre vencimientos y eventos de tu cuenta.</p>
+            </div>
+            <label class="finance-switch">
+                <input type="checkbox" checked disabled aria-label="Recordatorios importantes (activo)" />
+                <span class="finance-switch-track" aria-hidden="true"></span>
+            </label>
+        </div>
+
+        <div class="finance-toggle-row">
+            <div class="finance-toggle-body">
+                <p class="finance-toggle-name">Confirmación de acciones sensibles</p>
+                <p class="finance-toggle-desc">Se pide confirmar antes de acciones críticas.</p>
+            </div>
+            <label class="finance-switch">
+                <input type="checkbox" checked disabled aria-label="Confirmación de acciones sensibles (activo)" />
+                <span class="finance-switch-track" aria-hidden="true"></span>
+            </label>
+        </div>
+    </div>
+
+    <div class="finance-callout">
+        <i class="bi bi-info-circle-fill" aria-hidden="true"></i>
+        <span>Estas preferencias todavía no son configurables por cuenta.</span>
+    </div>
+</section>

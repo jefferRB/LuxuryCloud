@@ -1,0 +1,209 @@
+@model LuxuryApp.Models.Platform.PlatformRecurringReconciliationPageViewModel
+@using LuxuryApp.Models.SaaS
+
+@{
+    ViewData["Title"] = "Conciliacion recurrente";
+
+    string ResolveBadgeClass(EstadoPagoProveedor status) => status switch
+    {
+        EstadoPagoProveedor.Confirmado => "text-bg-success",
+        EstadoPagoProveedor.ManualReview => "text-bg-warning",
+        EstadoPagoProveedor.Pendiente => "text-bg-warning",
+        EstadoPagoProveedor.Expirado => "text-bg-secondary",
+        EstadoPagoProveedor.Cancelado => "text-bg-danger",
+        EstadoPagoProveedor.Fallido => "text-bg-danger",
+        _ => "text-bg-secondary"
+    };
+}
+
+<div class="container py-4">
+    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
+        <div>
+            <h1 class="h3 mb-1">Conciliacion recurrente Tilopay</h1>
+            <p class="text-muted mb-0">
+                Hosted links estaticos sin webhook confiable: esta vista permite aprobar manualmente pending recurrentes con auditoria.
+            </p>
+        </div>
+        <div class="text-muted small">
+            @* Único acceso posible: la policy de clase exige PlatformSuperAdmin. *@
+            <span class="badge text-bg-dark">PlatformSuperAdmin</span>
+        </div>
+    </div>
+
+    @if (TempData["RecurringReconciliationSuccess"] is string successMessage)
+    {
+        <div class="alert alert-success" role="alert">@successMessage</div>
+    }
+
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div class="alert alert-danger" role="alert">
+            <div class="fw-semibold mb-2">No fue posible aprobar el pending seleccionado.</div>
+            <div asp-validation-summary="All" class="mb-0"></div>
+        </div>
+    }
+
+    <div class="row g-4">
+        <div class="col-xl-7">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h2 class="h5 mb-1">Pendings abiertos</h2>
+                            <p class="text-muted mb-0">Solo quedan visibles estados `Pending` y `ManualReview`.</p>
+                        </div>
+                        <span class="badge text-bg-secondary">@Model.Items.Count registro(s)</span>
+                    </div>
+
+                    @if (Model.Items.Count == 0)
+                    {
+                        <div class="alert alert-light border mb-0">
+                            No hay pendings recurrentes abiertos para este alcance.
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>Tenant</th>
+                                        <th>Plan</th>
+                                        <th>Monto</th>
+                                        <th>Estado</th>
+                                        <th>Referencia</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var item in Model.Items)
+                                    {
+                                        var isSelected = Model.SelectedItem?.PaymentId == item.PaymentId;
+                                        <tr class="@(isSelected ? "table-active" : null)">
+                                            <td>
+                                                <div class="fw-semibold">@item.TenantName</div>
+                                                <div class="small text-muted">UserId: @(item.UserId ?? "n/a")</div>
+                                                <div class="small text-muted">Email: @(item.UserEmail ?? "n/a")</div>
+                                            </td>
+                                            <td>
+                                                <div class="fw-semibold">@item.PlanName</div>
+                                                <div class="small text-muted">@item.PlanCode</div>
+                                                <div class="small text-muted">RecurringPlanId: @(item.TilopayRecurringPlanId?.ToString() ?? "n/a")</div>
+                                            </td>
+                                            <td>
+                                                <div class="fw-semibold">@item.Currency @item.ExpectedAmount.ToString("0.00")</div>
+                                                <div class="small text-muted">@item.CreatedUtc.ToString("yyyy-MM-dd HH:mm") UTC</div>
+                                                @if (item.IsAddon)
+                                                {
+                                                    <div class="small text-muted">Add-on recurrente</div>
+                                                }
+                                            </td>
+                                            <td>
+                                                <span class="badge @ResolveBadgeClass(item.Status)">@item.Status</span>
+                                                @if (!string.IsNullOrWhiteSpace(item.ProviderResultMessage))
+                                                {
+                                                    <div class="small text-muted mt-1">@item.ProviderResultMessage</div>
+                                                }
+                                            </td>
+                                            <td>
+                                                <div class="small fw-semibold">@(item.CorrelationToken ?? "Sin correlacion")</div>
+                                                @if (!string.IsNullOrWhiteSpace(item.ProviderTransactionId))
+                                                {
+                                                    <div class="small text-muted">Tx: @item.ProviderTransactionId</div>
+                                                }
+                                                @if (!string.IsNullOrWhiteSpace(item.ProviderSubscriberId))
+                                                {
+                                                    <div class="small text-muted">Subscriber: @item.ProviderSubscriberId</div>
+                                                }
+                                            </td>
+                                            <td class="text-end">
+                                                <a class="btn btn-sm btn-outline-secondary" href="@Url.Action("Index", "RecurringReconciliation", new { paymentId = item.PaymentId })">
+                                                    Revisar
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-5">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <h2 class="h5 mb-3">Aprobar pending</h2>
+
+                    @if (Model.SelectedItem is null)
+                    {
+                        <div class="alert alert-light border mb-0">
+                            Selecciona un pending para capturar `transactionId`, monto, moneda y observacion.
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning">
+                            Esta accion activa la suscripcion y deja auditoria. Verifica contra el dashboard de Tilopay antes de confirmar.
+                        </div>
+
+                        <dl class="row small mb-4">
+                            <dt class="col-sm-5 text-muted">PaymentId</dt>
+                            <dd class="col-sm-7">@Model.SelectedItem.PaymentId</dd>
+                            <dt class="col-sm-5 text-muted">Tenant</dt>
+                            <dd class="col-sm-7">@Model.SelectedItem.TenantName</dd>
+                            <dt class="col-sm-5 text-muted">Plan</dt>
+                            <dd class="col-sm-7">@Model.SelectedItem.PlanCode</dd>
+                            <dt class="col-sm-5 text-muted">Monto esperado</dt>
+                            <dd class="col-sm-7">@Model.SelectedItem.Currency @Model.SelectedItem.ExpectedAmount.ToString("0.00")</dd>
+                            <dt class="col-sm-5 text-muted">Correlation</dt>
+                            <dd class="col-sm-7">@(Model.SelectedItem.CorrelationToken ?? "n/a")</dd>
+                        </dl>
+
+                        <form asp-action="Approve" asp-controller="RecurringReconciliation" method="post" novalidate>
+                            @Html.AntiForgeryToken()
+                            <input asp-for="ApprovalForm.PaymentId" type="hidden" />
+
+                            <div class="mb-3">
+                                <label asp-for="ApprovalForm.ProviderTransactionId" class="form-label"></label>
+                                <input asp-for="ApprovalForm.ProviderTransactionId" class="form-control" autocomplete="off" />
+                                <span asp-validation-for="ApprovalForm.ProviderTransactionId" class="text-danger small"></span>
+                            </div>
+
+                            <div class="mb-3">
+                                <label asp-for="ApprovalForm.ProviderSubscriberId" class="form-label"></label>
+                                <input asp-for="ApprovalForm.ProviderSubscriberId" class="form-control" autocomplete="off" />
+                                <span asp-validation-for="ApprovalForm.ProviderSubscriberId" class="text-danger small"></span>
+                            </div>
+
+                            <div class="row g-3">
+                                <div class="col-md-7">
+                                    <label asp-for="ApprovalForm.ApprovedAmount" class="form-label"></label>
+                                    <input asp-for="ApprovalForm.ApprovedAmount" class="form-control" autocomplete="off" />
+                                    <span asp-validation-for="ApprovalForm.ApprovedAmount" class="text-danger small"></span>
+                                </div>
+                                <div class="col-md-5">
+                                    <label asp-for="ApprovalForm.Currency" class="form-label"></label>
+                                    <input asp-for="ApprovalForm.Currency" class="form-control" autocomplete="off" />
+                                    <span asp-validation-for="ApprovalForm.Currency" class="text-danger small"></span>
+                                </div>
+                            </div>
+
+                            <div class="mt-3 mb-4">
+                                <label asp-for="ApprovalForm.Observation" class="form-label"></label>
+                                <textarea asp-for="ApprovalForm.Observation" class="form-control" rows="4"></textarea>
+                                <span asp-validation-for="ApprovalForm.Observation" class="text-danger small"></span>
+                            </div>
+
+                            <div class="d-flex flex-wrap gap-2">
+                                <button type="submit" class="btn btn-dark">Aprobar manualmente</button>
+                                <a class="btn btn-outline-secondary" href="@Url.Action("Index", "RecurringReconciliation")">Limpiar seleccion</a>
+                            </div>
+                        </form>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

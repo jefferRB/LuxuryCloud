@@ -1,0 +1,458 @@
+@model LuxuryApp.Models.PublicPages.TenantPublicPageViewModel
+@using System.Globalization
+@{
+    Layout = "_TenantPublicPageLayout";
+    var crCulture = CultureInfo.GetCultureInfo("es-CR");
+    ViewData["Title"] = Model.SeoTitle;
+    ViewData["FullTitle"] = Model.SeoTitle;
+    ViewData["MetaDescription"] = Model.SeoDescription;
+    ViewData["CanonicalUrl"] = Model.PublicSiteUrl;
+    ViewData["OgTitle"] = Model.SeoTitle;
+    ViewData["OgDescription"] = Model.SeoDescription;
+    ViewData["OgImage"] = Model.CoverImage?.Url ?? Model.LogoImage?.Url;
+
+    var reserveUrl = Model.ReserveActionUrl ?? Model.BookingUrl;
+    var whatsAppUrl = Model.WhatsAppActionUrl ?? Model.WhatsAppUrl;
+    var mapsUrl = Model.MapsActionUrl ?? Model.GoogleMapsUrl;
+    var wazeUrl = Model.WazeActionUrl;
+    var hasGallery = Model.BusinessGallery.Count > 0;
+    var hasServices = Model.Services.Count > 0;
+    var hasTeam = Model.TeamMembers.Count > 0;
+    var hasContact = Model.HasContactInfo;
+    var hasLocation = Model.ShowLocation &&
+        (!string.IsNullOrWhiteSpace(Model.Address) ||
+         !string.IsNullOrWhiteSpace(mapsUrl) ||
+         !string.IsNullOrWhiteSpace(wazeUrl));
+    var hasWhatsApp = !string.IsNullOrWhiteSpace(whatsAppUrl);
+}
+
+@* Tokens de marca del tenant. Los valores salen de PublicBrandTheme (HEX ya validado y
+   derivados calculados), nunca de texto libre de base de datos. Sin color configurado no se
+   emite nada y la landing queda identica a antes. *@
+@section Styles {
+    @if (Model.Theme.IsCustom)
+    {
+        <style>
+            :root {
+                --brand-accent: @Model.Theme.Accent;
+                --brand-accent-hover: @Model.Theme.AccentHover;
+                --brand-on-accent: @Model.Theme.OnAccent;
+                --tpp-accent: @Model.Theme.Accent;
+                --tpp-accent-dark: @Model.Theme.AccentHover;
+                --tpp-accent-ink: @Model.Theme.AccentInk;
+                --tpp-accent-soft: @Model.Theme.AccentSoft;
+                --tpp-accent-rgb: @Model.Theme.AccentRgb;
+            }
+        </style>
+    }
+}
+
+<div class="tpp-page" id="inicio">
+    <header class="tpp-site-nav" aria-label="Navegacion principal">
+        <div class="tpp-nav-shell">
+            <a class="tpp-nav-brand" href="#inicio" aria-label="Ir al inicio">
+                @if (Model.LogoImage is not null)
+                {
+                    <img src="@Model.LogoImage.Url"
+                         width="@Model.LogoImage.Width"
+                         height="@Model.LogoImage.Height"
+                         alt="@Model.LogoImage.AltText" />
+                }
+                <strong>@Model.BusinessName</strong>
+            </a>
+
+            <input class="tpp-nav-toggle" type="checkbox" id="tpp-nav-toggle" aria-label="Abrir menu" />
+            <label class="tpp-nav-menu-button" for="tpp-nav-toggle" aria-hidden="true">
+                <span></span>
+                <span></span>
+                <span></span>
+            </label>
+
+            <nav class="tpp-nav-links">
+                <a href="#inicio">Inicio</a>
+                @if (hasGallery)
+                {
+                    <a href="#trabajos">Trabajos</a>
+                }
+                @if (hasServices)
+                {
+                    <a href="#servicios">Servicios</a>
+                }
+                @if (hasTeam)
+                {
+                    <a href="#equipo">Equipo</a>
+                }
+                @if (hasLocation)
+                {
+                    <a href="#ubicacion">Ubicacion</a>
+                }
+                @if (!string.IsNullOrWhiteSpace(reserveUrl))
+                {
+                    <a class="tpp-nav-cta" href="@reserveUrl">Reservar</a>
+                }
+            </nav>
+        </div>
+    </header>
+
+    <section class="tpp-hero">
+        @if (Model.CoverImage is not null)
+        {
+            <img class="tpp-hero-cover"
+                 src="@Model.CoverImage.Url"
+                 width="@Model.CoverImage.Width"
+                 height="@Model.CoverImage.Height"
+                 alt="@Model.CoverImage.AltText" />
+        }
+        <div class="tpp-hero-shade"></div>
+
+        <div class="tpp-hero-content">
+            @if (Model.LogoImage is not null)
+            {
+                <div class="tpp-hero-logo-wrap">
+                    <img class="tpp-logo"
+                         src="@Model.LogoImage.Url"
+                         width="@Model.LogoImage.Width"
+                         height="@Model.LogoImage.Height"
+                         alt="@Model.LogoImage.AltText" />
+                </div>
+            }
+
+            @if (!string.IsNullOrWhiteSpace(Model.HeroEyebrow))
+            {
+                <p class="tpp-eyebrow">@Model.HeroEyebrow</p>
+            }
+            <h1>@Model.HeroTitle</h1>
+            @if (!string.IsNullOrWhiteSpace(Model.HeroSubtitle))
+            {
+                <p class="tpp-subtitle">@Model.HeroSubtitle</p>
+            }
+            @if (!string.IsNullOrWhiteSpace(Model.Description))
+            {
+                <p class="tpp-description">@Model.Description</p>
+            }
+
+            <div class="tpp-actions">
+                @if (!string.IsNullOrWhiteSpace(reserveUrl))
+                {
+                    <a class="tpp-btn tpp-btn-primary" href="@reserveUrl">Reservar cita</a>
+                }
+                @if (hasServices)
+                {
+                    <a class="tpp-btn tpp-btn-glass" href="#servicios">Ver servicios</a>
+                }
+            </div>
+
+            @if (string.IsNullOrWhiteSpace(Model.BookingUrl) && !Model.BookingEnabled)
+            {
+                <p class="tpp-booking-note">Las reservas online no estan disponibles en este momento.</p>
+            }
+        </div>
+    </section>
+
+    <main>
+        @if (hasContact)
+        {
+            <section class="tpp-section tpp-contact" id="contacto">
+                <div class="tpp-section-head tpp-section-head-centered">
+                    <p class="tpp-kicker">Informacion</p>
+                    <h2>Todo listo para visitarnos</h2>
+                    <p>Contacto, horarios y redes del negocio en un solo lugar.</p>
+                </div>
+
+                <div class="tpp-contact-grid">
+                    @if (!string.IsNullOrWhiteSpace(Model.Phone))
+                    {
+                        <a class="tpp-contact-item" href="tel:@Model.Phone">
+                            <span class="tpp-contact-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24"><path d="M7.2 4.2 9.4 3a1.7 1.7 0 0 1 2.3.6l1.1 2a1.8 1.8 0 0 1-.3 2.1l-1 1.1a11.6 11.6 0 0 0 4.7 4.7l1.1-1a1.8 1.8 0 0 1 2.1-.3l2 1.1a1.7 1.7 0 0 1 .6 2.3l-1.2 2.2c-.4.7-1.2 1.1-2 1a17.5 17.5 0 0 1-14.6-14.6c-.1-.8.3-1.6 1-2Z" /></svg>
+                            </span>
+                            <span><small>Telefono</small>@Model.Phone</span>
+                        </a>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(Model.Email))
+                    {
+                        <a class="tpp-contact-item" href="mailto:@Model.Email">
+                            <span class="tpp-contact-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24"><path d="M4 6.5h16a1.5 1.5 0 0 1 1.5 1.5v8a1.5 1.5 0 0 1-1.5 1.5H4A1.5 1.5 0 0 1 2.5 16V8A1.5 1.5 0 0 1 4 6.5Zm.8 2.2 6.4 4.5c.5.4 1.1.4 1.6 0l6.4-4.5" /></svg>
+                            </span>
+                            <span><small>Correo</small>@Model.Email</span>
+                        </a>
+                    }
+                    @if (Model.Schedule?.HasSchedule == true)
+                    {
+                        var schedule = Model.Schedule;
+                        <details class="tpp-contact-item tpp-hours">
+                            <summary class="tpp-hours-summary">
+                                <span class="tpp-contact-icon" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24"><path d="M12 3.5a8.5 8.5 0 1 1 0 17 8.5 8.5 0 0 1 0-17Zm0 4v5l3.4 2" /></svg>
+                                </span>
+                                <span class="tpp-hours-head">
+                                    <small>Horario</small>
+                                    <span class="tpp-hours-status @(schedule.IsOpenNow ? "is-open" : "is-closed")">
+                                        <strong>@schedule.StatusLabel</strong>
+                                        @if (!string.IsNullOrWhiteSpace(schedule.StatusDetail))
+                                        {
+                                            <span class="tpp-hours-detail">· @schedule.StatusDetail</span>
+                                        }
+                                    </span>
+                                </span>
+                                <span class="tpp-hours-chevron" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" /></svg>
+                                </span>
+                            </summary>
+                            <ul class="tpp-hours-list">
+                                @foreach (var day in schedule.Days)
+                                {
+                                    <li class="@(day.IsToday ? "is-today " : "")@(day.Closed ? "is-closed" : "")">
+                                        <span class="tpp-hours-day">@day.DayName</span>
+                                        <span class="tpp-hours-range">@day.HoursText</span>
+                                    </li>
+                                }
+                            </ul>
+                        </details>
+                    }
+                    else if (!string.IsNullOrWhiteSpace(Model.BusinessHours))
+                    {
+                        <div class="tpp-contact-item">
+                            <span class="tpp-contact-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24"><path d="M12 3.5a8.5 8.5 0 1 1 0 17 8.5 8.5 0 0 1 0-17Zm0 4v5l3.4 2" /></svg>
+                            </span>
+                            <span><small>Horario</small><span class="tpp-multiline">@Model.BusinessHours</span></span>
+                        </div>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(Model.FacebookUrl))
+                    {
+                        <a class="tpp-contact-item tpp-social-contact" href="@Model.FacebookUrl" target="_blank" rel="noopener noreferrer nofollow">
+                            <span class="tpp-social-mark tpp-social-facebook" aria-hidden="true">f</span>
+                            <span><small>Facebook</small>Ver pagina</span>
+                        </a>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(Model.TikTokUrl))
+                    {
+                        <a class="tpp-contact-item tpp-social-contact" href="@Model.TikTokUrl" target="_blank" rel="noopener noreferrer nofollow">
+                            <span class="tpp-social-mark tpp-social-tiktok" aria-hidden="true">TT</span>
+                            <span><small>TikTok</small>Ver clips</span>
+                        </a>
+                    }
+                </div>
+            </section>
+        }
+
+        @if (hasGallery)
+        {
+            <section class="tpp-section tpp-gallery-section" id="trabajos">
+                <div class="tpp-section-head tpp-section-head-centered">
+                    <p class="tpp-kicker">Trabajos</p>
+                    <h2>Conoce nuestro trabajo</h2>
+                    <p>Una muestra visual del ambiente, acabados y estilo del negocio.</p>
+                </div>
+                <div class="tpp-gallery-grid public-gallery-grid" data-count="@Model.BusinessGallery.Count">
+                    @foreach (var image in Model.BusinessGallery)
+                    {
+                        // Aspecto natural por foto (usando dimensiones ya guardadas): verticales altas,
+                        // horizontales anchas. Valores numericos seguros (no HTML arbitrario).
+                        var galleryStyle = image.Width > 0 && image.Height > 0
+                            ? $"aspect-ratio:{image.Width}/{image.Height}"
+                            : null;
+                        <a class="tpp-gallery-item"
+                           href="@image.Url"
+                           target="_blank"
+                           rel="noopener noreferrer"
+                           style="@galleryStyle">
+                            <img src="@image.Url"
+                                 width="@image.Width"
+                                 height="@image.Height"
+                                 alt="@image.AltText"
+                                 loading="lazy" />
+                        </a>
+                    }
+                </div>
+            </section>
+        }
+
+        @if (hasServices)
+        {
+            <section class="tpp-section tpp-services-section" id="servicios">
+                <div class="tpp-section-head tpp-section-head-row">
+                    <div>
+                        <p class="tpp-kicker">Servicios</p>
+                        <h2>Elegi el servicio que necesitas</h2>
+                        <p>Reserva en linea en pocos pasos. Puedes cambiar el servicio antes de confirmar tu cita.</p>
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(reserveUrl))
+                    {
+                        <a class="tpp-link" href="@reserveUrl">Ver disponibilidad</a>
+                    }
+                </div>
+                <div class="tpp-services-grid public-services-grid">
+                    @foreach (var service in Model.Services)
+                    {
+                        var serviceReserveUrl = service.ReserveActionUrl ?? service.BookingUrl;
+                        <article class="tpp-service-card public-service-card">
+                            @if (service.MainImage is not null)
+                            {
+                                <div class="tpp-service-image public-service-image">
+                                    <img src="@service.MainImage.Url"
+                                         width="@service.MainImage.Width"
+                                         height="@service.MainImage.Height"
+                                         alt="@service.MainImage.AltText"
+                                         loading="lazy" />
+                                </div>
+                            }
+                            <div class="tpp-service-body public-service-body">
+                                <div class="tpp-service-copy">
+                                    <h3>@service.Name</h3>
+                                    @if (!string.IsNullOrWhiteSpace(service.Description))
+                                    {
+                                        <p>@service.Description</p>
+                                    }
+                                </div>
+                                <div class="tpp-service-meta">
+                                    @if (service.DurationMinutes.HasValue)
+                                    {
+                                        <span>@service.DurationMinutes min</span>
+                                    }
+                                    @if (service.Price.HasValue)
+                                    {
+                                        <span>&#8353;@service.Price.Value.ToString("N0", crCulture)</span>
+                                    }
+                                </div>
+                                @if (!string.IsNullOrWhiteSpace(serviceReserveUrl))
+                                {
+                                    <a class="tpp-service-cta public-service-cta" href="@serviceReserveUrl">Reservar este servicio</a>
+                                }
+                            </div>
+                        </article>
+                    }
+                </div>
+            </section>
+        }
+
+        @if (hasTeam)
+        {
+            <section class="tpp-section tpp-team-section" id="equipo">
+                <div class="tpp-section-head tpp-section-head-centered">
+                    <p class="tpp-kicker">Equipo</p>
+                    <h2>Profesionales activos</h2>
+                    <p>Personas preparadas para ayudarte a lograr el resultado que buscas.</p>
+                </div>
+                <div class="tpp-team-grid">
+                    @foreach (var member in Model.TeamMembers)
+                    {
+                        <article class="tpp-team-card">
+                            <div class="tpp-team-photo">
+                                @if (!string.IsNullOrWhiteSpace(member.PhotoUrl))
+                                {
+                                    <img src="@member.PhotoUrl" alt="Foto de @member.Name" loading="lazy" />
+                                }
+                                else
+                                {
+                                    <span class="tpp-team-avatar" aria-hidden="true">@member.Initial</span>
+                                }
+                            </div>
+                            <div class="tpp-team-body">
+                                <h3>@member.Name</h3>
+                                @if (!string.IsNullOrWhiteSpace(member.Specialty))
+                                {
+                                    <p class="tpp-team-role">@member.Specialty</p>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(member.Description))
+                                {
+                                    <p class="tpp-team-bio">@member.Description</p>
+                                }
+                            </div>
+                        </article>
+                    }
+                </div>
+            </section>
+        }
+
+        @if (hasLocation)
+        {
+            <section class="tpp-section tpp-location-section" id="ubicacion">
+                <div class="tpp-location-card @(Model.LocationImage is not null ? "tpp-location-card-media" : "")">
+                    <div class="tpp-location-info">
+                        <div class="tpp-section-head">
+                            <p class="tpp-kicker">Ubicacion</p>
+                            <h2>Te esperamos</h2>
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(Model.Address))
+                        {
+                            <p class="tpp-location-address">@Model.Address</p>
+                        }
+                        <div class="tpp-location-actions">
+                            @if (!string.IsNullOrWhiteSpace(mapsUrl))
+                            {
+                                <a class="tpp-btn tpp-btn-secondary"
+                                   href="@mapsUrl"
+                                   target="_blank"
+                                   rel="noopener noreferrer nofollow">Ver en Google Maps</a>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(wazeUrl))
+                            {
+                                <a class="tpp-btn tpp-btn-secondary"
+                                   href="@wazeUrl"
+                                   target="_blank"
+                                   rel="noopener noreferrer nofollow">Abrir en Waze</a>
+                            }
+                        </div>
+                    </div>
+                    @if (Model.LocationImage is not null)
+                    {
+                        var locationStyle = Model.LocationImage.Width > 0 && Model.LocationImage.Height > 0
+                            ? $"aspect-ratio:{Model.LocationImage.Width}/{Model.LocationImage.Height}"
+                            : null;
+                        <div class="tpp-location-media" style="@locationStyle">
+                            <img src="@Model.LocationImage.Url"
+                                 width="@Model.LocationImage.Width"
+                                 height="@Model.LocationImage.Height"
+                                 alt="@Model.LocationImage.AltText"
+                                 loading="lazy" />
+                        </div>
+                    }
+                </div>
+            </section>
+        }
+    </main>
+
+    @if (hasWhatsApp || !string.IsNullOrWhiteSpace(Model.InstagramUrl))
+    {
+        <div class="tpp-floating-actions">
+            @if (!string.IsNullOrWhiteSpace(Model.InstagramUrl))
+            {
+                <a class="tpp-floating-btn tpp-floating-instagram"
+                   href="@Model.InstagramUrl"
+                   target="_blank"
+                   rel="noopener noreferrer nofollow"
+                   aria-label="Ver Instagram">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M12 7.2A4.8 4.8 0 1 0 16.8 12 4.81 4.81 0 0 0 12 7.2Zm0 7.9A3.1 3.1 0 1 1 15.1 12 3.1 3.1 0 0 1 12 15.1Zm4.9-8.1a1.12 1.12 0 1 1-1.12-1.12A1.12 1.12 0 0 1 16.9 7Zm3.2 1.14a5.54 5.54 0 0 0-1.51-3.92 5.58 5.58 0 0 0-3.92-1.51c-1.55-.09-6.19-.09-7.74 0A5.57 5.57 0 0 0 3 4.21 5.56 5.56 0 0 0 1.49 8.13c-.09 1.55-.09 6.19 0 7.74A5.54 5.54 0 0 0 3 19.79a5.58 5.58 0 0 0 3.92 1.51c1.55.09 6.19.09 7.74 0a5.54 5.54 0 0 0 3.92-1.51 5.58 5.58 0 0 0 1.51-3.92c.09-1.55.09-6.18 0-7.73ZM18.16 17.5a3.14 3.14 0 0 1-1.77 1.77c-1.22.49-4.13.38-5.48.38s-4.27.11-5.48-.38a3.14 3.14 0 0 1-1.77-1.77c-.49-1.22-.38-4.13-.38-5.48s-.11-4.27.38-5.48A3.14 3.14 0 0 1 5.05 4.77c1.22-.49 4.13-.38 5.48-.38s4.27-.11 5.48.38a3.14 3.14 0 0 1 1.77 1.77c.49 1.22.38 4.13.38 5.48s.11 4.27-.38 5.48Z" />
+                    </svg>
+                </a>
+            }
+            @if (hasWhatsApp)
+            {
+                <a class="tpp-floating-btn tpp-floating-whatsapp"
+                   href="@whatsAppUrl"
+                   target="_blank"
+                   rel="noopener noreferrer nofollow"
+                   aria-label="Contactar por WhatsApp">
+                    <svg viewBox="0 0 32 32" aria-hidden="true">
+                        <path d="M16 3.5A12.2 12.2 0 0 0 5.6 22.1L4 28l6-1.6A12.2 12.2 0 1 0 16 3.5Zm0 2.4a9.8 9.8 0 0 1 8.4 14.8 9.8 9.8 0 0 1-13.7 3.5l-.5-.3-3.1.8.8-3-.3-.5A9.8 9.8 0 0 1 16 5.9Zm-4.3 5.2c-.2 0-.6.1-.9.4-.4.4-1.2 1.2-1.2 2.9 0 1.7 1.2 3.3 1.4 3.5.2.2 2.4 3.8 5.9 5.1 2.9 1.1 3.5.9 4.1.8.6-.1 2-.8 2.3-1.6.3-.8.3-1.5.2-1.6-.1-.2-.3-.3-.7-.5l-2.1-1c-.3-.1-.6-.2-.8.2-.2.3-.9 1.1-1.1 1.3-.2.2-.4.2-.8.1-.4-.2-1.5-.5-2.8-1.7-1-1-1.7-2.1-1.9-2.5-.2-.4 0-.6.2-.8.2-.2.4-.4.5-.6.2-.2.2-.4.4-.6.1-.2.1-.5 0-.7l-.9-2.1c-.2-.5-.5-.5-.8-.5h-1Z" />
+                    </svg>
+                </a>
+            }
+        </div>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(reserveUrl))
+    {
+        <div class="tpp-mobile-cta">
+            <a class="tpp-btn tpp-btn-primary" href="@reserveUrl">Reservar cita</a>
+        </div>
+    }
+
+    <footer class="tpp-footer">
+        <span>Reservas impulsadas por <strong>LuxuryCloud</strong></span>
+    </footer>
+</div>

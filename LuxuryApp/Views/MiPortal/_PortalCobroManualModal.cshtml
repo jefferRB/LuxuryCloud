@@ -1,0 +1,211 @@
+@model LuxuryApp.Models.Funcionarios.MisCobrosViewModel
+@using LuxuryApp.Models.Funcionarios
+@{
+    var permsManual = ViewData["PortalPerms"] as FuncionarioPortalPermisosSet;
+    var puedeComprobanteManual = permsManual?.PuedeEnviarComprobantes ?? false;
+}
+<style>
+    /* Modal Nuevo cobro manual — premium, adaptado a los 4 temas con variables --private-* */
+    #cobroManualModal .modal-content { border:none; border-radius:1.1rem; overflow:hidden;
+        background:var(--private-surface-bg,#fff); color:var(--private-surface-text,#0f172a);
+        box-shadow:var(--private-panel-shadow,0 24px 60px rgba(2,6,23,.35)); }
+    .pcmn-header { display:flex; align-items:center; gap:.9rem; padding:1.15rem 1.25rem;
+        border-bottom:1px solid var(--private-surface-border,#eef1f6);
+        background:linear-gradient(135deg, rgba(22,163,74,.16), rgba(16,185,129,.06)); }
+    .pcmn-ic { width:2.8rem; height:2.8rem; border-radius:13px; flex-shrink:0; display:flex; align-items:center; justify-content:center;
+        font-size:1.3rem; background:rgba(22,163,74,.22); color:#6ee7b7; }
+    .pcmn-title { font-size:1.08rem; font-weight:800; margin:0; color:var(--private-surface-text,#0f172a); }
+    .pcmn-sub { font-size:.8rem; margin:.1rem 0 0; color:var(--private-muted-text,#64748b); }
+    .pcmn-close { margin-left:auto; border:none; background:transparent; color:var(--private-muted-text,#64748b);
+        font-size:1.1rem; cursor:pointer; padding:.3rem; border-radius:.5rem; }
+    .pcmn-close:hover { background:var(--private-row-hover-bg,rgba(15,23,42,.06)); }
+    .pcmn-body { padding:1.25rem; }
+    .pcmn-label { display:block; font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.3px;
+        color:var(--private-muted-text,#94a3b8); margin:0 0 .35rem; }
+    .pcmn-input, .pcmn-select { width:100%; border-radius:.7rem; padding:.6rem .8rem; font-size:.9rem; margin-bottom:1rem;
+        border:1px solid var(--private-input-border,rgba(15,23,42,.14)); background:var(--private-input-bg,#fff);
+        color:var(--private-input-text,#0f172a); }
+    .pcmn-input:focus, .pcmn-select:focus { outline:none; border-color:#16a34a; box-shadow:0 0 0 3px rgba(22,163,74,.18); }
+    .pcmn-money { display:flex; align-items:center; gap:.55rem; margin-bottom:1rem; padding:.55rem .8rem; border-radius:.7rem;
+        border:1.5px solid var(--private-input-border,rgba(15,23,42,.14)); background:var(--private-input-bg,#fff); }
+    .pcmn-money:focus-within { border-color:#16a34a; box-shadow:0 0 0 3px rgba(22,163,74,.2); }
+    .pcmn-money-cur { font-weight:800; font-size:1.15rem; color:var(--private-muted-text,#64748b); }
+    .pcmn-money-input { flex:1; border:none; background:transparent; outline:none; font-size:1.35rem; font-weight:800;
+        color:var(--private-input-text,#0f172a); width:100%; }
+    .pcmn-ac { position:relative; }
+    .pcmn-results { display:none; position:absolute; z-index:5; left:0; right:0; top:calc(100% - .8rem);
+        background:var(--private-surface-bg,#fff); border:1px solid var(--private-surface-border,#e2e8f0); border-radius:.6rem;
+        box-shadow:0 8px 20px rgba(15,23,42,.18); max-height:200px; overflow:auto; }
+    .pcmn-results button { display:block; width:100%; text-align:left; border:none; background:transparent;
+        padding:.5rem .75rem; font-size:.85rem; color:var(--private-surface-text,#0f172a); cursor:pointer; }
+    .pcmn-results button:hover { background:rgba(22,163,74,.12); }
+    .pcmn-footer { display:flex; gap:.6rem; padding:1rem 1.25rem 1.25rem; }
+    .pcmn-btn-ghost { border:1px solid var(--private-surface-border,rgba(15,23,42,.15)); background:transparent;
+        color:var(--private-surface-text,#0f172a); border-radius:.7rem; padding:.65rem 1.1rem; font-weight:700; font-size:.9rem; cursor:pointer; }
+    .pcmn-btn-primary { flex:1; border:none; border-radius:.7rem; padding:.65rem 1.1rem; font-weight:800; font-size:.92rem; cursor:pointer;
+        color:#fff; background:linear-gradient(135deg,#16a34a,#15803d); box-shadow:0 8px 20px rgba(22,163,74,.32);
+        display:inline-flex; align-items:center; justify-content:center; gap:.45rem; }
+    .pcmn-btn-primary:hover { filter:brightness(1.06); }
+    .pcmn-btn-primary:disabled { opacity:.6; cursor:wait; }
+    @@media (max-width:480px){ .pcmn-footer { flex-direction:column-reverse; } .pcmn-btn-ghost, .pcmn-btn-primary { width:100%; } }
+</style>
+
+<div class="modal fade" id="cobroManualModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <form method="post" action="/MiPortal/Cobros/RegistrarManual" id="cobroManualForm">
+                @Html.AntiForgeryToken()
+                <div class="pcmn-header">
+                    <div class="pcmn-ic"><i class="bi bi-plus-circle"></i></div>
+                    <div>
+                        <h5 class="pcmn-title">Nuevo cobro</h5>
+                        <p class="pcmn-sub">Registra un ingreso por tu servicio</p>
+                    </div>
+                    <button type="button" class="pcmn-close" data-bs-dismiss="modal" aria-label="Cerrar"><i class="bi bi-x-lg"></i></button>
+                </div>
+
+                <div class="modal-body pcmn-body">
+                    <label class="pcmn-label">Cliente</label>
+                    <div class="pcmn-ac">
+                        <input type="text" name="nombreCliente" id="cmCliente" autocomplete="off" class="pcmn-input"
+                               placeholder="Escribe para buscar (mín. 3 letras)" style="margin-bottom:0;" />
+                        <input type="hidden" name="clienteId" id="cmClienteId" />
+                        <div class="pcmn-results" id="cmResults"></div>
+                    </div>
+                    <div style="height:1rem;"></div>
+
+                    <label class="pcmn-label">Servicio</label>
+                    <select name="servicioId" id="cmServicio" class="pcmn-select" required>
+                        <option value="">Selecciona un servicio</option>
+                        @foreach (var sv in Model.Servicios)
+                        {
+                            <option value="@sv.Id" data-precio="@sv.Precio.ToString(System.Globalization.CultureInfo.InvariantCulture)">@sv.Nombre</option>
+                        }
+                    </select>
+
+                    <label class="pcmn-label">Monto cobrado</label>
+                    <div class="pcmn-money">
+                        <span class="pcmn-money-cur">₡</span>
+                        <input type="number" name="monto" id="cmMonto" step="0.01" min="0.01" required class="pcmn-money-input" placeholder="0,00" />
+                    </div>
+
+                    <label class="pcmn-label">Método de pago</label>
+                    <select name="metodoPago" class="pcmn-select">
+                        <option value="EFECTIVO">Efectivo</option>
+                        <option value="TARJETA">Tarjeta</option>
+                        <option value="SINPE">SINPE</option>
+                    </select>
+
+                    <label class="pcmn-label">Observación (opcional)</label>
+                    <input type="text" name="observacion" maxlength="500" class="pcmn-input"
+                           placeholder="Ej: venta directa, propina incluida…" style="margin-bottom:0;" />
+
+                    @if (puedeComprobanteManual)
+                    {
+                        <div style="margin-top:1rem;padding-top:.9rem;border-top:1px solid var(--private-surface-border,#eef1f6);">
+                            <label style="display:flex;align-items:center;gap:.55rem;cursor:pointer;font-weight:700;font-size:.9rem;color:var(--private-surface-text,#0f172a);">
+                                <input type="checkbox" name="enviarComprobante" value="true" id="cmEnviarComp" style="width:1.05rem;height:1.05rem;" />
+                                <i class="bi bi-envelope-paper"></i> Enviar comprobante por correo
+                            </label>
+                            <div id="cmCompWrap" style="display:none;margin-top:.6rem;">
+                                <input type="email" name="emailComprobante" id="cmCompEmail" class="pcmn-input" style="margin-bottom:.5rem;"
+                                       placeholder="correo@@ejemplo.com" autocomplete="off" />
+                                <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;font-size:.82rem;color:var(--private-muted-text,#64748b);">
+                                    <input type="checkbox" name="guardarEmailEnCliente" value="true" style="width:1rem;height:1rem;" />
+                                    Guardar este correo en el perfil del cliente
+                                </label>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <div class="pcmn-footer">
+                    <button type="button" class="pcmn-btn-ghost" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="pcmn-btn-primary" id="cmSubmit"><i class="bi bi-check2-circle"></i> Registrar cobro</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        var form = document.getElementById("cobroManualForm");
+        if (!form) return;
+        // Evitar doble submit
+        var submit = document.getElementById("cmSubmit");
+
+        // Autollenar el monto con el precio del servicio (solo UX; el backend revalida monto>0,
+        // que el servicio sea del tenant y el FuncionarioId del claim). data-precio viene invariant (punto).
+        var servicioSel = document.getElementById("cmServicio");
+        var montoInp = document.getElementById("cmMonto");
+        if (servicioSel && montoInp) {
+            servicioSel.addEventListener("change", function () {
+                var opt = this.options[this.selectedIndex];
+                var raw = opt ? opt.getAttribute("data-precio") : null;
+                if (raw === null || raw === "") return;
+                var precio = Number(raw);
+                if (!isFinite(precio) || precio < 0) return;
+                montoInp.value = precio.toFixed(2);
+            });
+        }
+        // Toggle del bloque de comprobante.
+        var enviarComp = document.getElementById("cmEnviarComp");
+        if (enviarComp) {
+            enviarComp.addEventListener("change", function () {
+                var wrap = document.getElementById("cmCompWrap");
+                if (wrap) wrap.style.display = this.checked ? "" : "none";
+            });
+        }
+        form.addEventListener("submit", function (e) {
+            // Si pidió comprobante, exige correo válido antes de bloquear el botón.
+            if (enviarComp && enviarComp.checked) {
+                var email = document.getElementById("cmCompEmail");
+                var val = email ? email.value.trim() : "";
+                if (!/^[^\s@@]+@@[^\s@@]+\.[^\s@@]+$/.test(val)) {
+                    e.preventDefault();
+                    if (email) email.focus();
+                    return;
+                }
+            }
+            submit.disabled = true;
+            submit.innerHTML = '<i class="bi bi-hourglass-split"></i> Registrando…';
+        });
+        // Autocomplete de clientes (endpoint seguro del portal)
+        var input = document.getElementById("cmCliente");
+        var results = document.getElementById("cmResults");
+        var hid = document.getElementById("cmClienteId");
+        var timer = null, controller = null;
+        function hide() { results.style.display = "none"; results.innerHTML = ""; }
+        input.addEventListener("input", function () {
+            hid.value = "";
+            var term = input.value.trim();
+            if (timer) clearTimeout(timer);
+            if (term.length < 3) { hide(); return; }
+            timer = setTimeout(function () {
+                if (controller) controller.abort();
+                controller = new AbortController();
+                fetch("/MiPortal/Clientes/Autocompletado?term=" + encodeURIComponent(term), { signal: controller.signal })
+                    .then(function (r) { return r.ok ? r.json() : []; })
+                    .then(function (items) {
+                        results.innerHTML = "";
+                        if (!items.length) { hide(); return; }
+                        items.forEach(function (c) {
+                            var b = document.createElement("button");
+                            b.type = "button";
+                            b.textContent = c.telefono ? (c.nombre + " · " + c.telefono) : c.nombre;
+                            b.addEventListener("click", function () {
+                                input.value = c.nombre || ""; hid.value = c.id || ""; hide();
+                                // Prefill del correo del comprobante si el cliente tiene uno y el campo está vacío.
+                                var email = document.getElementById("cmCompEmail");
+                                if (email && !email.value && c.correo) { email.value = c.correo; }
+                            });
+                            results.appendChild(b);
+                        });
+                        results.style.display = "block";
+                    }).catch(function () { });
+            }, 300);
+        });
+        input.addEventListener("blur", function () { setTimeout(hide, 180); });
+    })();
+</script>

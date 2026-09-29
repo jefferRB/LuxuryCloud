@@ -1,0 +1,4282 @@
+﻿-- =====================================================================================
+-- LuxuryCloud database baseline: SCHEMA ONLY
+-- Generated with SQL Server Management Objects from a local development database whose
+-- __EFMigrationsHistory matches every migration in LuxuryApp/Migrations.
+-- Contains no business data, users, logins, roles or permissions. See database/README.md.
+-- =====================================================================================
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+SET ANSI_PADDING ON
+GO
+
+-- ===== Row-Level Security predicate function =====
+CREATE FUNCTION dbo.fnTenantAccess (@TenantId UNIQUEIDENTIFIER)
+RETURNS TABLE
+WITH SCHEMABINDING
+AS
+RETURN
+(
+    SELECT 1 AS fn_result
+    WHERE @TenantId = CAST(SESSION_CONTEXT(N'TenantId') AS UNIQUEIDENTIFIER)
+);
+GO
+
+-- ===== Tables (keys, defaults, checks, indexes) =====
+CREATE TABLE [dbo].[__EFMigrationsHistory](
+	[MigrationId] [nvarchar](150) NOT NULL,
+	[ProductVersion] [nvarchar](32) NOT NULL,
+ CONSTRAINT [PK___EFMigrationsHistory] PRIMARY KEY CLUSTERED
+(
+	[MigrationId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+CREATE TABLE [dbo].[AspNetRoleClaims](
+	[Id] [int] IDENTITY(1,1) NOT NULL,
+	[RoleId] [nvarchar](450) NOT NULL,
+	[ClaimType] [nvarchar](max) NULL,
+	[ClaimValue] [nvarchar](max) NULL,
+ CONSTRAINT [PK_AspNetRoleClaims] PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE NONCLUSTERED INDEX [IX_AspNetRoleClaims_RoleId] ON [dbo].[AspNetRoleClaims]
+(
+	[RoleId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE TABLE [dbo].[AspNetRoles](
+	[Id] [nvarchar](450) NOT NULL,
+	[Name] [nvarchar](256) NULL,
+	[NormalizedName] [nvarchar](256) NULL,
+	[ConcurrencyStamp] [nvarchar](max) NULL,
+ CONSTRAINT [PK_AspNetRoles] PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [RoleNameIndex] ON [dbo].[AspNetRoles]
+(
+	[NormalizedName] ASC
+)
+WHERE ([NormalizedName] IS NOT NULL)
+WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE TABLE [dbo].[AspNetUserClaims](
+	[Id] [int] IDENTITY(1,1) NOT NULL,
+	[UserId] [nvarchar](450) NOT NULL,
+	[ClaimType] [nvarchar](max) NULL,
+	[ClaimValue] [nvarchar](max) NULL,
+ CONSTRAINT [PK_AspNetUserClaims] PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE NONCLUSTERED INDEX [IX_AspNetUserClaims_UserId] ON [dbo].[AspNetUserClaims]
+(
+	[UserId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE TABLE [dbo].[AspNetUserLogins](
+	[LoginProvider] [nvarchar](450) NOT NULL,
+	[ProviderKey] [nvarchar](450) NOT NULL,
+	[ProviderDisplayName] [nvarchar](max) NULL,
+	[UserId] [nvarchar](450) NOT NULL,
+ CONSTRAINT [PK_AspNetUserLogins] PRIMARY KEY CLUSTERED
+(
+	[LoginProvider] ASC,
+	[ProviderKey] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE NONCLUSTERED INDEX [IX_AspNetUserLogins_UserId] ON [dbo].[AspNetUserLogins]
+(
+	[UserId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE TABLE [dbo].[AspNetUserRoles](
+	[UserId] [nvarchar](450) NOT NULL,
+	[RoleId] [nvarchar](450) NOT NULL,
+ CONSTRAINT [PK_AspNetUserRoles] PRIMARY KEY CLUSTERED
+(
+	[UserId] ASC,
+	[RoleId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE NONCLUSTERED INDEX [IX_AspNetUserRoles_RoleId] ON [dbo].[AspNetUserRoles]
+(
+	[RoleId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE TABLE [dbo].[AspNetUsers](
+	[Id] [nvarchar](450) NOT NULL,
+	[UserName] [nvarchar](256) NULL,
+	[NormalizedUserName] [nvarchar](256) NULL,
+	[Email] [nvarchar](256) NULL,
+	[NormalizedEmail] [nvarchar](256) NULL,
+	[EmailConfirmed] [bit] NOT NULL,
+	[PasswordHash] [nvarchar](max) NULL,
+	[SecurityStamp] [nvarchar](max) NULL,
+	[ConcurrencyStamp] [nvarchar](max) NULL,
+	[PhoneNumber] [nvarchar](max) NULL,
+	[PhoneNumberConfirmed] [bit] NOT NULL,
+	[TwoFactorEnabled] [bit] NOT NULL,
+	[LockoutEnd] [datetimeoffset](7) NULL,
+	[LockoutEnabled] [bit] NOT NULL,
+	[AccessFailedCount] [int] NOT NULL,
+	[Name] [nvarchar](max) NULL,
+	[State] [bit] NOT NULL,
+	[TenantId] [uniqueidentifier] NOT NULL,
+	[IsPlatformSuperAdmin] [bit] NOT NULL,
+	[FuncionarioId] [int] NULL,
+ CONSTRAINT [PK_AspNetUsers] PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE NONCLUSTERED INDEX [EmailIndex] ON [dbo].[AspNetUsers]
+(
+	[NormalizedEmail] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_AspNetUsers_TenantId] ON [dbo].[AspNetUsers]
+(
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [UserNameIndex] ON [dbo].[AspNetUsers]
+(
+	[NormalizedUserName] ASC
+)
+WHERE ([NormalizedUserName] IS NOT NULL)
+WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+ALTER TABLE [dbo].[AspNetUsers] ADD  DEFAULT (CONVERT([bit],(0))) FOR [IsPlatformSuperAdmin]
+GO
+CREATE TABLE [dbo].[AspNetUserTokens](
+	[UserId] [nvarchar](450) NOT NULL,
+	[LoginProvider] [nvarchar](450) NOT NULL,
+	[Name] [nvarchar](450) NOT NULL,
+	[Value] [nvarchar](max) NULL,
+ CONSTRAINT [PK_AspNetUserTokens] PRIMARY KEY CLUSTERED
+(
+	[UserId] ASC,
+	[LoginProvider] ASC,
+	[Name] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+CREATE TABLE [dbo].[AssociatePermissions](
+	[Id] [int] IDENTITY(1,1) NOT NULL,
+	[TenantId] [uniqueidentifier] NOT NULL,
+	[AssociateId] [int] NOT NULL,
+	[Permiso] [nvarchar](80) NOT NULL,
+	[Permitido] [bit] NOT NULL,
+	[CreatedAtUtc] [datetime2](7) NOT NULL,
+	[UpdatedAtUtc] [datetime2](7) NOT NULL,
+ CONSTRAINT [PK_AssociatePermissions] PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_AssociatePermissions_AssociateId] ON [dbo].[AssociatePermissions]
+(
+	[AssociateId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_AssociatePermissions_TenantId] ON [dbo].[AssociatePermissions]
+(
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [UX_AssociatePermissions_Associate_Permiso] ON [dbo].[AssociatePermissions]
+(
+	[TenantId] ASC,
+	[AssociateId] ASC,
+	[Permiso] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE TABLE [dbo].[Associates](
+	[Id] [int] IDENTITY(1,1) NOT NULL,
+	[TenantId] [uniqueidentifier] NOT NULL,
+	[Nombre] [nvarchar](150) NOT NULL,
+	[Email] [nvarchar](256) NULL,
+	[Telefono] [nvarchar](30) NULL,
+	[Puesto] [nvarchar](120) NULL,
+	[Activo] [bit] NOT NULL,
+	[NotasInternas] [nvarchar](1000) NULL,
+	[AppUsuarioId] [nvarchar](450) NULL,
+	[CreatedAtUtc] [datetime2](7) NOT NULL,
+	[UpdatedAtUtc] [datetime2](7) NOT NULL,
+	[CreatedByUserId] [nvarchar](450) NULL,
+	[UpdatedByUserId] [nvarchar](450) NULL,
+ CONSTRAINT [PK_Associates] PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_Associates_TenantId] ON [dbo].[Associates]
+(
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_Associates_TenantId_Activo] ON [dbo].[Associates]
+(
+	[TenantId] ASC,
+	[Activo] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE NONCLUSTERED INDEX [IX_Associates_TenantId_Nombre] ON [dbo].[Associates]
+(
+	[TenantId] ASC,
+	[Nombre] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [UX_Associates_AppUsuarioId] ON [dbo].[Associates]
+(
+	[AppUsuarioId] ASC
+)
+WHERE ([AppUsuarioId] IS NOT NULL)
+WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [UX_Associates_TenantId_Email] ON [dbo].[Associates]
+(
+	[TenantId] ASC,
+	[Email] ASC
+)
+WHERE ([Email] IS NOT NULL)
+WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+ALTER TABLE [dbo].[Associates] ADD  DEFAULT (CONVERT([bit],(1))) FOR [Activo]
+GO
+CREATE TABLE [dbo].[AssociateTypes](
+	[Id] [int] IDENTITY(1,1) NOT NULL,
+	[TenantId] [uniqueidentifier] NOT NULL,
+	[AssociateId] [int] NOT NULL,
+	[Tipo] [int] NOT NULL,
+	[CreatedAtUtc] [datetime2](7) NOT NULL,
+ CONSTRAINT [PK_AssociateTypes] PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_AssociateTypes_AssociateId] ON [dbo].[AssociateTypes]
+(
+	[AssociateId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_AssociateTypes_TenantId] ON [dbo].[AssociateTypes]
+(
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [UX_AssociateTypes_Associate_Tipo] ON [dbo].[AssociateTypes]
+(
+	[TenantId] ASC,
+	[AssociateId] ASC,
+	[Tipo] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE TABLE [dbo].[BookingRequests](
+	[Id] [int] IDENTITY(1,1) NOT NULL,
+	[TenantId] [uniqueidentifier] NOT NULL,
+	[ServicioId] [int] NOT NULL,
+	[FuncionarioId] [int] NULL,
+	[ClienteId] [int] NULL,
+	[NombreCliente] [nvarchar](100) NOT NULL,
+	[TelefonoCliente] [nvarchar](30) NOT NULL,
+	[CorreoCliente] [nvarchar](256) NULL,
+	[FechaHoraInicioSolicitada] [datetime2](7) NOT NULL,
+	[FechaHoraFinCalculada] [datetime2](7) NOT NULL,
+	[DuracionMinutos] [int] NOT NULL,
+	[Estado] [nvarchar](30) NOT NULL,
+	[NotasCliente] [nvarchar](500) NULL,
+	[Origen] [nvarchar](40) NOT NULL,
+	[AceptaWhatsApp] [bit] NOT NULL,
+	[CreatedAtUtc] [datetime2](7) NOT NULL,
+	[ConfirmedAtUtc] [datetime2](7) NULL,
+	[ConfirmedByUserId] [nvarchar](450) NULL,
+	[RejectedAtUtc] [datetime2](7) NULL,
+	[RejectedByUserId] [nvarchar](450) NULL,
+	[RejectedReason] [nvarchar](300) NULL,
+	[ConvertedCitaId] [int] NULL,
+	[IpHash] [nvarchar](64) NULL,
+	[UserAgent] [nvarchar](400) NULL,
+	[PublicSubmissionToken] [nvarchar](64) NULL,
+	[FuncionarioAsignadoId] [int] NULL,
+ CONSTRAINT [PK_BookingRequests] PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_BookingRequests_ClienteId] ON [dbo].[BookingRequests]
+(
+	[ClienteId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_BookingRequests_ConvertedCitaId] ON [dbo].[BookingRequests]
+(
+	[ConvertedCitaId] ASC
+)
+WHERE ([ConvertedCitaId] IS NOT NULL)
+WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_BookingRequests_FuncionarioAsignadoId] ON [dbo].[BookingRequests]
+(
+	[FuncionarioAsignadoId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_BookingRequests_FuncionarioId] ON [dbo].[BookingRequests]
+(
+	[FuncionarioId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_BookingRequests_ServicioId] ON [dbo].[BookingRequests]
+(
+	[ServicioId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_BookingRequests_TenantId] ON [dbo].[BookingRequests]
+(
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE NONCLUSTERED INDEX [IX_BookingRequests_TenantId_Estado_Asignado_Fecha] ON [dbo].[BookingRequests]
+(
+	[TenantId] ASC,
+	[Estado] ASC,
+	[FuncionarioAsignadoId] ASC,
+	[FechaHoraInicioSolicitada] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE NONCLUSTERED INDEX [IX_BookingRequests_TenantId_Estado_Fecha] ON [dbo].[BookingRequests]
+(
+	[TenantId] ASC,
+	[Estado] ASC,
+	[FechaHoraInicioSolicitada] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE NONCLUSTERED INDEX [IX_BookingRequests_TenantId_Telefono_Estado] ON [dbo].[BookingRequests]
+(
+	[TenantId] ASC,
+	[TelefonoCliente] ASC,
+	[Estado] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [UX_BookingRequests_TenantId_SubmissionToken] ON [dbo].[BookingRequests]
+(
+	[TenantId] ASC,
+	[PublicSubmissionToken] ASC
+)
+WHERE ([PublicSubmissionToken] IS NOT NULL)
+WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE TABLE [dbo].[Categorias](
+	[Id] [int] IDENTITY(1,1) NOT NULL,
+	[Nombre] [nvarchar](150) NOT NULL,
+	[Detalle] [nvarchar](500) NOT NULL,
+	[Activo] [bit] NOT NULL,
+	[TenantId] [uniqueidentifier] NOT NULL,
+	[SystemCode] [nvarchar](40) NULL,
+PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_Categorias_TenantId] ON [dbo].[Categorias]
+(
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [IX_Categorias_TenantId_Nombre] ON [dbo].[Categorias]
+(
+	[TenantId] ASC,
+	[Nombre] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [UX_Categorias_TenantId_Nombre_PagoFuncionarios] ON [dbo].[Categorias]
+(
+	[TenantId] ASC,
+	[Nombre] ASC
+)
+WHERE ([Nombre]=N'Pago Funcionarios')
+WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [UX_Categorias_TenantId_SystemCode] ON [dbo].[Categorias]
+(
+	[TenantId] ASC,
+	[SystemCode] ASC
+)
+WHERE ([SystemCode] IS NOT NULL)
+WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+ALTER TABLE [dbo].[Categorias] ADD  DEFAULT ((1)) FOR [Activo]
+GO
+CREATE TABLE [dbo].[Citas](
+	[Id] [int] IDENTITY(1,1) NOT NULL,
+	[NombreCliente] [nvarchar](100) NULL,
+	[TelefonoCliente] [nvarchar](20) NULL,
+	[Servicio] [nvarchar](100) NULL,
+	[FechaHoraCita] [datetime] NOT NULL,
+	[Recordatorio24hEnviado] [bit] NOT NULL,
+	[Recordatorio3hEnviado] [bit] NOT NULL,
+	[ConfirmacionEnviada] [bit] NOT NULL,
+	[FuncionarioId] [int] NULL,
+	[ServicioId] [int] NULL,
+	[VisitaProcesada] [bit] NOT NULL,
+	[Tipo] [nvarchar](50) NOT NULL,
+	[DuracionMinutos] [int] NULL,
+	[TenantId] [uniqueidentifier] NOT NULL,
+	[CanceladaPorWhatsAppUtc] [datetime2](7) NULL,
+	[ConfirmacionWhatsAppEnviadaUtc] [datetime2](7) NULL,
+	[ConfirmadaPorWhatsAppUtc] [datetime2](7) NULL,
+	[EstadoConfirmacionWhatsApp] [nvarchar](30) NOT NULL,
+	[RecordatorioWhatsAppTresHorasEnviadoUtc] [datetime2](7) NULL,
+	[UltimaRespuestaWhatsAppUtc] [datetime2](7) NULL,
+	[UltimoMetaMessageId] [nvarchar](128) NULL,
+	[ClienteId] [int] NULL,
+	[WhatsAppConsentAtCreation] [bit] NOT NULL,
+	[WhatsAppConsentCapturedAtUtc] [datetime2](7) NULL,
+	[WhatsAppConsentSource] [nvarchar](80) NULL,
+	[ServicioNombrePersonalizado] [nvarchar](100) NULL,
+PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_Citas_ClienteId] ON [dbo].[Citas]
+(
+	[ClienteId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_Citas_FuncionarioId] ON [dbo].[Citas]
+(
+	[FuncionarioId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_Citas_TenantId] ON [dbo].[Citas]
+(
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_Citas_TenantId_ClienteId_FechaHoraCita] ON [dbo].[Citas]
+(
+	[TenantId] ASC,
+	[ClienteId] ASC,
+	[FechaHoraCita] DESC
+)
+WHERE ([ClienteId] IS NOT NULL)
+WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_Citas_TenantId_FechaHoraCita] ON [dbo].[Citas]
+(
+	[TenantId] ASC,
+	[FechaHoraCita] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_Citas_TenantId_FuncionarioId_FechaHoraCita] ON [dbo].[Citas]
+(
+	[TenantId] ASC,
+	[FuncionarioId] ASC,
+	[FechaHoraCita] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+ALTER TABLE [dbo].[Citas] ADD  DEFAULT ((0)) FOR [Recordatorio24hEnviado]
+GO
+ALTER TABLE [dbo].[Citas] ADD  DEFAULT ((0)) FOR [Recordatorio3hEnviado]
+GO
+ALTER TABLE [dbo].[Citas] ADD  DEFAULT ((0)) FOR [ConfirmacionEnviada]
+GO
+ALTER TABLE [dbo].[Citas] ADD  CONSTRAINT [DF_Citas_VisitaProcesada]  DEFAULT ((0)) FOR [VisitaProcesada]
+GO
+ALTER TABLE [dbo].[Citas] ADD  CONSTRAINT [DF_Citas_Tipo]  DEFAULT ('CITA') FOR [Tipo]
+GO
+ALTER TABLE [dbo].[Citas] ADD  DEFAULT (N'Pendiente') FOR [EstadoConfirmacionWhatsApp]
+GO
+ALTER TABLE [dbo].[Citas] ADD  DEFAULT (CONVERT([bit],(0))) FOR [WhatsAppConsentAtCreation]
+GO
+CREATE TABLE [dbo].[Clientes](
+	[NumeroTelefono] [nvarchar](50) NOT NULL,
+	[CorreoElectronico] [nvarchar](256) NULL,
+	[Nombre] [nvarchar](150) NOT NULL,
+	[FrecuenciaVisita] [int] NOT NULL,
+	[FechaUltimaVisita] [date] NULL,
+	[FechaCumpleaños] [date] NULL,
+	[DescripcionServiciosRealizados] [varchar](max) NULL,
+	[TenantId] [uniqueidentifier] NOT NULL,
+	[Id] [int] IDENTITY(1,1) NOT NULL,
+	[AceptaMensajesWhatsApp] [bit] NOT NULL,
+	[WhatsAppConsentCapturedByUserId] [nvarchar](450) NULL,
+	[WhatsAppConsentSource] [nvarchar](80) NULL,
+	[WhatsAppConsentTextVersion] [nvarchar](40) NULL,
+	[WhatsAppConsentUpdatedAtUtc] [datetime2](7) NULL,
+ CONSTRAINT [PK_Clientes] PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_Clientes_TenantId] ON [dbo].[Clientes]
+(
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE NONCLUSTERED INDEX [IX_Clientes_TenantId_Nombre] ON [dbo].[Clientes]
+(
+	[TenantId] ASC,
+	[Nombre] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [IX_Clientes_TenantId_NumeroTelefono] ON [dbo].[Clientes]
+(
+	[TenantId] ASC,
+	[NumeroTelefono] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+ALTER TABLE [dbo].[Clientes] ADD  DEFAULT (CONVERT([bit],(0))) FOR [AceptaMensajesWhatsApp]
+GO
+CREATE TABLE [dbo].[ClienteServiciosRealizados](
+	[Id] [int] IDENTITY(1,1) NOT NULL,
+	[TenantId] [uniqueidentifier] NOT NULL,
+	[ClienteId] [int] NOT NULL,
+	[FuncionarioId] [int] NULL,
+	[ServicioId] [int] NULL,
+	[CobroId] [int] NULL,
+	[CitaId] [int] NULL,
+	[FechaHora] [datetime2](7) NOT NULL,
+	[Monto] [decimal](18, 2) NULL,
+	[Notas] [nvarchar](500) NULL,
+	[Origen] [nvarchar](30) NOT NULL,
+	[CreadoEn] [datetime2](7) NOT NULL,
+ CONSTRAINT [PK_ClienteServiciosRealizados] PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_ClienteServiciosRealizados_CitaId] ON [dbo].[ClienteServiciosRealizados]
+(
+	[CitaId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_ClienteServiciosRealizados_ClienteId] ON [dbo].[ClienteServiciosRealizados]
+(
+	[ClienteId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_ClienteServiciosRealizados_FuncionarioId] ON [dbo].[ClienteServiciosRealizados]
+(
+	[FuncionarioId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_ClienteServiciosRealizados_ServicioId] ON [dbo].[ClienteServiciosRealizados]
+(
+	[ServicioId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_ClienteServiciosRealizados_TenantId] ON [dbo].[ClienteServiciosRealizados]
+(
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_ClienteServiciosRealizados_TenantId_ClienteId_FechaHora] ON [dbo].[ClienteServiciosRealizados]
+(
+	[TenantId] ASC,
+	[ClienteId] ASC,
+	[FechaHora] DESC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [UX_ClienteServiciosRealizados_CobroId] ON [dbo].[ClienteServiciosRealizados]
+(
+	[CobroId] ASC
+)
+WHERE ([CobroId] IS NOT NULL)
+WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE TABLE [dbo].[ClienteVisitas](
+	[Id] [int] IDENTITY(1,1) NOT NULL,
+	[NumeroTelefono] [nvarchar](50) NOT NULL,
+	[FechaVisita] [date] NOT NULL,
+	[TenantId] [uniqueidentifier] NOT NULL,
+	[ClienteId] [int] NOT NULL,
+PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_ClienteVisitas_ClienteId] ON [dbo].[ClienteVisitas]
+(
+	[ClienteId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_ClienteVisitas_TenantId] ON [dbo].[ClienteVisitas]
+(
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_ClienteVisitas_TenantId_ClienteId_FechaVisita] ON [dbo].[ClienteVisitas]
+(
+	[TenantId] ASC,
+	[ClienteId] ASC,
+	[FechaVisita] DESC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE TABLE [dbo].[Cobros](
+	[IdCobro] [int] IDENTITY(1,1) NOT NULL,
+	[FechaCobro] [datetime] NOT NULL,
+	[NombreCliente] [nvarchar](150) NOT NULL,
+	[FuncionarioId] [int] NOT NULL,
+	[ServicioId] [int] NULL,
+	[Monto] [decimal](10, 2) NOT NULL,
+	[MetodoPago] [nvarchar](20) NOT NULL,
+	[Observaciones] [nvarchar](300) NULL,
+	[ProductoId] [int] NULL,
+	[TenantId] [uniqueidentifier] NOT NULL,
+	[ClienteId] [int] NULL,
+	[CitaId] [int] NULL,
+	[ServicioNombrePersonalizado] [nvarchar](max) NULL,
+	[AplicaIvaSnapshot] [bit] NULL,
+	[DetalleSnapshot] [nvarchar](200) NULL,
+	[PrecioIncluyeIvaSnapshot] [bit] NULL,
+	[TarifaIvaSnapshot] [decimal](5, 2) NULL,
+	[ComisionCalculadaSobreSnapshot] [int] NULL,
+	[ModalidadIvaColaboradorSnapshot] [int] NULL,
+	[PorcentajeProductoSnapshot] [decimal](5, 2) NULL,
+	[PorcentajeServicioSnapshot] [decimal](5, 2) NULL,
+	[TarifaIvaColaboradorSnapshot] [decimal](5, 2) NULL,
+	[TipoRelacionColaboradorSnapshot] [int] NULL,
+PRIMARY KEY CLUSTERED
+(
+	[IdCobro] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_Cobros_CitaId] ON [dbo].[Cobros]
+(
+	[CitaId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_Cobros_ClienteId] ON [dbo].[Cobros]
+(
+	[ClienteId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_Cobros_TenantId] ON [dbo].[Cobros]
+(
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_Cobros_TenantId_ClienteId] ON [dbo].[Cobros]
+(
+	[TenantId] ASC,
+	[ClienteId] ASC
+)
+WHERE ([ClienteId] IS NOT NULL)
+WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_Cobros_TenantId_FechaCobro] ON [dbo].[Cobros]
+(
+	[TenantId] ASC,
+	[FechaCobro] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_Cobros_TenantId_FuncionarioId_FechaCobro] ON [dbo].[Cobros]
+(
+	[TenantId] ASC,
+	[FuncionarioId] ASC,
+	[FechaCobro] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [UX_Cobros_TenantId_CitaId] ON [dbo].[Cobros]
+(
+	[TenantId] ASC,
+	[CitaId] ASC
+)
+WHERE ([CitaId] IS NOT NULL)
+WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+ALTER TABLE [dbo].[Cobros] ADD  DEFAULT (getdate()) FOR [FechaCobro]
+GO
+ALTER TABLE [dbo].[Cobros]  WITH CHECK ADD  CONSTRAINT [CK_Cobros_SnapshotFiscal] CHECK  (([AplicaIvaSnapshot] IS NULL AND [TarifaIvaSnapshot] IS NULL AND [PrecioIncluyeIvaSnapshot] IS NULL OR [AplicaIvaSnapshot] IS NOT NULL AND [TarifaIvaSnapshot] IS NOT NULL AND [PrecioIncluyeIvaSnapshot] IS NOT NULL))
+GO
+ALTER TABLE [dbo].[Cobros] CHECK CONSTRAINT [CK_Cobros_SnapshotFiscal]
+GO
+ALTER TABLE [dbo].[Cobros]  WITH CHECK ADD  CONSTRAINT [CK_Cobros_SnapshotRemuneracion] CHECK  (([PorcentajeServicioSnapshot] IS NULL AND [PorcentajeProductoSnapshot] IS NULL AND [ComisionCalculadaSobreSnapshot] IS NULL AND [TipoRelacionColaboradorSnapshot] IS NULL AND [ModalidadIvaColaboradorSnapshot] IS NULL AND [TarifaIvaColaboradorSnapshot] IS NULL OR [PorcentajeServicioSnapshot] IS NOT NULL AND [PorcentajeProductoSnapshot] IS NOT NULL AND [ComisionCalculadaSobreSnapshot] IS NOT NULL AND [TipoRelacionColaboradorSnapshot] IS NOT NULL AND [ModalidadIvaColaboradorSnapshot] IS NOT NULL AND [TarifaIvaColaboradorSnapshot] IS NOT NULL))
+GO
+ALTER TABLE [dbo].[Cobros] CHECK CONSTRAINT [CK_Cobros_SnapshotRemuneracion]
+GO
+CREATE TABLE [dbo].[ComprobanteCobroLineas](
+	[Id] [int] IDENTITY(1,1) NOT NULL,
+	[TenantId] [uniqueidentifier] NOT NULL,
+	[ComprobanteCobroId] [int] NOT NULL,
+	[Descripcion] [nvarchar](250) NOT NULL,
+	[TipoLinea] [nvarchar](20) NOT NULL,
+	[Cantidad] [decimal](18, 2) NOT NULL,
+	[PrecioUnitario] [decimal](18, 2) NOT NULL,
+	[Subtotal] [decimal](18, 2) NOT NULL,
+	[Impuesto] [decimal](18, 2) NOT NULL,
+	[Total] [decimal](18, 2) NOT NULL,
+	[ServicioId] [int] NULL,
+	[ProductoId] [int] NULL,
+ CONSTRAINT [PK_ComprobanteCobroLineas] PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_ComprobanteCobroLineas_ComprobanteCobroId] ON [dbo].[ComprobanteCobroLineas]
+(
+	[ComprobanteCobroId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_ComprobanteCobroLineas_TenantId] ON [dbo].[ComprobanteCobroLineas]
+(
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_ComprobanteCobroLineas_TenantId_ComprobanteCobroId] ON [dbo].[ComprobanteCobroLineas]
+(
+	[TenantId] ASC,
+	[ComprobanteCobroId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE TABLE [dbo].[ComprobanteCobroSecuencias](
+	[TenantId] [uniqueidentifier] NOT NULL,
+	[UltimoNumero] [bigint] NOT NULL,
+ CONSTRAINT [PK_ComprobanteCobroSecuencias] PRIMARY KEY CLUSTERED
+(
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_ComprobanteCobroSecuencias_TenantId] ON [dbo].[ComprobanteCobroSecuencias]
+(
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE TABLE [dbo].[ComprobantesCobro](
+	[Id] [int] IDENTITY(1,1) NOT NULL,
+	[TenantId] [uniqueidentifier] NOT NULL,
+	[CobroId] [int] NOT NULL,
+	[CitaId] [int] NULL,
+	[ClienteId] [int] NULL,
+	[FuncionarioId] [int] NULL,
+	[NumeroInterno] [nvarchar](40) NOT NULL,
+	[TipoComprobante] [nvarchar](40) NOT NULL,
+	[EstadoEnvio] [nvarchar](20) NOT NULL,
+	[TokenPublico] [nvarchar](64) NOT NULL,
+	[EmailDestino] [nvarchar](256) NOT NULL,
+	[EmailDestinoNormalizado] [nvarchar](256) NOT NULL,
+	[NombreClienteSnapshot] [nvarchar](150) NOT NULL,
+	[TelefonoClienteSnapshot] [nvarchar](50) NULL,
+	[NombreNegocioSnapshot] [nvarchar](150) NOT NULL,
+	[CedulaNegocioSnapshot] [nvarchar](50) NULL,
+	[TelefonoNegocioSnapshot] [nvarchar](50) NULL,
+	[EmailNegocioSnapshot] [nvarchar](256) NULL,
+	[DireccionNegocioSnapshot] [nvarchar](300) NULL,
+	[FechaEmision] [datetime2](7) NOT NULL,
+	[Moneda] [nvarchar](3) NOT NULL,
+	[Subtotal] [decimal](18, 2) NOT NULL,
+	[Descuento] [decimal](18, 2) NOT NULL,
+	[Impuesto] [decimal](18, 2) NOT NULL,
+	[Total] [decimal](18, 2) NOT NULL,
+	[MetodoPago] [nvarchar](20) NOT NULL,
+	[Observacion] [nvarchar](500) NULL,
+	[ResendEmailId] [nvarchar](80) NULL,
+	[ErrorEnvio] [nvarchar](500) NULL,
+	[IntentosEnvio] [int] NOT NULL,
+	[CreatedAt] [datetime2](7) NOT NULL,
+	[CreatedByUserId] [nvarchar](450) NULL,
+	[SentAt] [datetime2](7) NULL,
+	[HaciendaClave] [nvarchar](60) NULL,
+	[HaciendaConsecutivo] [nvarchar](40) NULL,
+	[HaciendaXmlPath] [nvarchar](400) NULL,
+	[HaciendaEstado] [nvarchar](40) NULL,
+	[HaciendaRespuesta] [nvarchar](max) NULL,
+	[EsFiscal] [bit] NOT NULL,
+ CONSTRAINT [PK_ComprobantesCobro] PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_ComprobantesCobro_ClienteId] ON [dbo].[ComprobantesCobro]
+(
+	[ClienteId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_ComprobantesCobro_CobroId] ON [dbo].[ComprobantesCobro]
+(
+	[CobroId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_ComprobantesCobro_FuncionarioId] ON [dbo].[ComprobantesCobro]
+(
+	[FuncionarioId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_ComprobantesCobro_TenantId] ON [dbo].[ComprobantesCobro]
+(
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_ComprobantesCobro_TenantId_ClienteId] ON [dbo].[ComprobantesCobro]
+(
+	[TenantId] ASC,
+	[ClienteId] ASC
+)
+WHERE ([ClienteId] IS NOT NULL)
+WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE NONCLUSTERED INDEX [IX_ComprobantesCobro_TenantId_EstadoEnvio] ON [dbo].[ComprobantesCobro]
+(
+	[TenantId] ASC,
+	[EstadoEnvio] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [UX_ComprobantesCobro_TenantId_CobroId] ON [dbo].[ComprobantesCobro]
+(
+	[TenantId] ASC,
+	[CobroId] ASC
+)
+WHERE ([EstadoEnvio]<>'Cancelled')
+WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [UX_ComprobantesCobro_TenantId_NumeroInterno] ON [dbo].[ComprobantesCobro]
+(
+	[TenantId] ASC,
+	[NumeroInterno] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [UX_ComprobantesCobro_TokenPublico] ON [dbo].[ComprobantesCobro]
+(
+	[TokenPublico] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE TABLE [dbo].[ContractAcceptanceRecords](
+	[Id] [uniqueidentifier] NOT NULL,
+	[UserId] [nvarchar](450) NOT NULL,
+	[ContractDocumentId] [uniqueidentifier] NOT NULL,
+	[ContractVersion] [nvarchar](50) NOT NULL,
+	[AcceptedContentHash] [nvarchar](64) NOT NULL,
+	[AcceptanceSource] [nvarchar](40) NOT NULL,
+	[IpAddress] [nvarchar](64) NULL,
+	[UserAgent] [nvarchar](2048) NULL,
+	[AcceptedAtUtc] [datetime2](7) NOT NULL,
+ CONSTRAINT [PK_ContractAcceptanceRecords] PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_ContractAcceptanceRecords_ContractDocumentId] ON [dbo].[ContractAcceptanceRecords]
+(
+	[ContractDocumentId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE NONCLUSTERED INDEX [IX_ContractAcceptanceRecords_UserId_ContractDocumentId_AcceptedAtUtc] ON [dbo].[ContractAcceptanceRecords]
+(
+	[UserId] ASC,
+	[ContractDocumentId] ASC,
+	[AcceptedAtUtc] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE TABLE [dbo].[ContractDocuments](
+	[Id] [uniqueidentifier] NOT NULL,
+	[Title] [nvarchar](200) NOT NULL,
+	[VersionNumber] [nvarchar](50) NOT NULL,
+	[ContentHtml] [nvarchar](max) NOT NULL,
+	[ContentHash] [nvarchar](64) NOT NULL,
+	[IsActive] [bit] NOT NULL,
+	[EffectiveFromUtc] [datetime2](7) NOT NULL,
+	[CreatedAtUtc] [datetime2](7) NOT NULL,
+	[UpdatedAtUtc] [datetime2](7) NOT NULL,
+ CONSTRAINT [PK_ContractDocuments] PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [IX_ContractDocuments_IsActive] ON [dbo].[ContractDocuments]
+(
+	[IsActive] ASC
+)
+WHERE ([IsActive]=(1))
+WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [IX_ContractDocuments_VersionNumber] ON [dbo].[ContractDocuments]
+(
+	[VersionNumber] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE TABLE [dbo].[DetalleCobroProductos](
+	[IdDetalle] [int] IDENTITY(1,1) NOT NULL,
+	[CobroId] [int] NOT NULL,
+	[ProductoId] [int] NOT NULL,
+	[Cantidad] [int] NOT NULL,
+	[PrecioUnitario] [decimal](10, 2) NOT NULL,
+	[Subtotal] [decimal](10, 2) NOT NULL,
+	[TenantId] [uniqueidentifier] NOT NULL,
+PRIMARY KEY CLUSTERED
+(
+	[IdDetalle] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_DetalleCobroProductos_CobroId] ON [dbo].[DetalleCobroProductos]
+(
+	[CobroId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_DetalleCobroProductos_ProductoId] ON [dbo].[DetalleCobroProductos]
+(
+	[ProductoId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_DetalleCobroProductos_TenantId] ON [dbo].[DetalleCobroProductos]
+(
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_DetalleCobroProductos_TenantId_CobroId] ON [dbo].[DetalleCobroProductos]
+(
+	[TenantId] ASC,
+	[CobroId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE TABLE [dbo].[Egresos](
+	[IdEgreso] [int] IDENTITY(1,1) NOT NULL,
+	[FechaEgreso] [datetime] NOT NULL,
+	[Detalle] [nvarchar](200) NOT NULL,
+	[CategoriaId] [int] NOT NULL,
+	[Monto] [decimal](10, 2) NOT NULL,
+	[MetodoPago] [nvarchar](50) NOT NULL,
+	[TenantId] [uniqueidentifier] NOT NULL,
+PRIMARY KEY CLUSTERED
+(
+	[IdEgreso] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_Egresos_TenantId] ON [dbo].[Egresos]
+(
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_Egresos_TenantId_CategoriaId_FechaEgreso] ON [dbo].[Egresos]
+(
+	[TenantId] ASC,
+	[CategoriaId] ASC,
+	[FechaEgreso] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_Egresos_TenantId_FechaEgreso] ON [dbo].[Egresos]
+(
+	[TenantId] ASC,
+	[FechaEgreso] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+ALTER TABLE [dbo].[Egresos] ADD  DEFAULT (getdate()) FOR [FechaEgreso]
+GO
+CREATE TABLE [dbo].[EventosPago](
+	[Id] [uniqueidentifier] NOT NULL,
+	[ProveedorEventId] [nvarchar](100) NULL,
+	[Tipo] [nvarchar](100) NULL,
+	[Procesado] [bit] NULL,
+	[Payload] [nvarchar](max) NULL,
+	[Proveedor] [int] NOT NULL,
+	[TenantId] [uniqueidentifier] NULL,
+	[PlanId] [uniqueidentifier] NULL,
+	[PagoSuscripcionId] [uniqueidentifier] NULL,
+	[ReferenciaExterna] [nvarchar](100) NULL,
+	[ProviderTransactionId] [nvarchar](100) NULL,
+	[CorrelationId] [nvarchar](100) NULL,
+	[EstadoProcesamiento] [nvarchar](50) NOT NULL,
+	[FechaRecepcionUtc] [datetime2](7) NOT NULL,
+	[FechaProcesamientoUtc] [datetime2](7) NULL,
+	[Error] [nvarchar](500) NULL,
+	[Moneda] [nvarchar](10) NULL,
+	[Monto] [decimal](18, 2) NULL,
+	[ProviderSubscriberId] [nvarchar](100) NULL,
+	[TilopayRecurringPlanId] [int] NULL,
+PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+UNIQUE NONCLUSTERED
+(
+	[ProveedorEventId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [IX_EventosPago_Proveedor_ProveedorEventId] ON [dbo].[EventosPago]
+(
+	[Proveedor] ASC,
+	[ProveedorEventId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE NONCLUSTERED INDEX [IX_EventosPago_Proveedor_ReferenciaExterna] ON [dbo].[EventosPago]
+(
+	[Proveedor] ASC,
+	[ReferenciaExterna] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_EventosPago_TenantId] ON [dbo].[EventosPago]
+(
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [UX_StripeEventId] ON [dbo].[EventosPago]
+(
+	[ProveedorEventId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+ALTER TABLE [dbo].[EventosPago] ADD  DEFAULT (newid()) FOR [Id]
+GO
+ALTER TABLE [dbo].[EventosPago] ADD  DEFAULT ((0)) FOR [Procesado]
+GO
+ALTER TABLE [dbo].[EventosPago] ADD  CONSTRAINT [DF_EventosPago_Proveedor]  DEFAULT ((1)) FOR [Proveedor]
+GO
+ALTER TABLE [dbo].[EventosPago] ADD  CONSTRAINT [DF_EventosPago_EstadoProcesamiento]  DEFAULT ('Pendiente') FOR [EstadoProcesamiento]
+GO
+ALTER TABLE [dbo].[EventosPago] ADD  CONSTRAINT [DF_EventosPago_FechaRecepcionUtc]  DEFAULT (sysutcdatetime()) FOR [FechaRecepcionUtc]
+GO
+CREATE TABLE [dbo].[Facturas](
+	[Id] [uniqueidentifier] NOT NULL,
+	[TenantId] [uniqueidentifier] NOT NULL,
+	[ProviderInvoiceId] [nvarchar](100) NULL,
+	[Monto] [decimal](10, 2) NULL,
+	[Moneda] [nvarchar](10) NOT NULL,
+	[Estado] [nvarchar](50) NOT NULL,
+	[Fecha] [datetime2](7) NULL,
+	[SuscripcionId] [uniqueidentifier] NULL,
+	[PagoSuscripcionId] [uniqueidentifier] NULL,
+	[Proveedor] [int] NOT NULL,
+	[ProviderTransactionId] [nvarchar](100) NULL,
+	[ProviderReference] [nvarchar](100) NULL,
+PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_Facturas_PagoSuscripcionId] ON [dbo].[Facturas]
+(
+	[PagoSuscripcionId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE NONCLUSTERED INDEX [IX_Facturas_Proveedor_ProviderReference_Estado] ON [dbo].[Facturas]
+(
+	[Proveedor] ASC,
+	[ProviderReference] ASC,
+	[Estado] ASC
+)
+WHERE ([ProviderReference] IS NOT NULL)
+WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [IX_Facturas_Proveedor_ProviderTransactionId] ON [dbo].[Facturas]
+(
+	[Proveedor] ASC,
+	[ProviderTransactionId] ASC
+)
+WHERE ([ProviderTransactionId] IS NOT NULL)
+WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_Facturas_SuscripcionId] ON [dbo].[Facturas]
+(
+	[SuscripcionId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_Facturas_TenantId] ON [dbo].[Facturas]
+(
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [UX_Factura_StripeInvoiceId] ON [dbo].[Facturas]
+(
+	[ProviderInvoiceId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+ALTER TABLE [dbo].[Facturas] ADD  DEFAULT (newid()) FOR [Id]
+GO
+ALTER TABLE [dbo].[Facturas] ADD  CONSTRAINT [DF_Facturas_Proveedor]  DEFAULT ((1)) FOR [Proveedor]
+GO
+CREATE TABLE [dbo].[Features](
+	[Id] [uniqueidentifier] NOT NULL,
+	[Codigo] [nvarchar](100) NOT NULL,
+	[Nombre] [nvarchar](150) NOT NULL,
+PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
+UNIQUE NONCLUSTERED
+(
+	[Codigo] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+ALTER TABLE [dbo].[Features] ADD  DEFAULT (newid()) FOR [Id]
+GO
+CREATE TABLE [dbo].[FuncionarioPortalPermisos](
+	[Id] [int] IDENTITY(1,1) NOT NULL,
+	[TenantId] [uniqueidentifier] NOT NULL,
+	[FuncionarioId] [int] NOT NULL,
+	[Permiso] [nvarchar](60) NOT NULL,
+	[Permitido] [bit] NOT NULL,
+	[CreatedAtUtc] [datetime2](7) NOT NULL,
+	[UpdatedAtUtc] [datetime2](7) NOT NULL,
+ CONSTRAINT [PK_FuncionarioPortalPermisos] PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_FuncionarioPortalPermisos_FuncionarioId] ON [dbo].[FuncionarioPortalPermisos]
+(
+	[FuncionarioId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_FuncionarioPortalPermisos_TenantId] ON [dbo].[FuncionarioPortalPermisos]
+(
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [UX_FuncionarioPortalPermisos_Tenant_Funcionario_Permiso] ON [dbo].[FuncionarioPortalPermisos]
+(
+	[TenantId] ASC,
+	[FuncionarioId] ASC,
+	[Permiso] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE TABLE [dbo].[Funcionarios](
+	[IdFuncionario] [int] IDENTITY(1,1) NOT NULL,
+	[Nombre] [nvarchar](120) NOT NULL,
+	[ColorCalendario] [nvarchar](20) NOT NULL,
+	[PorcentajeGanancia] [decimal](5, 2) NOT NULL,
+	[FechaIngreso] [date] NOT NULL,
+	[Telefono] [nvarchar](25) NULL,
+	[Email] [nvarchar](120) NULL,
+	[Observaciones] [nvarchar](500) NULL,
+	[Activo] [bit] NOT NULL,
+	[FechaCreacion] [datetime] NULL,
+	[FechaModificacion] [datetime] NULL,
+	[IdPuesto] [int] NOT NULL,
+	[PorcentajeProducto] [decimal](5, 2) NOT NULL,
+	[TenantId] [uniqueidentifier] NOT NULL,
+	[RebajarImpuestosAntesDeComision] [bit] NOT NULL,
+	[AppUsuarioId] [nvarchar](450) NULL,
+	[ColaboradorFacturaIva] [bit] NOT NULL,
+	[ComisionCalculadaSobre] [int] NOT NULL,
+	[RequiereFacturaAntesDePagar] [bit] NOT NULL,
+	[TarifaIvaFacturaColaborador] [decimal](18, 2) NOT NULL,
+	[TipoRelacionColaborador] [int] NOT NULL,
+	[FotoActualizadaUtc] [datetime2](7) NULL,
+	[FotoStoragePath] [nvarchar](400) NULL,
+	[FotoUrl] [nvarchar](400) NULL,
+	[MostrarFotoEnReservas] [bit] NOT NULL,
+	[ModalidadIvaColaborador] [int] NOT NULL,
+	[DescripcionPublica] [nvarchar](280) NULL,
+PRIMARY KEY CLUSTERED
+(
+	[IdFuncionario] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_Funcionarios_Activo] ON [dbo].[Funcionarios]
+(
+	[Activo] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_Funcionarios_IdPuesto] ON [dbo].[Funcionarios]
+(
+	[IdPuesto] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_Funcionarios_TenantId] ON [dbo].[Funcionarios]
+(
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE NONCLUSTERED INDEX [IX_Funcionarios_TenantId_Nombre] ON [dbo].[Funcionarios]
+(
+	[TenantId] ASC,
+	[Nombre] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [UX_Funcionarios_AppUsuarioId] ON [dbo].[Funcionarios]
+(
+	[AppUsuarioId] ASC
+)
+WHERE ([AppUsuarioId] IS NOT NULL)
+WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+ALTER TABLE [dbo].[Funcionarios] ADD  DEFAULT ((50)) FOR [PorcentajeGanancia]
+GO
+ALTER TABLE [dbo].[Funcionarios] ADD  DEFAULT (getdate()) FOR [FechaIngreso]
+GO
+ALTER TABLE [dbo].[Funcionarios] ADD  DEFAULT ((1)) FOR [Activo]
+GO
+ALTER TABLE [dbo].[Funcionarios] ADD  DEFAULT (getdate()) FOR [FechaCreacion]
+GO
+ALTER TABLE [dbo].[Funcionarios] ADD  DEFAULT ((0)) FOR [PorcentajeProducto]
+GO
+ALTER TABLE [dbo].[Funcionarios] ADD  DEFAULT (CONVERT([bit],(1))) FOR [RebajarImpuestosAntesDeComision]
+GO
+ALTER TABLE [dbo].[Funcionarios] ADD  DEFAULT (CONVERT([bit],(0))) FOR [ColaboradorFacturaIva]
+GO
+ALTER TABLE [dbo].[Funcionarios] ADD  DEFAULT ((0)) FOR [ComisionCalculadaSobre]
+GO
+ALTER TABLE [dbo].[Funcionarios] ADD  DEFAULT (CONVERT([bit],(0))) FOR [RequiereFacturaAntesDePagar]
+GO
+ALTER TABLE [dbo].[Funcionarios] ADD  DEFAULT ((13.0)) FOR [TarifaIvaFacturaColaborador]
+GO
+ALTER TABLE [dbo].[Funcionarios] ADD  DEFAULT ((0)) FOR [TipoRelacionColaborador]
+GO
+ALTER TABLE [dbo].[Funcionarios] ADD  DEFAULT (CONVERT([bit],(1))) FOR [MostrarFotoEnReservas]
+GO
+ALTER TABLE [dbo].[Funcionarios] ADD  DEFAULT ((0)) FOR [ModalidadIvaColaborador]
+GO
+CREATE TABLE [dbo].[HistorialSuscripciones](
+	[Id] [uniqueidentifier] NOT NULL,
+	[SuscripcionId] [uniqueidentifier] NULL,
+	[PlanIdAnterior] [uniqueidentifier] NULL,
+	[PlanIdNuevo] [uniqueidentifier] NULL,
+	[FechaCambio] [datetime2](7) NULL,
+	[Proveedor] [int] NULL,
+	[Motivo] [nvarchar](250) NULL,
+PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_HistorialSuscripciones_SuscripcionId] ON [dbo].[HistorialSuscripciones]
+(
+	[SuscripcionId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+ALTER TABLE [dbo].[HistorialSuscripciones] ADD  DEFAULT (newid()) FOR [Id]
+GO
+ALTER TABLE [dbo].[HistorialSuscripciones] ADD  DEFAULT (getdate()) FOR [FechaCambio]
+GO
+CREATE TABLE [dbo].[InvestorAgreements](
+	[Id] [int] IDENTITY(1,1) NOT NULL,
+	[TenantId] [uniqueidentifier] NOT NULL,
+	[InvestorId] [int] NOT NULL,
+	[ParticipacionPorcentaje] [decimal](9, 4) NOT NULL,
+	[EffectiveFrom] [date] NOT NULL,
+	[EffectiveTo] [date] NULL,
+	[Frecuencia] [int] NOT NULL,
+	[TratamientoPerdidas] [int] NOT NULL,
+	[EnvioAutomatico] [bit] NOT NULL,
+	[Activo] [bit] NOT NULL,
+	[Notas] [nvarchar](1000) NULL,
+	[CreatedAtUtc] [datetime2](7) NOT NULL,
+	[UpdatedAtUtc] [datetime2](7) NOT NULL,
+	[CreatedByUserId] [nvarchar](450) NULL,
+	[UpdatedByUserId] [nvarchar](450) NULL,
+	[DiaCorte] [int] NULL,
+ CONSTRAINT [PK_InvestorAgreements] PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_InvestorAgreements_InvestorId] ON [dbo].[InvestorAgreements]
+(
+	[InvestorId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_InvestorAgreements_TenantId] ON [dbo].[InvestorAgreements]
+(
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_InvestorAgreements_TenantId_Activo_EffectiveFrom] ON [dbo].[InvestorAgreements]
+(
+	[TenantId] ASC,
+	[Activo] ASC,
+	[EffectiveFrom] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_InvestorAgreements_TenantId_EffectiveFrom] ON [dbo].[InvestorAgreements]
+(
+	[TenantId] ASC,
+	[EffectiveFrom] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_InvestorAgreements_TenantId_InvestorId] ON [dbo].[InvestorAgreements]
+(
+	[TenantId] ASC,
+	[InvestorId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+ALTER TABLE [dbo].[InvestorAgreements] ADD  DEFAULT (CONVERT([bit],(1))) FOR [Activo]
+GO
+ALTER TABLE [dbo].[InvestorAgreements]  WITH CHECK ADD  CONSTRAINT [CK_InvestorAgreements_DiaCorte] CHECK  (([DiaCorte] IS NULL OR [DiaCorte]>=(1) AND [DiaCorte]<=(31)))
+GO
+ALTER TABLE [dbo].[InvestorAgreements] CHECK CONSTRAINT [CK_InvestorAgreements_DiaCorte]
+GO
+CREATE TABLE [dbo].[InvestorDistributionPayments](
+	[Id] [int] IDENTITY(1,1) NOT NULL,
+	[TenantId] [uniqueidentifier] NOT NULL,
+	[StatementId] [int] NOT NULL,
+	[Fecha] [date] NOT NULL,
+	[Monto] [decimal](18, 2) NOT NULL,
+	[MetodoPago] [nvarchar](30) NOT NULL,
+	[Referencia] [nvarchar](120) NULL,
+	[Notas] [nvarchar](500) NULL,
+	[EsReversion] [bit] NOT NULL,
+	[Motivo] [nvarchar](300) NULL,
+	[RegistradoPorUserId] [nvarchar](450) NULL,
+	[RegistradoPorEmail] [nvarchar](256) NULL,
+	[CreatedAtUtc] [datetime2](7) NOT NULL,
+ CONSTRAINT [PK_InvestorDistributionPayments] PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_InvestorDistributionPayments_StatementId] ON [dbo].[InvestorDistributionPayments]
+(
+	[StatementId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_InvestorDistributionPayments_TenantId] ON [dbo].[InvestorDistributionPayments]
+(
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_InvestorDistributionPayments_TenantId_Fecha] ON [dbo].[InvestorDistributionPayments]
+(
+	[TenantId] ASC,
+	[Fecha] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_InvestorDistributionPayments_TenantId_StatementId] ON [dbo].[InvestorDistributionPayments]
+(
+	[TenantId] ASC,
+	[StatementId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE TABLE [dbo].[InvestorPolicyExpenseCategories](
+	[Id] [int] IDENTITY(1,1) NOT NULL,
+	[TenantId] [uniqueidentifier] NOT NULL,
+	[PolicyId] [int] NOT NULL,
+	[CategoriaId] [int] NOT NULL,
+ CONSTRAINT [PK_InvestorPolicyExpenseCategories] PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_InvestorPolicyExpenseCategories_CategoriaId] ON [dbo].[InvestorPolicyExpenseCategories]
+(
+	[CategoriaId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_InvestorPolicyExpenseCategories_PolicyId] ON [dbo].[InvestorPolicyExpenseCategories]
+(
+	[PolicyId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_InvestorPolicyExpenseCategories_TenantId] ON [dbo].[InvestorPolicyExpenseCategories]
+(
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [UX_InvestorPolicyExpenseCategories_Policy_Categoria] ON [dbo].[InvestorPolicyExpenseCategories]
+(
+	[TenantId] ASC,
+	[PolicyId] ASC,
+	[CategoriaId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE TABLE [dbo].[InvestorProfitPolicies](
+	[Id] [int] IDENTITY(1,1) NOT NULL,
+	[TenantId] [uniqueidentifier] NOT NULL,
+	[ExcluirIva] [bit] NOT NULL,
+	[IncluirLiquidaciones] [bit] NOT NULL,
+	[BaseLiquidaciones] [int] NOT NULL,
+	[ModoCategoriasGasto] [int] NOT NULL,
+	[TratamientoPerdidasPorDefecto] [int] NOT NULL,
+	[FrecuenciaPorDefecto] [int] NOT NULL,
+	[GeneracionAutomatica] [bit] NOT NULL,
+	[EnvioAutomatico] [bit] NOT NULL,
+	[DiasEsperaGeneracion] [int] NOT NULL,
+	[HoraGeneracion] [int] NOT NULL,
+	[CreatedAtUtc] [datetime2](7) NOT NULL,
+	[UpdatedAtUtc] [datetime2](7) NOT NULL,
+	[UpdatedByUserId] [nvarchar](450) NULL,
+ CONSTRAINT [PK_InvestorProfitPolicies] PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [UX_InvestorProfitPolicies_TenantId] ON [dbo].[InvestorProfitPolicies]
+(
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+ALTER TABLE [dbo].[InvestorProfitPolicies] ADD  DEFAULT (CONVERT([bit],(1))) FOR [ExcluirIva]
+GO
+ALTER TABLE [dbo].[InvestorProfitPolicies] ADD  DEFAULT (CONVERT([bit],(1))) FOR [IncluirLiquidaciones]
+GO
+CREATE TABLE [dbo].[InvestorStatementAdjustments](
+	[Id] [int] IDENTITY(1,1) NOT NULL,
+	[TenantId] [uniqueidentifier] NOT NULL,
+	[StatementId] [int] NOT NULL,
+	[Monto] [decimal](18, 2) NOT NULL,
+	[Descripcion] [nvarchar](300) NOT NULL,
+	[CreadoPorUserId] [nvarchar](450) NULL,
+	[CreadoPorEmail] [nvarchar](256) NULL,
+	[CreatedAtUtc] [datetime2](7) NOT NULL,
+ CONSTRAINT [PK_InvestorStatementAdjustments] PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_InvestorStatementAdjustments_StatementId] ON [dbo].[InvestorStatementAdjustments]
+(
+	[StatementId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_InvestorStatementAdjustments_TenantId] ON [dbo].[InvestorStatementAdjustments]
+(
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_InvestorStatementAdjustments_TenantId_StatementId] ON [dbo].[InvestorStatementAdjustments]
+(
+	[TenantId] ASC,
+	[StatementId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE TABLE [dbo].[InvestorStatementEmailLogs](
+	[Id] [int] IDENTITY(1,1) NOT NULL,
+	[TenantId] [uniqueidentifier] NOT NULL,
+	[StatementId] [int] NOT NULL,
+	[RecipientEmail] [nvarchar](256) NOT NULL,
+	[Subject] [nvarchar](300) NOT NULL,
+	[Status] [int] NOT NULL,
+	[IsTest] [bit] NOT NULL,
+	[ResendSequence] [int] NOT NULL,
+	[TriggeredByUserId] [nvarchar](450) NULL,
+	[ProviderMessageId] [nvarchar](200) NULL,
+	[ErrorMessage] [nvarchar](500) NULL,
+	[ContentHash] [nvarchar](64) NULL,
+	[SentAtUtc] [datetime2](7) NULL,
+	[CreatedAtUtc] [datetime2](7) NOT NULL,
+ CONSTRAINT [PK_InvestorStatementEmailLogs] PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_InvestorStatementEmailLogs_StatementId] ON [dbo].[InvestorStatementEmailLogs]
+(
+	[StatementId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_InvestorStatementEmailLogs_TenantId] ON [dbo].[InvestorStatementEmailLogs]
+(
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_InvestorStatementEmailLogs_TenantId_StatementId] ON [dbo].[InvestorStatementEmailLogs]
+(
+	[TenantId] ASC,
+	[StatementId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [UX_InvestorStatementEmailLogs_RealSent] ON [dbo].[InvestorStatementEmailLogs]
+(
+	[TenantId] ASC,
+	[StatementId] ASC,
+	[RecipientEmail] ASC,
+	[ResendSequence] ASC
+)
+WHERE ([IsTest]=(0) AND [Status]=(1))
+WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE TABLE [dbo].[InvestorStatements](
+	[Id] [int] IDENTITY(1,1) NOT NULL,
+	[TenantId] [uniqueidentifier] NOT NULL,
+	[InvestorId] [int] NOT NULL,
+	[AgreementId] [int] NULL,
+	[PeriodoInicio] [date] NOT NULL,
+	[PeriodoFin] [date] NOT NULL,
+	[Frecuencia] [int] NOT NULL,
+	[IngresosCobrados] [decimal](18, 2) NOT NULL,
+	[IvaExcluido] [decimal](18, 2) NOT NULL,
+	[IngresosNetos] [decimal](18, 2) NOT NULL,
+	[GastosElegibles] [decimal](18, 2) NOT NULL,
+	[Liquidaciones] [decimal](18, 2) NOT NULL,
+	[AjustesPositivos] [decimal](18, 2) NOT NULL,
+	[AjustesNegativos] [decimal](18, 2) NOT NULL,
+	[PerdidaArrastrada] [decimal](18, 2) NOT NULL,
+	[PerdidaPendiente] [decimal](18, 2) NOT NULL,
+	[GananciaDistribuible] [decimal](18, 2) NOT NULL,
+	[ParticipacionPorcentaje] [decimal](9, 4) NOT NULL,
+	[ParticipacionCalculada] [decimal](18, 2) NOT NULL,
+	[TotalPagado] [decimal](18, 2) NOT NULL,
+	[SaldoPendiente] [decimal](18, 2) NOT NULL,
+	[Estado] [int] NOT NULL,
+	[FechaCalculoUtc] [datetime2](7) NOT NULL,
+	[GeneradoPorUserId] [nvarchar](450) NULL,
+	[PoliticaVersion] [nvarchar](300) NOT NULL,
+	[FinalizadoAtUtc] [datetime2](7) NULL,
+	[FinalizadoPorUserId] [nvarchar](450) NULL,
+	[EnviadoAtUtc] [datetime2](7) NULL,
+	[AnuladoAtUtc] [datetime2](7) NULL,
+	[AnuladoPorUserId] [nvarchar](450) NULL,
+	[MotivoAnulacion] [nvarchar](500) NULL,
+	[ReabiertoAtUtc] [datetime2](7) NULL,
+	[ReabiertoPorUserId] [nvarchar](450) NULL,
+	[MotivoReapertura] [nvarchar](500) NULL,
+	[CreatedAtUtc] [datetime2](7) NOT NULL,
+	[UpdatedAtUtc] [datetime2](7) NOT NULL,
+	[DiaCorte] [int] NULL,
+	[FechaCorte] [date] NOT NULL,
+ CONSTRAINT [PK_InvestorStatements] PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_InvestorStatements_AgreementId] ON [dbo].[InvestorStatements]
+(
+	[AgreementId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_InvestorStatements_InvestorId] ON [dbo].[InvestorStatements]
+(
+	[InvestorId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_InvestorStatements_TenantId] ON [dbo].[InvestorStatements]
+(
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_InvestorStatements_TenantId_Estado] ON [dbo].[InvestorStatements]
+(
+	[TenantId] ASC,
+	[Estado] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_InvestorStatements_TenantId_Periodo] ON [dbo].[InvestorStatements]
+(
+	[TenantId] ASC,
+	[PeriodoInicio] ASC,
+	[PeriodoFin] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [UX_InvestorStatements_Investor_Periodo] ON [dbo].[InvestorStatements]
+(
+	[TenantId] ASC,
+	[InvestorId] ASC,
+	[PeriodoInicio] ASC,
+	[PeriodoFin] ASC
+)
+WHERE ([Estado]<>(5))
+WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+ALTER TABLE [dbo].[InvestorStatements] ADD  DEFAULT ('0001-01-01') FOR [FechaCorte]
+GO
+CREATE TABLE [dbo].[LiquidacionesSemanales](
+	[Id] [int] IDENTITY(1,1) NOT NULL,
+	[TenantId] [uniqueidentifier] NOT NULL,
+	[SemanaInicio] [datetime2](7) NOT NULL,
+	[SemanaFin] [datetime2](7) NOT NULL,
+	[FechaPago] [datetime2](7) NOT NULL,
+	[MontoTotal] [decimal](18, 2) NOT NULL,
+	[Estado] [nvarchar](30) NOT NULL,
+	[Observacion] [nvarchar](500) NULL,
+	[CreadoPor] [nvarchar](450) NULL,
+	[FechaCreacion] [datetime2](7) NOT NULL,
+	[EgresoId] [int] NULL,
+	[IdempotencyKey] [uniqueidentifier] NULL,
+ CONSTRAINT [PK_LiquidacionesSemanales] PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [IX_LiquidacionesSemanales_EgresoId] ON [dbo].[LiquidacionesSemanales]
+(
+	[EgresoId] ASC
+)
+WHERE ([EgresoId] IS NOT NULL)
+WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_LiquidacionesSemanales_TenantId] ON [dbo].[LiquidacionesSemanales]
+(
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_LiquidacionesSemanales_TenantId_Semana] ON [dbo].[LiquidacionesSemanales]
+(
+	[TenantId] ASC,
+	[SemanaInicio] ASC,
+	[SemanaFin] ASC,
+	[FechaPago] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [UX_LiquidacionesSemanales_TenantId_IdempotencyKey] ON [dbo].[LiquidacionesSemanales]
+(
+	[TenantId] ASC,
+	[IdempotencyKey] ASC
+)
+WHERE ([IdempotencyKey] IS NOT NULL)
+WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+ALTER TABLE [dbo].[LiquidacionesSemanales]  WITH CHECK ADD  CONSTRAINT [CK_LiquidacionesSemanales_MontoTotal] CHECK  (([MontoTotal]>=(0)))
+GO
+ALTER TABLE [dbo].[LiquidacionesSemanales] CHECK CONSTRAINT [CK_LiquidacionesSemanales_MontoTotal]
+GO
+ALTER TABLE [dbo].[LiquidacionesSemanales]  WITH CHECK ADD  CONSTRAINT [CK_LiquidacionesSemanales_SemanaValida] CHECK  (([SemanaFin]>=[SemanaInicio]))
+GO
+ALTER TABLE [dbo].[LiquidacionesSemanales] CHECK CONSTRAINT [CK_LiquidacionesSemanales_SemanaValida]
+GO
+CREATE TABLE [dbo].[LiquidacionesSemanalesDetalle](
+	[Id] [int] IDENTITY(1,1) NOT NULL,
+	[TenantId] [uniqueidentifier] NOT NULL,
+	[LiquidacionSemanalId] [int] NOT NULL,
+	[FuncionarioId] [int] NOT NULL,
+	[MontoServicios] [decimal](18, 2) NOT NULL,
+	[MontoProductos] [decimal](18, 2) NOT NULL,
+	[Impuestos] [decimal](18, 2) NOT NULL,
+	[MontoNeto] [decimal](18, 2) NOT NULL,
+	[MontoPagado] [decimal](18, 2) NOT NULL,
+	[Pendiente] [decimal](18, 2) NOT NULL,
+ CONSTRAINT [PK_LiquidacionesSemanalesDetalle] PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_LiquidacionesSemanalesDetalle_FuncionarioId] ON [dbo].[LiquidacionesSemanalesDetalle]
+(
+	[FuncionarioId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_LiquidacionesSemanalesDetalle_LiquidacionSemanalId] ON [dbo].[LiquidacionesSemanalesDetalle]
+(
+	[LiquidacionSemanalId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_LiquidacionesSemanalesDetalle_TenantId] ON [dbo].[LiquidacionesSemanalesDetalle]
+(
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [IX_LiquidacionesSemanalesDetalle_TenantId_LiquidacionSemanalId_FuncionarioId] ON [dbo].[LiquidacionesSemanalesDetalle]
+(
+	[TenantId] ASC,
+	[LiquidacionSemanalId] ASC,
+	[FuncionarioId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+ALTER TABLE [dbo].[LiquidacionesSemanalesDetalle]  WITH CHECK ADD  CONSTRAINT [CK_LiquidacionesSemanalesDetalle_Montos] CHECK  (([MontoServicios]>=(0) AND [MontoProductos]>=(0) AND [Impuestos]>=(0) AND [MontoNeto]>=(0) AND [MontoPagado]>(0)))
+GO
+ALTER TABLE [dbo].[LiquidacionesSemanalesDetalle] CHECK CONSTRAINT [CK_LiquidacionesSemanalesDetalle_Montos]
+GO
+CREATE TABLE [dbo].[LiquidacionesSemanalesDistribucionMensual](
+	[Id] [int] IDENTITY(1,1) NOT NULL,
+	[TenantId] [uniqueidentifier] NOT NULL,
+	[LiquidacionSemanalId] [int] NOT NULL,
+	[Anio] [int] NOT NULL,
+	[Mes] [int] NOT NULL,
+	[MontoAsignado] [decimal](18, 2) NOT NULL,
+	[DiasAplicados] [int] NOT NULL,
+ CONSTRAINT [PK_LiquidacionesSemanalesDistribucionMensual] PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_LiquidacionesSemanalesDistribucionMensual_LiquidacionSemanalId] ON [dbo].[LiquidacionesSemanalesDistribucionMensual]
+(
+	[LiquidacionSemanalId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_LiquidacionesSemanalesDistribucionMensual_TenantId] ON [dbo].[LiquidacionesSemanalesDistribucionMensual]
+(
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_LiquidacionesSemanalesDistribucionMensual_TenantId_Anio_Mes] ON [dbo].[LiquidacionesSemanalesDistribucionMensual]
+(
+	[TenantId] ASC,
+	[Anio] ASC,
+	[Mes] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [IX_LiquidacionesSemanalesDistribucionMensual_TenantId_LiquidacionSemanalId_Anio_Mes] ON [dbo].[LiquidacionesSemanalesDistribucionMensual]
+(
+	[TenantId] ASC,
+	[LiquidacionSemanalId] ASC,
+	[Anio] ASC,
+	[Mes] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+ALTER TABLE [dbo].[LiquidacionesSemanalesDistribucionMensual]  WITH CHECK ADD  CONSTRAINT [CK_LiquidacionesSemanalesDistribucionMensual_Valores] CHECK  (([MontoAsignado]>=(0) AND [DiasAplicados]>(0) AND ([Mes]>=(1) AND [Mes]<=(12))))
+GO
+ALTER TABLE [dbo].[LiquidacionesSemanalesDistribucionMensual] CHECK CONSTRAINT [CK_LiquidacionesSemanalesDistribucionMensual_Valores]
+GO
+CREATE TABLE [dbo].[MovimientosInventario](
+	[IdMovimiento] [int] IDENTITY(1,1) NOT NULL,
+	[ProductoId] [int] NOT NULL,
+	[FechaMovimiento] [datetime] NOT NULL,
+	[TipoMovimiento] [nvarchar](50) NOT NULL,
+	[Cantidad] [int] NOT NULL,
+	[StockAnterior] [int] NOT NULL,
+	[StockNuevo] [int] NOT NULL,
+	[Observacion] [nvarchar](200) NULL,
+	[TenantId] [uniqueidentifier] NOT NULL,
+PRIMARY KEY CLUSTERED
+(
+	[IdMovimiento] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_MovimientosInventario_ProductoId] ON [dbo].[MovimientosInventario]
+(
+	[ProductoId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_MovimientosInventario_TenantId] ON [dbo].[MovimientosInventario]
+(
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_MovimientosInventario_TenantId_ProductoId_FechaMovimiento] ON [dbo].[MovimientosInventario]
+(
+	[TenantId] ASC,
+	[ProductoId] ASC,
+	[FechaMovimiento] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+ALTER TABLE [dbo].[MovimientosInventario] ADD  DEFAULT (getdate()) FOR [FechaMovimiento]
+GO
+CREATE TABLE [dbo].[PagosFuncionarios](
+	[IdPago] [int] IDENTITY(1,1) NOT NULL,
+	[FuncionarioId] [int] NOT NULL,
+	[FechaPago] [datetime] NOT NULL,
+	[MontoPagado] [decimal](10, 2) NOT NULL,
+	[Observacion] [nvarchar](200) NULL,
+	[InicioSemana] [datetime] NULL,
+	[FinSemana] [datetime] NULL,
+	[TenantId] [uniqueidentifier] NOT NULL,
+PRIMARY KEY CLUSTERED
+(
+	[IdPago] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_PagosFuncionarios_TenantId] ON [dbo].[PagosFuncionarios]
+(
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_PagosFuncionarios_TenantId_Semana_Funcionario] ON [dbo].[PagosFuncionarios]
+(
+	[TenantId] ASC,
+	[InicioSemana] ASC,
+	[FinSemana] ASC,
+	[FuncionarioId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+ALTER TABLE [dbo].[PagosFuncionarios] ADD  DEFAULT (getdate()) FOR [FechaPago]
+GO
+CREATE TABLE [dbo].[PagosSuscripcion](
+	[Id] [uniqueidentifier] NOT NULL,
+	[TenantId] [uniqueidentifier] NOT NULL,
+	[PlanId] [uniqueidentifier] NOT NULL,
+	[Proveedor] [int] NOT NULL,
+	[Estado] [int] NOT NULL,
+	[ReferenciaInterna] [nvarchar](100) NOT NULL,
+	[ProviderCheckoutId] [nvarchar](100) NULL,
+	[ProviderTransactionId] [nvarchar](100) NULL,
+	[ProviderReference] [nvarchar](100) NULL,
+	[ProviderResultCode] [nvarchar](50) NULL,
+	[ProviderResultMessage] [nvarchar](300) NULL,
+	[ProviderAuthorizationCode] [nvarchar](100) NULL,
+	[ProviderCardBrand] [nvarchar](50) NULL,
+	[ProviderCardLast4] [nvarchar](20) NULL,
+	[CheckoutUrl] [nvarchar](500) NULL,
+	[ClienteNombre] [nvarchar](150) NULL,
+	[ClienteEmail] [nvarchar](200) NULL,
+	[Descripcion] [nvarchar](250) NOT NULL,
+	[Monto] [decimal](18, 2) NOT NULL,
+	[Moneda] [nvarchar](10) NOT NULL,
+	[FechaCreacionUtc] [datetime2](7) NOT NULL,
+	[FechaActualizacionUtc] [datetime2](7) NULL,
+	[FechaConfirmacionUtc] [datetime2](7) NULL,
+	[UltimoPayloadProveedor] [nvarchar](max) NULL,
+	[CorrelationToken] [nvarchar](100) NULL,
+	[ProviderSubscriberId] [nvarchar](100) NULL,
+	[TilopayRecurringPlanId] [int] NULL,
+ CONSTRAINT [PK_PagosSuscripcion] PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_PagosSuscripcion_PlanId] ON [dbo].[PagosSuscripcion]
+(
+	[PlanId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [IX_PagosSuscripcion_Proveedor_ProviderCheckoutId] ON [dbo].[PagosSuscripcion]
+(
+	[Proveedor] ASC,
+	[ProviderCheckoutId] ASC
+)
+WHERE ([ProviderCheckoutId] IS NOT NULL)
+WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [IX_PagosSuscripcion_Proveedor_ProviderReference] ON [dbo].[PagosSuscripcion]
+(
+	[Proveedor] ASC,
+	[ProviderReference] ASC
+)
+WHERE ([ProviderReference] IS NOT NULL)
+WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE NONCLUSTERED INDEX [IX_PagosSuscripcion_Proveedor_ProviderSubscriberId] ON [dbo].[PagosSuscripcion]
+(
+	[Proveedor] ASC,
+	[ProviderSubscriberId] ASC
+)
+WHERE ([ProviderSubscriberId] IS NOT NULL)
+WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [IX_PagosSuscripcion_Proveedor_ProviderTransactionId] ON [dbo].[PagosSuscripcion]
+(
+	[Proveedor] ASC,
+	[ProviderTransactionId] ASC
+)
+WHERE ([ProviderTransactionId] IS NOT NULL)
+WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [IX_PagosSuscripcion_Proveedor_ReferenciaInterna] ON [dbo].[PagosSuscripcion]
+(
+	[Proveedor] ASC,
+	[ReferenciaInterna] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_PagosSuscripcion_TenantId] ON [dbo].[PagosSuscripcion]
+(
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE TABLE [dbo].[PlanChangeIntents](
+	[Id] [uniqueidentifier] NOT NULL,
+	[TenantId] [uniqueidentifier] NOT NULL,
+	[FromPlanId] [uniqueidentifier] NULL,
+	[FromPlanCode] [nvarchar](50) NULL,
+	[FromWorkerCount] [int] NULL,
+	[FromTilopayRecurringPlanId] [int] NULL,
+	[FromProviderSubscriptionId] [nvarchar](100) NULL,
+	[ToPlanId] [uniqueidentifier] NOT NULL,
+	[ToPlanCode] [nvarchar](50) NOT NULL,
+	[ToWorkerCount] [int] NOT NULL,
+	[ToBillingCycle] [int] NOT NULL,
+	[ToTilopayRecurringPlanId] [int] NOT NULL,
+	[Estado] [int] NOT NULL,
+	[OldProviderCancellation] [int] NOT NULL,
+	[PagoSuscripcionId] [uniqueidentifier] NULL,
+	[NewProviderSubscriptionId] [nvarchar](100) NULL,
+	[CreatedAtUtc] [datetime2](7) NOT NULL,
+	[UpdatedAtUtc] [datetime2](7) NULL,
+	[AppliedAtUtc] [datetime2](7) NULL,
+	[Notes] [nvarchar](300) NULL,
+	[OldCancellationAttemptCount] [int] NOT NULL,
+	[OldCancellationAttemptsResetAtUtc] [datetime2](7) NULL,
+	[OldCancellationLastAttemptUtc] [datetime2](7) NULL,
+	[OldCancellationNextRetryUtc] [datetime2](7) NULL,
+ CONSTRAINT [PK_PlanChangeIntents] PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_PlanChangeIntents_TenantId_Estado] ON [dbo].[PlanChangeIntents]
+(
+	[TenantId] ASC,
+	[Estado] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [IX_PlanChangeIntents_TenantId_OpenPending] ON [dbo].[PlanChangeIntents]
+(
+	[TenantId] ASC
+)
+WHERE ([Estado]=(0))
+WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+ALTER TABLE [dbo].[PlanChangeIntents] ADD  DEFAULT ((0)) FOR [OldCancellationAttemptCount]
+GO
+CREATE TABLE [dbo].[Planes](
+	[Id] [uniqueidentifier] NOT NULL,
+	[Nombre] [nvarchar](50) NOT NULL,
+	[PrecioMensual] [decimal](10, 2) NOT NULL,
+	[ProviderProductId] [nvarchar](100) NULL,
+	[ProviderPriceId] [nvarchar](100) NULL,
+	[Activo] [bit] NOT NULL,
+	[Moneda] [nvarchar](100) NOT NULL,
+	[MaxFuncionarios] [int] NULL,
+	[EsPlanValidacion] [bit] NOT NULL,
+	[Codigo] [nvarchar](50) NULL,
+	[LimiteMensajesMensual] [int] NULL,
+	[BillingCycle] [int] NOT NULL,
+	[MonthlyEquivalentAmount] [decimal](18, 2) NULL,
+PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [IX_Planes_Codigo] ON [dbo].[Planes]
+(
+	[Codigo] ASC
+)
+WHERE ([Codigo] IS NOT NULL)
+WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+ALTER TABLE [dbo].[Planes] ADD  DEFAULT (newid()) FOR [Id]
+GO
+ALTER TABLE [dbo].[Planes] ADD  DEFAULT ((1)) FOR [Activo]
+GO
+ALTER TABLE [dbo].[Planes] ADD  DEFAULT ('USD') FOR [Moneda]
+GO
+ALTER TABLE [dbo].[Planes] ADD  DEFAULT (CONVERT([bit],(0))) FOR [EsPlanValidacion]
+GO
+ALTER TABLE [dbo].[Planes] ADD  DEFAULT ((0)) FOR [BillingCycle]
+GO
+CREATE TABLE [dbo].[PlanFeatures](
+	[PlanId] [uniqueidentifier] NOT NULL,
+	[FeatureId] [uniqueidentifier] NOT NULL,
+	[Limite] [int] NULL,
+PRIMARY KEY CLUSTERED
+(
+	[PlanId] ASC,
+	[FeatureId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_PlanFeatures_FeatureId] ON [dbo].[PlanFeatures]
+(
+	[FeatureId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE TABLE [dbo].[PlatformAuditLogs](
+	[Id] [uniqueidentifier] NOT NULL,
+	[ActorUserId] [nvarchar](450) NOT NULL,
+	[ActorEmail] [nvarchar](256) NOT NULL,
+	[Action] [nvarchar](80) NOT NULL,
+	[EntityType] [nvarchar](60) NOT NULL,
+	[EntityId] [nvarchar](450) NULL,
+	[TenantId] [uniqueidentifier] NULL,
+	[TenantName] [nvarchar](150) NULL,
+	[TargetUserId] [nvarchar](450) NULL,
+	[TargetUserEmail] [nvarchar](256) NULL,
+	[BeforeJson] [nvarchar](max) NULL,
+	[AfterJson] [nvarchar](max) NULL,
+	[Reason] [nvarchar](500) NULL,
+	[IpAddress] [nvarchar](64) NULL,
+	[UserAgent] [nvarchar](512) NULL,
+	[CreatedAtUtc] [datetime2](7) NOT NULL,
+ CONSTRAINT [PK_PlatformAuditLogs] PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE NONCLUSTERED INDEX [IX_PlatformAuditLogs_Action] ON [dbo].[PlatformAuditLogs]
+(
+	[Action] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE NONCLUSTERED INDEX [IX_PlatformAuditLogs_ActorUserId] ON [dbo].[PlatformAuditLogs]
+(
+	[ActorUserId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_PlatformAuditLogs_CreatedAtUtc] ON [dbo].[PlatformAuditLogs]
+(
+	[CreatedAtUtc] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE NONCLUSTERED INDEX [IX_PlatformAuditLogs_EntityType_EntityId] ON [dbo].[PlatformAuditLogs]
+(
+	[EntityType] ASC,
+	[EntityId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_PlatformAuditLogs_TenantId] ON [dbo].[PlatformAuditLogs]
+(
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE TABLE [dbo].[PlatformCommercialSnapshots](
+	[Id] [uniqueidentifier] NOT NULL,
+	[PeriodYear] [int] NOT NULL,
+	[PeriodMonth] [int] NOT NULL,
+	[CapturedAtUtc] [datetime2](7) NOT NULL,
+	[TriggerType] [nvarchar](20) NOT NULL,
+	[TriggeredByEmail] [nvarchar](256) NULL,
+	[MrrTotal] [decimal](18, 2) NOT NULL,
+	[ArrTotal] [decimal](18, 2) NOT NULL,
+	[ActiveSubscriptions] [int] NOT NULL,
+	[MonthlyCycleCount] [int] NOT NULL,
+	[AnnualCycleCount] [int] NOT NULL,
+	[TenantsTotal] [int] NOT NULL,
+	[TenantsSaludable] [int] NOT NULL,
+	[TenantsAtencion] [int] NOT NULL,
+	[TenantsRiesgo] [int] NOT NULL,
+	[TenantsSinAcceso] [int] NOT NULL,
+	[TrialsActivos] [int] NOT NULL,
+	[TrialsPorVencer7d] [int] NOT NULL,
+	[ChurnedTenants] [int] NOT NULL,
+	[ChurnedMrr] [decimal](18, 2) NOT NULL,
+	[NewTenants] [int] NOT NULL,
+	[DetailJson] [nvarchar](max) NULL,
+ CONSTRAINT [PK_PlatformCommercialSnapshots] PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [UX_PlatformCommercialSnapshots_Period] ON [dbo].[PlatformCommercialSnapshots]
+(
+	[PeriodYear] ASC,
+	[PeriodMonth] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE TABLE [dbo].[PlatformWorkerHeartbeats](
+	[WorkerName] [nvarchar](100) NOT NULL,
+	[LastBeatUtc] [datetime2](7) NOT NULL,
+	[LastCycleSummary] [nvarchar](300) NULL,
+ CONSTRAINT [PK_PlatformWorkerHeartbeats] PRIMARY KEY CLUSTERED
+(
+	[WorkerName] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+CREATE TABLE [dbo].[Productos](
+	[IdProducto] [int] IDENTITY(1,1) NOT NULL,
+	[NombreProducto] [nvarchar](150) NOT NULL,
+	[DetalleProducto] [nvarchar](300) NULL,
+	[PrecioProducto] [decimal](10, 2) NOT NULL,
+	[CantidadProducto] [int] NOT NULL,
+	[StockMinimo] [int] NOT NULL,
+	[Activo] [bit] NOT NULL,
+	[FechaRegistro] [datetime] NOT NULL,
+	[TenantId] [uniqueidentifier] NOT NULL,
+	[AplicaIva] [bit] NOT NULL,
+	[PrecioIncluyeIva] [bit] NULL,
+	[TarifaIva] [decimal](18, 2) NULL,
+PRIMARY KEY CLUSTERED
+(
+	[IdProducto] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_Productos_TenantId] ON [dbo].[Productos]
+(
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE NONCLUSTERED INDEX [IX_Productos_TenantId_Activo_NombreProducto] ON [dbo].[Productos]
+(
+	[TenantId] ASC,
+	[Activo] ASC,
+	[NombreProducto] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [IX_Productos_TenantId_NombreProducto] ON [dbo].[Productos]
+(
+	[TenantId] ASC,
+	[NombreProducto] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+ALTER TABLE [dbo].[Productos] ADD  DEFAULT ((0)) FOR [CantidadProducto]
+GO
+ALTER TABLE [dbo].[Productos] ADD  DEFAULT ((5)) FOR [StockMinimo]
+GO
+ALTER TABLE [dbo].[Productos] ADD  DEFAULT ((1)) FOR [Activo]
+GO
+ALTER TABLE [dbo].[Productos] ADD  DEFAULT (getdate()) FOR [FechaRegistro]
+GO
+ALTER TABLE [dbo].[Productos] ADD  DEFAULT (CONVERT([bit],(1))) FOR [AplicaIva]
+GO
+CREATE TABLE [dbo].[PromotionalCodeRedemptions](
+	[Id] [uniqueidentifier] NOT NULL,
+	[TenantId] [uniqueidentifier] NOT NULL,
+	[PromotionalCodeId] [uniqueidentifier] NOT NULL,
+	[TenantCommercialAccessGrantId] [uniqueidentifier] NULL,
+	[ConsumidoPorUserId] [nvarchar](450) NULL,
+	[EmailConsumidor] [nvarchar](256) NOT NULL,
+	[FechaConsumoUtc] [datetime2](7) NOT NULL,
+ CONSTRAINT [PK_PromotionalCodeRedemptions] PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [IX_PromotionalCodeRedemptions_PromotionalCodeId_TenantId] ON [dbo].[PromotionalCodeRedemptions]
+(
+	[PromotionalCodeId] ASC,
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_PromotionalCodeRedemptions_TenantCommercialAccessGrantId] ON [dbo].[PromotionalCodeRedemptions]
+(
+	[TenantCommercialAccessGrantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_PromotionalCodeRedemptions_TenantId] ON [dbo].[PromotionalCodeRedemptions]
+(
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE TABLE [dbo].[PromotionalCodes](
+	[Id] [uniqueidentifier] NOT NULL,
+	[Codigo] [nvarchar](100) NOT NULL,
+	[Activo] [bit] NOT NULL,
+	[TipoBeneficio] [int] NOT NULL,
+	[DiasGratis] [int] NOT NULL,
+	[PlanId] [uniqueidentifier] NOT NULL,
+	[MaxUsos] [int] NULL,
+	[UsosActuales] [int] NOT NULL,
+	[FechaExpiracionUtc] [datetime2](7) NULL,
+	[SoloPrimerRegistro] [bit] NOT NULL,
+	[EmailObjetivo] [nvarchar](256) NULL,
+	[CreadoPorUserId] [nvarchar](450) NULL,
+	[NotasInternas] [nvarchar](2000) NULL,
+	[FechaCreacionUtc] [datetime2](7) NOT NULL,
+	[FechaActualizacionUtc] [datetime2](7) NULL,
+ CONSTRAINT [PK_PromotionalCodes] PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [IX_PromotionalCodes_Codigo] ON [dbo].[PromotionalCodes]
+(
+	[Codigo] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_PromotionalCodes_PlanId] ON [dbo].[PromotionalCodes]
+(
+	[PlanId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE TABLE [dbo].[ProviderAddonAuditSnapshots](
+	[Id] [uniqueidentifier] NOT NULL,
+	[TenantId] [uniqueidentifier] NOT NULL,
+	[CapturedAtUtc] [datetime2](7) NOT NULL,
+	[ActiveAddonSubscriberCount] [int] NOT NULL,
+	[HasDoubleActive] [bit] NOT NULL,
+	[IsInconclusive] [bit] NOT NULL,
+	[ActiveRecurringPlanIds] [nvarchar](200) NULL,
+	[ActiveSubscriberIds] [nvarchar](400) NULL,
+	[LocalProviderSubscriptionId] [nvarchar](100) NULL,
+	[Source] [nvarchar](40) NOT NULL,
+	[Detail] [nvarchar](500) NULL,
+ CONSTRAINT [PK_ProviderAddonAuditSnapshots] PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_ProviderAddonAuditSnapshots_HasDoubleActive] ON [dbo].[ProviderAddonAuditSnapshots]
+(
+	[HasDoubleActive] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [IX_ProviderAddonAuditSnapshots_TenantId] ON [dbo].[ProviderAddonAuditSnapshots]
+(
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE TABLE [dbo].[Puestos](
+	[IdPuesto] [int] IDENTITY(1,1) NOT NULL,
+	[NombrePuesto] [nvarchar](100) NOT NULL,
+	[Detalle] [nvarchar](250) NULL,
+	[Activo] [bit] NOT NULL,
+	[TenantId] [uniqueidentifier] NOT NULL,
+PRIMARY KEY CLUSTERED
+(
+	[IdPuesto] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_Puestos_TenantId] ON [dbo].[Puestos]
+(
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [IX_Puestos_TenantId_NombrePuesto] ON [dbo].[Puestos]
+(
+	[TenantId] ASC,
+	[NombrePuesto] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+ALTER TABLE [dbo].[Puestos] ADD  DEFAULT ((1)) FOR [Activo]
+GO
+CREATE TABLE [dbo].[RecurringScheduleExceptions](
+	[Id] [int] IDENTITY(1,1) NOT NULL,
+	[TenantId] [uniqueidentifier] NOT NULL,
+	[RuleId] [int] NOT NULL,
+	[FuncionarioId] [int] NULL,
+	[Fecha] [date] NOT NULL,
+	[Tipo] [int] NOT NULL,
+	[HoraInicioAlternativa] [time](7) NULL,
+	[HoraFinAlternativa] [time](7) NULL,
+	[Motivo] [nvarchar](200) NULL,
+	[CreadoPorUserId] [nvarchar](450) NULL,
+	[CreatedAtUtc] [datetime2](7) NOT NULL,
+ CONSTRAINT [PK_RecurringScheduleExceptions] PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_RecurringScheduleExceptions_FuncionarioId] ON [dbo].[RecurringScheduleExceptions]
+(
+	[FuncionarioId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_RecurringScheduleExceptions_RuleId] ON [dbo].[RecurringScheduleExceptions]
+(
+	[RuleId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_RecurringScheduleExceptions_TenantId] ON [dbo].[RecurringScheduleExceptions]
+(
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_RecurringScheduleExceptions_TenantId_Rule_Fecha] ON [dbo].[RecurringScheduleExceptions]
+(
+	[TenantId] ASC,
+	[RuleId] ASC,
+	[Fecha] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [UX_RecurringScheduleExceptions_Rule_Fecha_Funcionario] ON [dbo].[RecurringScheduleExceptions]
+(
+	[TenantId] ASC,
+	[RuleId] ASC,
+	[Fecha] ASC,
+	[FuncionarioId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE TABLE [dbo].[RecurringScheduleRules](
+	[Id] [int] IDENTITY(1,1) NOT NULL,
+	[TenantId] [uniqueidentifier] NOT NULL,
+	[Nombre] [nvarchar](100) NOT NULL,
+	[Tipo] [int] NOT NULL,
+	[HoraInicio] [time](7) NOT NULL,
+	[HoraFin] [time](7) NOT NULL,
+	[DiasSemanaMask] [int] NOT NULL,
+	[VigenteDesde] [date] NOT NULL,
+	[VigenteHasta] [date] NULL,
+	[Activa] [bit] NOT NULL,
+	[Alcance] [int] NOT NULL,
+	[IncluirNuevosColaboradores] [bit] NOT NULL,
+	[EtiquetaCalendario] [nvarchar](60) NULL,
+	[Motivo] [nvarchar](60) NULL,
+	[ReglaOrigenId] [int] NULL,
+	[CreadoPorUserId] [nvarchar](450) NULL,
+	[ActualizadoPorUserId] [nvarchar](450) NULL,
+	[CreatedAtUtc] [datetime2](7) NOT NULL,
+	[UpdatedAtUtc] [datetime2](7) NOT NULL,
+ CONSTRAINT [PK_RecurringScheduleRules] PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_RecurringScheduleRules_ReglaOrigenId] ON [dbo].[RecurringScheduleRules]
+(
+	[ReglaOrigenId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_RecurringScheduleRules_TenantId] ON [dbo].[RecurringScheduleRules]
+(
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_RecurringScheduleRules_TenantId_Activa] ON [dbo].[RecurringScheduleRules]
+(
+	[TenantId] ASC,
+	[Activa] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_RecurringScheduleRules_TenantId_Vigencia] ON [dbo].[RecurringScheduleRules]
+(
+	[TenantId] ASC,
+	[VigenteDesde] ASC,
+	[VigenteHasta] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+ALTER TABLE [dbo].[RecurringScheduleRules] ADD  DEFAULT (CONVERT([bit],(1))) FOR [Activa]
+GO
+ALTER TABLE [dbo].[RecurringScheduleRules] ADD  DEFAULT (CONVERT([bit],(1))) FOR [IncluirNuevosColaboradores]
+GO
+CREATE TABLE [dbo].[RecurringScheduleRuleTargets](
+	[Id] [int] IDENTITY(1,1) NOT NULL,
+	[TenantId] [uniqueidentifier] NOT NULL,
+	[RuleId] [int] NOT NULL,
+	[FuncionarioId] [int] NOT NULL,
+ CONSTRAINT [PK_RecurringScheduleRuleTargets] PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_RecurringScheduleRuleTargets_FuncionarioId] ON [dbo].[RecurringScheduleRuleTargets]
+(
+	[FuncionarioId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_RecurringScheduleRuleTargets_RuleId] ON [dbo].[RecurringScheduleRuleTargets]
+(
+	[RuleId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_RecurringScheduleRuleTargets_TenantId] ON [dbo].[RecurringScheduleRuleTargets]
+(
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_RecurringScheduleRuleTargets_TenantId_FuncionarioId] ON [dbo].[RecurringScheduleRuleTargets]
+(
+	[TenantId] ASC,
+	[FuncionarioId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [UX_RecurringScheduleRuleTargets_Rule_Funcionario] ON [dbo].[RecurringScheduleRuleTargets]
+(
+	[TenantId] ASC,
+	[RuleId] ASC,
+	[FuncionarioId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE TABLE [dbo].[Servicios](
+	[Id] [int] IDENTITY(1,1) NOT NULL,
+	[Nombre] [nvarchar](450) NOT NULL,
+	[Precio] [decimal](10, 2) NOT NULL,
+	[Activo] [bit] NOT NULL,
+	[DuracionMinutos] [int] NULL,
+	[TenantId] [uniqueidentifier] NOT NULL,
+	[AplicaIva] [bit] NOT NULL,
+	[PrecioIncluyeIva] [bit] NULL,
+	[TarifaIva] [decimal](18, 2) NULL,
+PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_Servicios_TenantId] ON [dbo].[Servicios]
+(
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [IX_Servicios_TenantId_Nombre] ON [dbo].[Servicios]
+(
+	[TenantId] ASC,
+	[Nombre] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+ALTER TABLE [dbo].[Servicios] ADD  DEFAULT ((1)) FOR [Activo]
+GO
+ALTER TABLE [dbo].[Servicios] ADD  DEFAULT (CONVERT([bit],(1))) FOR [AplicaIva]
+GO
+CREATE TABLE [dbo].[SubscriptionPaymentIncidents](
+	[Id] [uniqueidentifier] NOT NULL,
+	[TenantId] [uniqueidentifier] NOT NULL,
+	[SuscripcionId] [uniqueidentifier] NOT NULL,
+	[PlanCode] [nvarchar](50) NULL,
+	[TilopayRecurringPlanId] [int] NULL,
+	[ProviderSubscriptionId] [nvarchar](100) NULL,
+	[ClienteEmail] [nvarchar](320) NULL,
+	[Status] [int] NOT NULL,
+	[FailureDetectedAtUtc] [datetime2](7) NOT NULL,
+	[GraceEndsAtUtc] [datetime2](7) NULL,
+	[ResolvedAtUtc] [datetime2](7) NULL,
+	[ProviderEventKey] [nvarchar](128) NULL,
+	[ProviderResultCode] [nvarchar](40) NULL,
+	[ProviderResultMessage] [nvarchar](300) NULL,
+	[FailureCount] [int] NOT NULL,
+	[NotificationCount] [int] NOT NULL,
+	[LastNotificationAtUtc] [datetime2](7) NULL,
+	[LastReminderAtUtc] [datetime2](7) NULL,
+	[CreatedAtUtc] [datetime2](7) NOT NULL,
+	[UpdatedAtUtc] [datetime2](7) NOT NULL,
+	[AddonId] [uniqueidentifier] NULL,
+	[Scope] [int] NOT NULL,
+ CONSTRAINT [PK_SubscriptionPaymentIncidents] PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_SubscriptionPaymentIncidents_TenantId] ON [dbo].[SubscriptionPaymentIncidents]
+(
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+ALTER TABLE [dbo].[SubscriptionPaymentIncidents] ADD  DEFAULT ((0)) FOR [Scope]
+GO
+CREATE TABLE [dbo].[Suscripciones](
+	[Id] [uniqueidentifier] NOT NULL,
+	[TenantId] [uniqueidentifier] NOT NULL,
+	[PlanId] [uniqueidentifier] NOT NULL,
+	[ProviderCustomerId] [nvarchar](100) NULL,
+	[ProviderSubscriptionId] [nvarchar](100) NULL,
+	[Estado] [int] NOT NULL,
+	[FechaInicio] [datetime2](7) NOT NULL,
+	[FechaFin] [datetime2](7) NULL,
+	[FechaTrialFin] [datetime2](7) NULL,
+	[CancelAtPeriodEnd] [bit] NOT NULL,
+	[Proveedor] [int] NOT NULL,
+	[ProviderTransactionId] [nvarchar](100) NULL,
+	[ProviderPaymentLinkId] [nvarchar](100) NULL,
+	[ProviderReference] [nvarchar](100) NULL,
+	[UltimoEventoProveedorId] [nvarchar](100) NULL,
+	[FechaUltimoPagoUtc] [datetime2](7) NULL,
+	[FechaUltimaActualizacionUtc] [datetime2](7) NULL,
+	[MotivoEstado] [nvarchar](250) NULL,
+	[CodigoPlan] [nvarchar](50) NULL,
+	[FechaCancelacionUtc] [datetime2](7) NULL,
+	[FechaFinGraciaUtc] [datetime2](7) NULL,
+	[FechaProximoCobroUtc] [datetime2](7) NULL,
+	[MaxFuncionarios] [int] NULL,
+	[MonedaFacturacion] [nvarchar](10) NULL,
+	[PrecioMensual] [decimal](18, 2) NULL,
+	[TilopayRecurringPlanId] [int] NULL,
+	[ProviderExpiresAtUtc] [datetime2](7) NULL,
+	[ProviderExpiryLastSyncedUtc] [datetime2](7) NULL,
+	[ProviderExpiryRaw] [nvarchar](20) NULL,
+	[CancellationEffectiveAtUtc] [datetime2](7) NULL,
+	[CancellationReason] [nvarchar](250) NULL,
+	[CancellationRequestedAtUtc] [datetime2](7) NULL,
+	[CancellationRequestedByUserId] [nvarchar](450) NULL,
+	[ProviderCancelledAtUtc] [datetime2](7) NULL,
+	[ProviderPausedAtUtc] [datetime2](7) NULL,
+	[ProviderStatusLastSyncedUtc] [datetime2](7) NULL,
+	[ProviderStatusRaw] [nvarchar](40) NULL,
+	[LastPaymentFailedAtUtc] [datetime2](7) NULL,
+	[LastPaymentRecoveryNotificationAtUtc] [datetime2](7) NULL,
+	[PaymentRecoveryStatus] [nvarchar](40) NULL,
+PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_Suscripciones_PlanId] ON [dbo].[Suscripciones]
+(
+	[PlanId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE NONCLUSTERED INDEX [IX_Suscripciones_StripeSubId] ON [dbo].[Suscripciones]
+(
+	[ProviderSubscriptionId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [IX_Suscripciones_TenantId] ON [dbo].[Suscripciones]
+(
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [UX_Tenant_Sub_Activa] ON [dbo].[Suscripciones]
+(
+	[TenantId] ASC
+)
+WHERE ([Estado] IN ((1), (2)))
+WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+ALTER TABLE [dbo].[Suscripciones] ADD  DEFAULT (newid()) FOR [Id]
+GO
+ALTER TABLE [dbo].[Suscripciones] ADD  DEFAULT (getdate()) FOR [FechaInicio]
+GO
+ALTER TABLE [dbo].[Suscripciones] ADD  DEFAULT ((0)) FOR [CancelAtPeriodEnd]
+GO
+ALTER TABLE [dbo].[Suscripciones] ADD  CONSTRAINT [DF_Suscripciones_Proveedor]  DEFAULT ((1)) FOR [Proveedor]
+GO
+CREATE TABLE [dbo].[TenantBookingBusinessHours](
+	[Id] [int] IDENTITY(1,1) NOT NULL,
+	[TenantId] [uniqueidentifier] NOT NULL,
+	[DiaSemana] [int] NOT NULL,
+	[IsEnabled] [bit] NOT NULL,
+	[OpenTime] [time](7) NOT NULL,
+	[CloseTime] [time](7) NOT NULL,
+	[CreatedAtUtc] [datetime2](7) NOT NULL,
+	[UpdatedAtUtc] [datetime2](7) NOT NULL,
+ CONSTRAINT [PK_TenantBookingBusinessHours] PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_TenantBookingBusinessHours_TenantId] ON [dbo].[TenantBookingBusinessHours]
+(
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [UX_TenantBookingBusinessHours_TenantId_DiaSemana] ON [dbo].[TenantBookingBusinessHours]
+(
+	[TenantId] ASC,
+	[DiaSemana] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+ALTER TABLE [dbo].[TenantBookingBusinessHours]  WITH CHECK ADD  CONSTRAINT [CK_TenantBookingBusinessHours_DiaSemana] CHECK  (([DiaSemana]>=(0) AND [DiaSemana]<=(6)))
+GO
+ALTER TABLE [dbo].[TenantBookingBusinessHours] CHECK CONSTRAINT [CK_TenantBookingBusinessHours_DiaSemana]
+GO
+ALTER TABLE [dbo].[TenantBookingBusinessHours]  WITH CHECK ADD  CONSTRAINT [CK_TenantBookingBusinessHours_Horario] CHECK  (([OpenTime]<[CloseTime]))
+GO
+ALTER TABLE [dbo].[TenantBookingBusinessHours] CHECK CONSTRAINT [CK_TenantBookingBusinessHours_Horario]
+GO
+CREATE TABLE [dbo].[TenantBookingFuncionarioServices](
+	[Id] [int] IDENTITY(1,1) NOT NULL,
+	[TenantId] [uniqueidentifier] NOT NULL,
+	[FuncionarioId] [int] NOT NULL,
+	[ServicioId] [int] NOT NULL,
+	[IsEnabled] [bit] NOT NULL,
+	[CreatedAtUtc] [datetime2](7) NOT NULL,
+	[UpdatedAtUtc] [datetime2](7) NOT NULL,
+ CONSTRAINT [PK_TenantBookingFuncionarioServices] PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_TenantBookingFuncionarioServices_FuncionarioId] ON [dbo].[TenantBookingFuncionarioServices]
+(
+	[FuncionarioId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_TenantBookingFuncionarioServices_ServicioId] ON [dbo].[TenantBookingFuncionarioServices]
+(
+	[ServicioId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_TenantBookingFuncionarioServices_Tenant_Servicio] ON [dbo].[TenantBookingFuncionarioServices]
+(
+	[TenantId] ASC,
+	[ServicioId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_TenantBookingFuncionarioServices_TenantId] ON [dbo].[TenantBookingFuncionarioServices]
+(
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [UX_TenantBookingFuncionarioServices_Tenant_Func_Servicio] ON [dbo].[TenantBookingFuncionarioServices]
+(
+	[TenantId] ASC,
+	[FuncionarioId] ASC,
+	[ServicioId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE TABLE [dbo].[TenantBookingServiceSettings](
+	[Id] [int] IDENTITY(1,1) NOT NULL,
+	[TenantId] [uniqueidentifier] NOT NULL,
+	[ServicioId] [int] NOT NULL,
+	[IsVisibleOnline] [bit] NOT NULL,
+	[PublicName] [nvarchar](120) NULL,
+	[PublicDescription] [nvarchar](300) NULL,
+	[DisplayOrder] [int] NOT NULL,
+	[ShowPrice] [bit] NOT NULL,
+	[Category] [nvarchar](80) NULL,
+	[CreatedAtUtc] [datetime2](7) NOT NULL,
+	[UpdatedAtUtc] [datetime2](7) NOT NULL,
+ CONSTRAINT [PK_TenantBookingServiceSettings] PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_TenantBookingServiceSettings_ServicioId] ON [dbo].[TenantBookingServiceSettings]
+(
+	[ServicioId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_TenantBookingServiceSettings_TenantId] ON [dbo].[TenantBookingServiceSettings]
+(
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [UX_TenantBookingServiceSettings_TenantId_ServicioId] ON [dbo].[TenantBookingServiceSettings]
+(
+	[TenantId] ASC,
+	[ServicioId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE TABLE [dbo].[TenantBookingSettings](
+	[Id] [uniqueidentifier] NOT NULL,
+	[TenantId] [uniqueidentifier] NOT NULL,
+	[PublicBookingEnabled] [bit] NOT NULL,
+	[PublicBookingSlug] [nvarchar](80) NULL,
+	[PublicBookingMode] [nvarchar](40) NOT NULL,
+	[PublicBookingAllowEmployeeSelection] [bit] NOT NULL,
+	[PublicBookingAllowAnyEmployee] [bit] NOT NULL,
+	[PublicBookingMinAdvanceMinutes] [int] NOT NULL,
+	[PublicBookingMaxDaysAhead] [int] NOT NULL,
+	[PublicBookingWelcomeMessage] [nvarchar](500) NULL,
+	[PublicBookingConfirmationMessage] [nvarchar](500) NULL,
+	[OpenTime] [time](7) NOT NULL,
+	[CloseTime] [time](7) NOT NULL,
+	[SlotIntervalMinutes] [int] NOT NULL,
+	[WorkingDaysMask] [int] NOT NULL,
+	[CreatedAtUtc] [datetime2](7) NOT NULL,
+	[UpdatedAtUtc] [datetime2](7) NOT NULL,
+	[UpdatedByUserId] [nvarchar](450) NULL,
+	[PublicBookingShowEmployeePhotos] [bit] NOT NULL,
+ CONSTRAINT [PK_TenantBookingSettings] PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [UX_TenantBookingSettings_Slug] ON [dbo].[TenantBookingSettings]
+(
+	[PublicBookingSlug] ASC
+)
+WHERE ([PublicBookingSlug] IS NOT NULL)
+WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [UX_TenantBookingSettings_TenantId] ON [dbo].[TenantBookingSettings]
+(
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+ALTER TABLE [dbo].[TenantBookingSettings] ADD  DEFAULT (CONVERT([bit],(1))) FOR [PublicBookingShowEmployeePhotos]
+GO
+CREATE TABLE [dbo].[TenantCommercialAccessGrants](
+	[Id] [uniqueidentifier] NOT NULL,
+	[TenantId] [uniqueidentifier] NOT NULL,
+	[PlanId] [uniqueidentifier] NOT NULL,
+	[Source] [int] NOT NULL,
+	[Activo] [bit] NOT NULL,
+	[RequiresBilling] [bit] NOT NULL,
+	[FechaInicioUtc] [datetime2](7) NOT NULL,
+	[FechaFinUtc] [datetime2](7) NOT NULL,
+	[PromotionalCodeId] [uniqueidentifier] NULL,
+	[CreadoPorUserId] [nvarchar](450) NULL,
+	[NotasInternas] [nvarchar](2000) NULL,
+ CONSTRAINT [PK_TenantCommercialAccessGrants] PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_TenantCommercialAccessGrants_PlanId] ON [dbo].[TenantCommercialAccessGrants]
+(
+	[PlanId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_TenantCommercialAccessGrants_PromotionalCodeId] ON [dbo].[TenantCommercialAccessGrants]
+(
+	[PromotionalCodeId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_TenantCommercialAccessGrants_TenantId] ON [dbo].[TenantCommercialAccessGrants]
+(
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_TenantCommercialAccessGrants_TenantId_Activo_FechaInicioUtc_FechaFinUtc] ON [dbo].[TenantCommercialAccessGrants]
+(
+	[TenantId] ASC,
+	[Activo] ASC,
+	[FechaInicioUtc] ASC,
+	[FechaFinUtc] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE TABLE [dbo].[TenantInvestors](
+	[Id] [int] IDENTITY(1,1) NOT NULL,
+	[TenantId] [uniqueidentifier] NOT NULL,
+	[Nombre] [nvarchar](150) NOT NULL,
+	[Email] [nvarchar](256) NOT NULL,
+	[Telefono] [nvarchar](30) NULL,
+	[Activo] [bit] NOT NULL,
+	[NotasInternas] [nvarchar](1000) NULL,
+	[CreatedAtUtc] [datetime2](7) NOT NULL,
+	[UpdatedAtUtc] [datetime2](7) NOT NULL,
+	[CreatedByUserId] [nvarchar](450) NULL,
+	[UpdatedByUserId] [nvarchar](450) NULL,
+	[AssociateId] [int] NULL,
+ CONSTRAINT [PK_TenantInvestors] PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_TenantInvestors_TenantId] ON [dbo].[TenantInvestors]
+(
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_TenantInvestors_TenantId_Activo] ON [dbo].[TenantInvestors]
+(
+	[TenantId] ASC,
+	[Activo] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [UX_TenantInvestors_AssociateId] ON [dbo].[TenantInvestors]
+(
+	[AssociateId] ASC
+)
+WHERE ([AssociateId] IS NOT NULL)
+WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [UX_TenantInvestors_TenantId_Email] ON [dbo].[TenantInvestors]
+(
+	[TenantId] ASC,
+	[Email] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+ALTER TABLE [dbo].[TenantInvestors] ADD  DEFAULT (CONVERT([bit],(1))) FOR [Activo]
+GO
+CREATE TABLE [dbo].[TenantMonthlyReportEmailLogs](
+	[Id] [int] IDENTITY(1,1) NOT NULL,
+	[TenantId] [uniqueidentifier] NOT NULL,
+	[ReportYear] [int] NOT NULL,
+	[ReportMonth] [int] NOT NULL,
+	[RecipientEmail] [nvarchar](256) NOT NULL,
+	[Subject] [nvarchar](200) NOT NULL,
+	[Status] [nvarchar](20) NOT NULL,
+	[IsTest] [bit] NOT NULL,
+	[TriggeredByUserId] [nvarchar](450) NULL,
+	[ProviderMessageId] [nvarchar](100) NULL,
+	[ErrorMessage] [nvarchar](500) NULL,
+	[ContentHash] [nvarchar](64) NULL,
+	[CreatedAt] [datetime2](7) NOT NULL,
+	[SentAt] [datetime2](7) NULL,
+ CONSTRAINT [PK_TenantMonthlyReportEmailLogs] PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_TenantMonthlyReportEmailLogs_CreatedAt] ON [dbo].[TenantMonthlyReportEmailLogs]
+(
+	[CreatedAt] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_TenantMonthlyReportEmailLogs_Tenant_Anio_Mes] ON [dbo].[TenantMonthlyReportEmailLogs]
+(
+	[TenantId] ASC,
+	[ReportYear] ASC,
+	[ReportMonth] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE NONCLUSTERED INDEX [IX_TenantMonthlyReportEmailLogs_Tenant_Periodo_Correo_Test] ON [dbo].[TenantMonthlyReportEmailLogs]
+(
+	[TenantId] ASC,
+	[ReportYear] ASC,
+	[ReportMonth] ASC,
+	[RecipientEmail] ASC,
+	[IsTest] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE NONCLUSTERED INDEX [IX_TenantMonthlyReportEmailLogs_Tenant_Status] ON [dbo].[TenantMonthlyReportEmailLogs]
+(
+	[TenantId] ASC,
+	[Status] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_TenantMonthlyReportEmailLogs_TenantId] ON [dbo].[TenantMonthlyReportEmailLogs]
+(
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [UX_TenantMonthlyReportEmailLogs_RealSent] ON [dbo].[TenantMonthlyReportEmailLogs]
+(
+	[TenantId] ASC,
+	[ReportYear] ASC,
+	[ReportMonth] ASC,
+	[RecipientEmail] ASC
+)
+WHERE ([IsTest]=(0) AND [Status]='Sent')
+WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE TABLE [dbo].[TenantMonthlyReportSettings](
+	[Id] [int] IDENTITY(1,1) NOT NULL,
+	[TenantId] [uniqueidentifier] NOT NULL,
+	[IsEnabled] [bit] NOT NULL,
+	[SendToOwnerEmail] [bit] NOT NULL,
+	[AdditionalRecipients] [nvarchar](1000) NULL,
+	[IncludeFinancialData] [bit] NOT NULL,
+	[IncludeOperationalData] [bit] NOT NULL,
+	[IncludeRecommendations] [bit] NOT NULL,
+	[SendDayOfMonth] [int] NOT NULL,
+	[SendHour] [int] NOT NULL,
+	[CreatedAt] [datetime2](7) NOT NULL,
+	[UpdatedAt] [datetime2](7) NOT NULL,
+	[IncludeManualRecipients] [bit] NOT NULL,
+	[IncludeMonthOverMonth] [bit] NOT NULL,
+	[LastAutomaticError] [nvarchar](500) NULL,
+	[LastAutomaticPeriod] [int] NULL,
+	[LastAutomaticRunAt] [datetime2](7) NULL,
+	[LastAutomaticSentAt] [datetime2](7) NULL,
+	[RequireConfirmedEmail] [bit] NOT NULL,
+	[SendToAllAdmins] [bit] NOT NULL,
+ CONSTRAINT [PK_TenantMonthlyReportSettings] PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_TenantMonthlyReportSettings_TenantId_IsEnabled] ON [dbo].[TenantMonthlyReportSettings]
+(
+	[TenantId] ASC,
+	[IsEnabled] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [UX_TenantMonthlyReportSettings_TenantId] ON [dbo].[TenantMonthlyReportSettings]
+(
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+ALTER TABLE [dbo].[TenantMonthlyReportSettings] ADD  DEFAULT (CONVERT([bit],(1))) FOR [SendToOwnerEmail]
+GO
+ALTER TABLE [dbo].[TenantMonthlyReportSettings] ADD  DEFAULT (CONVERT([bit],(1))) FOR [IncludeFinancialData]
+GO
+ALTER TABLE [dbo].[TenantMonthlyReportSettings] ADD  DEFAULT (CONVERT([bit],(1))) FOR [IncludeOperationalData]
+GO
+ALTER TABLE [dbo].[TenantMonthlyReportSettings] ADD  DEFAULT (CONVERT([bit],(1))) FOR [IncludeRecommendations]
+GO
+ALTER TABLE [dbo].[TenantMonthlyReportSettings] ADD  DEFAULT ((1)) FOR [SendDayOfMonth]
+GO
+ALTER TABLE [dbo].[TenantMonthlyReportSettings] ADD  DEFAULT ((8)) FOR [SendHour]
+GO
+ALTER TABLE [dbo].[TenantMonthlyReportSettings] ADD  DEFAULT (CONVERT([bit],(1))) FOR [IncludeManualRecipients]
+GO
+ALTER TABLE [dbo].[TenantMonthlyReportSettings] ADD  DEFAULT (CONVERT([bit],(1))) FOR [IncludeMonthOverMonth]
+GO
+ALTER TABLE [dbo].[TenantMonthlyReportSettings] ADD  DEFAULT (CONVERT([bit],(0))) FOR [RequireConfirmedEmail]
+GO
+ALTER TABLE [dbo].[TenantMonthlyReportSettings] ADD  DEFAULT (CONVERT([bit],(1))) FOR [SendToAllAdmins]
+GO
+CREATE TABLE [dbo].[TenantNotifications](
+	[Id] [int] IDENTITY(1,1) NOT NULL,
+	[TenantId] [uniqueidentifier] NOT NULL,
+	[Type] [nvarchar](60) NOT NULL,
+	[Title] [nvarchar](150) NOT NULL,
+	[Message] [nvarchar](400) NOT NULL,
+	[ActionUrl] [nvarchar](300) NULL,
+	[EntityType] [nvarchar](60) NULL,
+	[EntityId] [int] NULL,
+	[MetadataJson] [nvarchar](max) NULL,
+	[IsRead] [bit] NOT NULL,
+	[ReadAtUtc] [datetime2](7) NULL,
+	[CreatedAtUtc] [datetime2](7) NOT NULL,
+	[Source] [nvarchar](40) NOT NULL,
+ CONSTRAINT [PK_TenantNotifications] PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_TenantNotifications_TenantId] ON [dbo].[TenantNotifications]
+(
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_TenantNotifications_TenantId_IsRead_CreatedAtUtc] ON [dbo].[TenantNotifications]
+(
+	[TenantId] ASC,
+	[IsRead] ASC,
+	[CreatedAtUtc] DESC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [UX_TenantNotifications_TenantId_Type_Entity] ON [dbo].[TenantNotifications]
+(
+	[TenantId] ASC,
+	[Type] ASC,
+	[EntityType] ASC,
+	[EntityId] ASC
+)
+WHERE ([EntityType] IS NOT NULL AND [EntityId] IS NOT NULL)
+WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE TABLE [dbo].[TenantPublicAssets](
+	[Id] [uniqueidentifier] NOT NULL,
+	[TenantId] [uniqueidentifier] NOT NULL,
+	[TenantPublicPageId] [uniqueidentifier] NULL,
+	[ServicioId] [int] NULL,
+	[AssetType] [int] NOT NULL,
+	[StorageKey] [nvarchar](500) NOT NULL,
+	[PublicUrl] [nvarchar](800) NOT NULL,
+	[ContentType] [nvarchar](60) NOT NULL,
+	[SizeBytes] [bigint] NOT NULL,
+	[Width] [int] NOT NULL,
+	[Height] [int] NOT NULL,
+	[OriginalFileName] [nvarchar](180) NULL,
+	[SortOrder] [int] NOT NULL,
+	[IsActive] [bit] NOT NULL,
+	[CreatedAtUtc] [datetime2](7) NOT NULL,
+	[UpdatedAtUtc] [datetime2](7) NOT NULL,
+	[DeletedAtUtc] [datetime2](7) NULL,
+ CONSTRAINT [PK_TenantPublicAssets] PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_TenantPublicAssets_ServicioId] ON [dbo].[TenantPublicAssets]
+(
+	[ServicioId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_TenantPublicAssets_TenantId] ON [dbo].[TenantPublicAssets]
+(
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_TenantPublicAssets_TenantId_AssetType] ON [dbo].[TenantPublicAssets]
+(
+	[TenantId] ASC,
+	[AssetType] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_TenantPublicAssets_TenantId_ServicioId_AssetType] ON [dbo].[TenantPublicAssets]
+(
+	[TenantId] ASC,
+	[ServicioId] ASC,
+	[AssetType] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_TenantPublicAssets_TenantPublicPageId] ON [dbo].[TenantPublicAssets]
+(
+	[TenantPublicPageId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [UX_TenantPublicAssets_StorageKey] ON [dbo].[TenantPublicAssets]
+(
+	[StorageKey] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+ALTER TABLE [dbo].[TenantPublicAssets] ADD  DEFAULT (CONVERT([bit],(1))) FOR [IsActive]
+GO
+CREATE TABLE [dbo].[TenantPublicPageDailyMetrics](
+	[Id] [uniqueidentifier] NOT NULL,
+	[TenantId] [uniqueidentifier] NOT NULL,
+	[Date] [date] NOT NULL,
+	[MetricType] [int] NOT NULL,
+	[Slug] [nvarchar](80) NOT NULL,
+	[ServicioId] [int] NULL,
+	[Count] [bigint] NOT NULL,
+	[CreatedAtUtc] [datetime2](7) NOT NULL,
+	[UpdatedAtUtc] [datetime2](7) NOT NULL,
+ CONSTRAINT [PK_TenantPublicPageDailyMetrics] PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_TenantPublicPageDailyMetrics_ServicioId] ON [dbo].[TenantPublicPageDailyMetrics]
+(
+	[ServicioId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_TenantPublicPageDailyMetrics_TenantId] ON [dbo].[TenantPublicPageDailyMetrics]
+(
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_TenantPublicPageDailyMetrics_TenantId_Date] ON [dbo].[TenantPublicPageDailyMetrics]
+(
+	[TenantId] ASC,
+	[Date] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_TenantPublicPageDailyMetrics_TenantId_Date_MetricType] ON [dbo].[TenantPublicPageDailyMetrics]
+(
+	[TenantId] ASC,
+	[Date] ASC,
+	[MetricType] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_TenantPublicPageDailyMetrics_TenantId_Date_MetricType_ServicioId] ON [dbo].[TenantPublicPageDailyMetrics]
+(
+	[TenantId] ASC,
+	[Date] ASC,
+	[MetricType] ASC,
+	[ServicioId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+ALTER TABLE [dbo].[TenantPublicPageDailyMetrics] ADD  DEFAULT (CONVERT([bigint],(0))) FOR [Count]
+GO
+CREATE TABLE [dbo].[TenantPublicPages](
+	[Id] [uniqueidentifier] NOT NULL,
+	[TenantId] [uniqueidentifier] NOT NULL,
+	[IsPublished] [bit] NOT NULL,
+	[HeroTitle] [nvarchar](120) NULL,
+	[HeroSubtitle] [nvarchar](180) NULL,
+	[Description] [nvarchar](1500) NULL,
+	[LogoUrl] [nvarchar](400) NULL,
+	[CoverImageUrl] [nvarchar](400) NULL,
+	[Phone] [nvarchar](30) NULL,
+	[WhatsAppPhone] [nvarchar](30) NULL,
+	[Email] [nvarchar](256) NULL,
+	[Address] [nvarchar](300) NULL,
+	[GoogleMapsUrl] [nvarchar](500) NULL,
+	[InstagramUrl] [nvarchar](300) NULL,
+	[FacebookUrl] [nvarchar](300) NULL,
+	[TikTokUrl] [nvarchar](300) NULL,
+	[ShowServices] [bit] NOT NULL,
+	[ShowPrices] [bit] NOT NULL,
+	[ShowTeam] [bit] NOT NULL,
+	[ShowLocation] [bit] NOT NULL,
+	[ShowWhatsAppButton] [bit] NOT NULL,
+	[SeoTitle] [nvarchar](70) NULL,
+	[SeoDescription] [nvarchar](180) NULL,
+	[CreatedAtUtc] [datetime2](7) NOT NULL,
+	[UpdatedAtUtc] [datetime2](7) NOT NULL,
+	[BusinessHours] [nvarchar](500) NULL,
+	[HeroEyebrow] [nvarchar](80) NULL,
+	[WazeUrl] [nvarchar](500) NULL,
+	[BusinessHoursJson] [nvarchar](2000) NULL,
+	[PublicBusinessName] [nvarchar](120) NULL,
+	[AccentColorHex] [nvarchar](7) NULL,
+ CONSTRAINT [PK_TenantPublicPages] PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [UX_TenantPublicPages_TenantId] ON [dbo].[TenantPublicPages]
+(
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+ALTER TABLE [dbo].[TenantPublicPages] ADD  DEFAULT (CONVERT([bit],(0))) FOR [IsPublished]
+GO
+ALTER TABLE [dbo].[TenantPublicPages] ADD  DEFAULT (CONVERT([bit],(1))) FOR [ShowServices]
+GO
+ALTER TABLE [dbo].[TenantPublicPages] ADD  DEFAULT (CONVERT([bit],(1))) FOR [ShowPrices]
+GO
+ALTER TABLE [dbo].[TenantPublicPages] ADD  DEFAULT (CONVERT([bit],(0))) FOR [ShowTeam]
+GO
+ALTER TABLE [dbo].[TenantPublicPages] ADD  DEFAULT (CONVERT([bit],(1))) FOR [ShowLocation]
+GO
+ALTER TABLE [dbo].[TenantPublicPages] ADD  DEFAULT (CONVERT([bit],(1))) FOR [ShowWhatsAppButton]
+GO
+CREATE TABLE [dbo].[Tenants](
+	[Id] [uniqueidentifier] NOT NULL,
+	[Nombre] [nvarchar](150) NOT NULL,
+	[FechaCreacion] [datetime2](7) NOT NULL,
+	[Activo] [bit] NOT NULL,
+	[CommercialAccessMode] [int] NOT NULL,
+	[CommercialNotes] [nvarchar](250) NULL,
+	[CommercialUpdatedByUserId] [nvarchar](450) NULL,
+	[CommercialUpdatedUtc] [datetime2](7) NULL,
+	[ForcedPlanId] [uniqueidentifier] NULL,
+	[PreciosIncluyenIva] [bit] NOT NULL,
+	[TarifaIvaPorDefecto] [decimal](18, 2) NOT NULL,
+PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_Tenants_ForcedPlanId] ON [dbo].[Tenants]
+(
+	[ForcedPlanId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+ALTER TABLE [dbo].[Tenants] ADD  DEFAULT (newid()) FOR [Id]
+GO
+ALTER TABLE [dbo].[Tenants] ADD  DEFAULT (getdate()) FOR [FechaCreacion]
+GO
+ALTER TABLE [dbo].[Tenants] ADD  DEFAULT ((1)) FOR [Activo]
+GO
+ALTER TABLE [dbo].[Tenants] ADD  DEFAULT ((0)) FOR [CommercialAccessMode]
+GO
+ALTER TABLE [dbo].[Tenants] ADD  DEFAULT (CONVERT([bit],(1))) FOR [PreciosIncluyenIva]
+GO
+ALTER TABLE [dbo].[Tenants] ADD  DEFAULT ((13.0)) FOR [TarifaIvaPorDefecto]
+GO
+CREATE TABLE [dbo].[TenantSubscriptionAddons](
+	[Id] [uniqueidentifier] NOT NULL,
+	[TenantId] [uniqueidentifier] NOT NULL,
+	[PlanId] [uniqueidentifier] NOT NULL,
+	[AddonCode] [nvarchar](50) NOT NULL,
+	[Estado] [int] NOT NULL,
+	[TilopayRecurringPlanId] [int] NULL,
+	[ProviderSubscriptionId] [nvarchar](100) NULL,
+	[ProviderTransactionId] [nvarchar](100) NULL,
+	[PrecioMensual] [decimal](18, 2) NULL,
+	[MonedaFacturacion] [nvarchar](10) NULL,
+	[MonthlyMessageLimit] [int] NOT NULL,
+	[FechaInicio] [datetime2](7) NOT NULL,
+	[FechaFin] [datetime2](7) NULL,
+	[FechaProximoCobroUtc] [datetime2](7) NULL,
+	[FechaFinGraciaUtc] [datetime2](7) NULL,
+	[FechaCancelacionUtc] [datetime2](7) NULL,
+	[CreatedAtUtc] [datetime2](7) NOT NULL,
+	[UpdatedAtUtc] [datetime2](7) NOT NULL,
+	[CancelAtPeriodEnd] [bit] NOT NULL,
+	[CancellationEffectiveAtUtc] [datetime2](7) NULL,
+	[CancellationReason] [nvarchar](250) NULL,
+	[CancellationRequestedByUserId] [nvarchar](450) NULL,
+	[PendingCancellationProviderSubscriptionId] [nvarchar](100) NULL,
+	[PendingCancellationTilopayRecurringPlanId] [int] NULL,
+	[ProviderCancellation] [int] NOT NULL,
+	[ProviderCancellationAttemptCount] [int] NOT NULL,
+	[ProviderCancellationLastAttemptUtc] [datetime2](7) NULL,
+	[ProviderCancellationNextRetryUtc] [datetime2](7) NULL,
+	[ProviderCancelledAtUtc] [datetime2](7) NULL,
+	[BillingSource] [int] NOT NULL,
+	[GrantedAtUtc] [datetime2](7) NULL,
+	[GrantedByUserId] [nvarchar](450) NULL,
+	[IsManualGrantIndefinite] [bit] NOT NULL,
+	[ManualGrantExpiresAtUtc] [datetime2](7) NULL,
+	[ManualGrantReason] [nvarchar](500) NULL,
+	[ManualGrantType] [int] NULL,
+	[RevocationReason] [nvarchar](500) NULL,
+	[RevokedAtUtc] [datetime2](7) NULL,
+	[RevokedByUserId] [nvarchar](450) NULL,
+	[PreviousProviderCancelledAtUtc] [datetime2](7) NULL,
+	[PreviousProviderSubscriptionId] [nvarchar](100) NULL,
+	[ProviderCancellationSubscriptionId] [nvarchar](100) NULL,
+ CONSTRAINT [PK_TenantSubscriptionAddons] PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_TenantSubscriptionAddons_PlanId] ON [dbo].[TenantSubscriptionAddons]
+(
+	[PlanId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [IX_TenantSubscriptionAddons_ProviderSubscriptionId] ON [dbo].[TenantSubscriptionAddons]
+(
+	[ProviderSubscriptionId] ASC
+)
+WHERE ([ProviderSubscriptionId] IS NOT NULL)
+WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [IX_TenantSubscriptionAddons_TenantId] ON [dbo].[TenantSubscriptionAddons]
+(
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+ALTER TABLE [dbo].[TenantSubscriptionAddons] ADD  DEFAULT (CONVERT([bit],(0))) FOR [CancelAtPeriodEnd]
+GO
+ALTER TABLE [dbo].[TenantSubscriptionAddons] ADD  DEFAULT ((0)) FOR [ProviderCancellation]
+GO
+ALTER TABLE [dbo].[TenantSubscriptionAddons] ADD  DEFAULT ((0)) FOR [ProviderCancellationAttemptCount]
+GO
+ALTER TABLE [dbo].[TenantSubscriptionAddons] ADD  DEFAULT ((0)) FOR [BillingSource]
+GO
+ALTER TABLE [dbo].[TenantSubscriptionAddons] ADD  DEFAULT (CONVERT([bit],(0))) FOR [IsManualGrantIndefinite]
+GO
+CREATE TABLE [dbo].[TenantWhatsAppSettings](
+	[Id] [uniqueidentifier] NOT NULL,
+	[TenantId] [uniqueidentifier] NOT NULL,
+	[IsEnabled] [bit] NOT NULL,
+	[SendConfirmationOnCreate] [bit] NOT NULL,
+	[SendReminderThreeHoursBefore] [bit] NOT NULL,
+	[DailyMessageLimit] [int] NOT NULL,
+	[TimeZoneId] [nvarchar](100) NOT NULL,
+	[Notes] [nvarchar](2000) NULL,
+	[CreatedAtUtc] [datetime2](7) NOT NULL,
+	[UpdatedAtUtc] [datetime2](7) NOT NULL,
+	[UpdatedByUserId] [nvarchar](450) NULL,
+	[ConfirmationBatchTarget] [nvarchar](30) NOT NULL,
+	[ConfirmationBatchTime] [time](7) NULL,
+	[ConfirmationHoursBefore] [int] NOT NULL,
+	[ConfirmationMorningEnd] [time](7) NULL,
+	[ConfirmationMorningStart] [time](7) NULL,
+	[ConfirmationScheduleMode] [nvarchar](40) NOT NULL,
+	[LastConfirmationBatchRunDateLocal] [date] NULL,
+	[LastReminderBatchRunDateLocal] [date] NULL,
+	[QuietHoursEnabled] [bit] NOT NULL,
+	[QuietHoursEnd] [time](7) NULL,
+	[QuietHoursStart] [time](7) NULL,
+	[ReminderBatchTarget] [nvarchar](30) NOT NULL,
+	[ReminderBatchTime] [time](7) NULL,
+	[ReminderHoursBefore] [int] NOT NULL,
+	[ReminderLookAheadHours] [int] NOT NULL,
+	[ReminderScheduleMode] [nvarchar](40) NOT NULL,
+	[SendConfirmationImmediatelyIfInsideWindow] [bit] NOT NULL,
+	[SendReminderImmediatelyIfInsideWindow] [bit] NOT NULL,
+ CONSTRAINT [PK_TenantWhatsAppSettings] PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_TenantWhatsAppSettings_TenantId_IsEnabled] ON [dbo].[TenantWhatsAppSettings]
+(
+	[TenantId] ASC,
+	[IsEnabled] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [UX_TenantWhatsAppSettings_TenantId] ON [dbo].[TenantWhatsAppSettings]
+(
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+ALTER TABLE [dbo].[TenantWhatsAppSettings] ADD  DEFAULT (CONVERT([bit],(0))) FOR [IsEnabled]
+GO
+ALTER TABLE [dbo].[TenantWhatsAppSettings] ADD  DEFAULT (CONVERT([bit],(1))) FOR [SendConfirmationOnCreate]
+GO
+ALTER TABLE [dbo].[TenantWhatsAppSettings] ADD  DEFAULT (CONVERT([bit],(1))) FOR [SendReminderThreeHoursBefore]
+GO
+ALTER TABLE [dbo].[TenantWhatsAppSettings] ADD  DEFAULT ((30)) FOR [DailyMessageLimit]
+GO
+ALTER TABLE [dbo].[TenantWhatsAppSettings] ADD  DEFAULT (N'America/Costa_Rica') FOR [TimeZoneId]
+GO
+ALTER TABLE [dbo].[TenantWhatsAppSettings] ADD  DEFAULT (N'TomorrowAllDay') FOR [ConfirmationBatchTarget]
+GO
+ALTER TABLE [dbo].[TenantWhatsAppSettings] ADD  DEFAULT ((24)) FOR [ConfirmationHoursBefore]
+GO
+ALTER TABLE [dbo].[TenantWhatsAppSettings] ADD  DEFAULT (N'RelativeBeforeAppointment') FOR [ConfirmationScheduleMode]
+GO
+ALTER TABLE [dbo].[TenantWhatsAppSettings] ADD  DEFAULT (CONVERT([bit],(0))) FOR [QuietHoursEnabled]
+GO
+ALTER TABLE [dbo].[TenantWhatsAppSettings] ADD  DEFAULT (N'SameDayRemaining') FOR [ReminderBatchTarget]
+GO
+ALTER TABLE [dbo].[TenantWhatsAppSettings] ADD  DEFAULT ((3)) FOR [ReminderHoursBefore]
+GO
+ALTER TABLE [dbo].[TenantWhatsAppSettings] ADD  DEFAULT ((3)) FOR [ReminderLookAheadHours]
+GO
+ALTER TABLE [dbo].[TenantWhatsAppSettings] ADD  DEFAULT (N'RelativeBeforeAppointment') FOR [ReminderScheduleMode]
+GO
+ALTER TABLE [dbo].[TenantWhatsAppSettings] ADD  DEFAULT (CONVERT([bit],(1))) FOR [SendConfirmationImmediatelyIfInsideWindow]
+GO
+ALTER TABLE [dbo].[TenantWhatsAppSettings] ADD  DEFAULT (CONVERT([bit],(1))) FOR [SendReminderImmediatelyIfInsideWindow]
+GO
+CREATE TABLE [dbo].[WhatsAppInboundAutoReplies](
+	[Id] [bigint] IDENTITY(1,1) NOT NULL,
+	[InboundMessageId] [nvarchar](128) NOT NULL,
+	[SenderPhoneE164] [nvarchar](32) NULL,
+	[MessageType] [nvarchar](40) NULL,
+	[Status] [nvarchar](30) NOT NULL,
+	[ReplyMetaMessageId] [nvarchar](128) NULL,
+	[ErrorCode] [nvarchar](80) NULL,
+	[ErrorMessage] [nvarchar](1000) NULL,
+	[ReceivedAtUtc] [datetime2](7) NOT NULL,
+	[ProcessedAtUtc] [datetime2](7) NULL,
+ CONSTRAINT [PK_WhatsAppInboundAutoReplies] PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_WhatsAppInboundAutoReplies_ReceivedAtUtc] ON [dbo].[WhatsAppInboundAutoReplies]
+(
+	[ReceivedAtUtc] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [UX_WhatsAppInboundAutoReplies_InboundMessageId] ON [dbo].[WhatsAppInboundAutoReplies]
+(
+	[InboundMessageId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE TABLE [dbo].[WhatsAppMessageLogs](
+	[Id] [bigint] IDENTITY(1,1) NOT NULL,
+	[TenantId] [uniqueidentifier] NOT NULL,
+	[CitaId] [int] NULL,
+	[Direction] [nvarchar](20) NOT NULL,
+	[NotificationType] [nvarchar](40) NOT NULL,
+	[Provider] [nvarchar](40) NOT NULL,
+	[MetaMessageId] [nvarchar](128) NULL,
+	[ContextMessageId] [nvarchar](128) NULL,
+	[RecipientPhoneE164] [nvarchar](32) NULL,
+	[SenderPhoneE164] [nvarchar](32) NULL,
+	[WaId] [nvarchar](64) NULL,
+	[TemplateName] [nvarchar](128) NULL,
+	[PayloadJson] [nvarchar](max) NULL,
+	[Status] [nvarchar](30) NOT NULL,
+	[ErrorCode] [nvarchar](80) NULL,
+	[ErrorMessage] [nvarchar](1000) NULL,
+	[AttemptCount] [int] NOT NULL,
+	[CreatedAtUtc] [datetime2](7) NOT NULL,
+	[SentAtUtc] [datetime2](7) NULL,
+	[DeliveredAtUtc] [datetime2](7) NULL,
+	[ReadAtUtc] [datetime2](7) NULL,
+	[FailedAtUtc] [datetime2](7) NULL,
+	[ProcessedAtUtc] [datetime2](7) NULL,
+	[ProcessingStartedAtUtc] [datetime2](7) NULL,
+	[LastAttemptAtUtc] [datetime2](7) NULL,
+	[NextAttemptAtUtc] [datetime2](7) NULL,
+ CONSTRAINT [PK_WhatsAppMessageLogs] PRIMARY KEY CLUSTERED
+(
+	[Id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_WhatsAppMessageLogs_CitaId] ON [dbo].[WhatsAppMessageLogs]
+(
+	[CitaId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE NONCLUSTERED INDEX [IX_WhatsAppMessageLogs_ContextMessageId] ON [dbo].[WhatsAppMessageLogs]
+(
+	[ContextMessageId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_WhatsAppMessageLogs_TenantId] ON [dbo].[WhatsAppMessageLogs]
+(
+	[TenantId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_WhatsAppMessageLogs_TenantId_CitaId] ON [dbo].[WhatsAppMessageLogs]
+(
+	[TenantId] ASC,
+	[CitaId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+CREATE NONCLUSTERED INDEX [IX_WhatsAppMessageLogs_TenantId_CreatedAtUtc] ON [dbo].[WhatsAppMessageLogs]
+(
+	[TenantId] ASC,
+	[CreatedAtUtc] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE NONCLUSTERED INDEX [IX_WhatsAppMessageLogs_TenantId_NotificationType_Status] ON [dbo].[WhatsAppMessageLogs]
+(
+	[TenantId] ASC,
+	[NotificationType] ASC,
+	[Status] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE NONCLUSTERED INDEX [IX_WhatsAppMessageLogs_TenantId_RecipientPhone_CreatedAtUtc] ON [dbo].[WhatsAppMessageLogs]
+(
+	[TenantId] ASC,
+	[RecipientPhoneE164] ASC,
+	[CreatedAtUtc] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [UX_WhatsAppMessageLogs_ActiveOutboundNotification] ON [dbo].[WhatsAppMessageLogs]
+(
+	[TenantId] ASC,
+	[CitaId] ASC,
+	[NotificationType] ASC,
+	[Direction] ASC
+)
+WHERE ([Direction]='Outbound' AND [CitaId] IS NOT NULL AND ([Status] IN ('Pending', 'Processing', 'Sent')))
+WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [UX_WhatsAppMessageLogs_MetaMessageId] ON [dbo].[WhatsAppMessageLogs]
+(
+	[MetaMessageId] ASC
+)
+WHERE ([MetaMessageId] IS NOT NULL)
+WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+
+-- ===== Foreign keys =====
+ALTER TABLE [dbo].[AspNetRoleClaims]  WITH CHECK ADD  CONSTRAINT [FK_AspNetRoleClaims_AspNetRoles_RoleId] FOREIGN KEY([RoleId])
+REFERENCES [dbo].[AspNetRoles] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[AspNetRoleClaims] CHECK CONSTRAINT [FK_AspNetRoleClaims_AspNetRoles_RoleId]
+GO
+ALTER TABLE [dbo].[AspNetUserClaims]  WITH CHECK ADD  CONSTRAINT [FK_AspNetUserClaims_AspNetUsers_UserId] FOREIGN KEY([UserId])
+REFERENCES [dbo].[AspNetUsers] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[AspNetUserClaims] CHECK CONSTRAINT [FK_AspNetUserClaims_AspNetUsers_UserId]
+GO
+ALTER TABLE [dbo].[AspNetUserLogins]  WITH CHECK ADD  CONSTRAINT [FK_AspNetUserLogins_AspNetUsers_UserId] FOREIGN KEY([UserId])
+REFERENCES [dbo].[AspNetUsers] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[AspNetUserLogins] CHECK CONSTRAINT [FK_AspNetUserLogins_AspNetUsers_UserId]
+GO
+ALTER TABLE [dbo].[AspNetUserRoles]  WITH CHECK ADD  CONSTRAINT [FK_AspNetUserRoles_AspNetRoles_RoleId] FOREIGN KEY([RoleId])
+REFERENCES [dbo].[AspNetRoles] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[AspNetUserRoles] CHECK CONSTRAINT [FK_AspNetUserRoles_AspNetRoles_RoleId]
+GO
+ALTER TABLE [dbo].[AspNetUserRoles]  WITH CHECK ADD  CONSTRAINT [FK_AspNetUserRoles_AspNetUsers_UserId] FOREIGN KEY([UserId])
+REFERENCES [dbo].[AspNetUsers] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[AspNetUserRoles] CHECK CONSTRAINT [FK_AspNetUserRoles_AspNetUsers_UserId]
+GO
+ALTER TABLE [dbo].[AspNetUsers]  WITH CHECK ADD  CONSTRAINT [FK_AspNetUsers_Tenants_TenantId] FOREIGN KEY([TenantId])
+REFERENCES [dbo].[Tenants] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[AspNetUsers] CHECK CONSTRAINT [FK_AspNetUsers_Tenants_TenantId]
+GO
+ALTER TABLE [dbo].[AspNetUserTokens]  WITH CHECK ADD  CONSTRAINT [FK_AspNetUserTokens_AspNetUsers_UserId] FOREIGN KEY([UserId])
+REFERENCES [dbo].[AspNetUsers] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[AspNetUserTokens] CHECK CONSTRAINT [FK_AspNetUserTokens_AspNetUsers_UserId]
+GO
+ALTER TABLE [dbo].[AssociatePermissions]  WITH CHECK ADD  CONSTRAINT [FK_AssociatePermissions_Associates_AssociateId] FOREIGN KEY([AssociateId])
+REFERENCES [dbo].[Associates] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[AssociatePermissions] CHECK CONSTRAINT [FK_AssociatePermissions_Associates_AssociateId]
+GO
+ALTER TABLE [dbo].[Associates]  WITH CHECK ADD  CONSTRAINT [FK_Associates_AspNetUsers_AppUsuarioId] FOREIGN KEY([AppUsuarioId])
+REFERENCES [dbo].[AspNetUsers] ([Id])
+ON DELETE SET NULL
+GO
+ALTER TABLE [dbo].[Associates] CHECK CONSTRAINT [FK_Associates_AspNetUsers_AppUsuarioId]
+GO
+ALTER TABLE [dbo].[AssociateTypes]  WITH CHECK ADD  CONSTRAINT [FK_AssociateTypes_Associates_AssociateId] FOREIGN KEY([AssociateId])
+REFERENCES [dbo].[Associates] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[AssociateTypes] CHECK CONSTRAINT [FK_AssociateTypes_Associates_AssociateId]
+GO
+ALTER TABLE [dbo].[BookingRequests]  WITH CHECK ADD  CONSTRAINT [FK_BookingRequests_Citas_ConvertedCitaId] FOREIGN KEY([ConvertedCitaId])
+REFERENCES [dbo].[Citas] ([Id])
+ON DELETE SET NULL
+GO
+ALTER TABLE [dbo].[BookingRequests] CHECK CONSTRAINT [FK_BookingRequests_Citas_ConvertedCitaId]
+GO
+ALTER TABLE [dbo].[BookingRequests]  WITH CHECK ADD  CONSTRAINT [FK_BookingRequests_Clientes_ClienteId] FOREIGN KEY([ClienteId])
+REFERENCES [dbo].[Clientes] ([Id])
+ON DELETE SET NULL
+GO
+ALTER TABLE [dbo].[BookingRequests] CHECK CONSTRAINT [FK_BookingRequests_Clientes_ClienteId]
+GO
+ALTER TABLE [dbo].[BookingRequests]  WITH CHECK ADD  CONSTRAINT [FK_BookingRequests_Funcionarios_FuncionarioAsignadoId] FOREIGN KEY([FuncionarioAsignadoId])
+REFERENCES [dbo].[Funcionarios] ([IdFuncionario])
+GO
+ALTER TABLE [dbo].[BookingRequests] CHECK CONSTRAINT [FK_BookingRequests_Funcionarios_FuncionarioAsignadoId]
+GO
+ALTER TABLE [dbo].[BookingRequests]  WITH CHECK ADD  CONSTRAINT [FK_BookingRequests_Funcionarios_FuncionarioId] FOREIGN KEY([FuncionarioId])
+REFERENCES [dbo].[Funcionarios] ([IdFuncionario])
+GO
+ALTER TABLE [dbo].[BookingRequests] CHECK CONSTRAINT [FK_BookingRequests_Funcionarios_FuncionarioId]
+GO
+ALTER TABLE [dbo].[BookingRequests]  WITH CHECK ADD  CONSTRAINT [FK_BookingRequests_Servicios_ServicioId] FOREIGN KEY([ServicioId])
+REFERENCES [dbo].[Servicios] ([Id])
+GO
+ALTER TABLE [dbo].[BookingRequests] CHECK CONSTRAINT [FK_BookingRequests_Servicios_ServicioId]
+GO
+ALTER TABLE [dbo].[Categorias]  WITH CHECK ADD  CONSTRAINT [FK_Categorias_Tenants] FOREIGN KEY([TenantId])
+REFERENCES [dbo].[Tenants] ([Id])
+GO
+ALTER TABLE [dbo].[Categorias] CHECK CONSTRAINT [FK_Categorias_Tenants]
+GO
+ALTER TABLE [dbo].[Citas]  WITH CHECK ADD  CONSTRAINT [FK_Citas_Clientes_ClienteId] FOREIGN KEY([ClienteId])
+REFERENCES [dbo].[Clientes] ([Id])
+GO
+ALTER TABLE [dbo].[Citas] CHECK CONSTRAINT [FK_Citas_Clientes_ClienteId]
+GO
+ALTER TABLE [dbo].[Citas]  WITH CHECK ADD  CONSTRAINT [FK_Citas_Funcionarios] FOREIGN KEY([FuncionarioId])
+REFERENCES [dbo].[Funcionarios] ([IdFuncionario])
+GO
+ALTER TABLE [dbo].[Citas] CHECK CONSTRAINT [FK_Citas_Funcionarios]
+GO
+ALTER TABLE [dbo].[Citas]  WITH CHECK ADD  CONSTRAINT [FK_Citas_Servicios] FOREIGN KEY([ServicioId])
+REFERENCES [dbo].[Servicios] ([Id])
+GO
+ALTER TABLE [dbo].[Citas] CHECK CONSTRAINT [FK_Citas_Servicios]
+GO
+ALTER TABLE [dbo].[Citas]  WITH CHECK ADD  CONSTRAINT [FK_Citas_Tenants] FOREIGN KEY([TenantId])
+REFERENCES [dbo].[Tenants] ([Id])
+GO
+ALTER TABLE [dbo].[Citas] CHECK CONSTRAINT [FK_Citas_Tenants]
+GO
+ALTER TABLE [dbo].[Clientes]  WITH CHECK ADD  CONSTRAINT [FK_Clientes_Tenants] FOREIGN KEY([TenantId])
+REFERENCES [dbo].[Tenants] ([Id])
+GO
+ALTER TABLE [dbo].[Clientes] CHECK CONSTRAINT [FK_Clientes_Tenants]
+GO
+ALTER TABLE [dbo].[ClienteServiciosRealizados]  WITH CHECK ADD  CONSTRAINT [FK_ClienteServiciosRealizados_Citas_CitaId] FOREIGN KEY([CitaId])
+REFERENCES [dbo].[Citas] ([Id])
+ON DELETE SET NULL
+GO
+ALTER TABLE [dbo].[ClienteServiciosRealizados] CHECK CONSTRAINT [FK_ClienteServiciosRealizados_Citas_CitaId]
+GO
+ALTER TABLE [dbo].[ClienteServiciosRealizados]  WITH CHECK ADD  CONSTRAINT [FK_ClienteServiciosRealizados_Clientes_ClienteId] FOREIGN KEY([ClienteId])
+REFERENCES [dbo].[Clientes] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[ClienteServiciosRealizados] CHECK CONSTRAINT [FK_ClienteServiciosRealizados_Clientes_ClienteId]
+GO
+ALTER TABLE [dbo].[ClienteServiciosRealizados]  WITH CHECK ADD  CONSTRAINT [FK_ClienteServiciosRealizados_Cobros_CobroId] FOREIGN KEY([CobroId])
+REFERENCES [dbo].[Cobros] ([IdCobro])
+ON DELETE SET NULL
+GO
+ALTER TABLE [dbo].[ClienteServiciosRealizados] CHECK CONSTRAINT [FK_ClienteServiciosRealizados_Cobros_CobroId]
+GO
+ALTER TABLE [dbo].[ClienteServiciosRealizados]  WITH CHECK ADD  CONSTRAINT [FK_ClienteServiciosRealizados_Funcionarios_FuncionarioId] FOREIGN KEY([FuncionarioId])
+REFERENCES [dbo].[Funcionarios] ([IdFuncionario])
+GO
+ALTER TABLE [dbo].[ClienteServiciosRealizados] CHECK CONSTRAINT [FK_ClienteServiciosRealizados_Funcionarios_FuncionarioId]
+GO
+ALTER TABLE [dbo].[ClienteServiciosRealizados]  WITH CHECK ADD  CONSTRAINT [FK_ClienteServiciosRealizados_Servicios_ServicioId] FOREIGN KEY([ServicioId])
+REFERENCES [dbo].[Servicios] ([Id])
+GO
+ALTER TABLE [dbo].[ClienteServiciosRealizados] CHECK CONSTRAINT [FK_ClienteServiciosRealizados_Servicios_ServicioId]
+GO
+ALTER TABLE [dbo].[ClienteVisitas]  WITH CHECK ADD  CONSTRAINT [FK_ClienteVisitas_Clientes_ClienteId] FOREIGN KEY([ClienteId])
+REFERENCES [dbo].[Clientes] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[ClienteVisitas] CHECK CONSTRAINT [FK_ClienteVisitas_Clientes_ClienteId]
+GO
+ALTER TABLE [dbo].[ClienteVisitas]  WITH CHECK ADD  CONSTRAINT [FK_ClienteVisitas_Tenants] FOREIGN KEY([TenantId])
+REFERENCES [dbo].[Tenants] ([Id])
+GO
+ALTER TABLE [dbo].[ClienteVisitas] CHECK CONSTRAINT [FK_ClienteVisitas_Tenants]
+GO
+ALTER TABLE [dbo].[Cobros]  WITH CHECK ADD  CONSTRAINT [FK_Cobros_Citas_CitaId] FOREIGN KEY([CitaId])
+REFERENCES [dbo].[Citas] ([Id])
+ON DELETE SET NULL
+GO
+ALTER TABLE [dbo].[Cobros] CHECK CONSTRAINT [FK_Cobros_Citas_CitaId]
+GO
+ALTER TABLE [dbo].[Cobros]  WITH CHECK ADD  CONSTRAINT [FK_Cobros_Clientes_ClienteId] FOREIGN KEY([ClienteId])
+REFERENCES [dbo].[Clientes] ([Id])
+GO
+ALTER TABLE [dbo].[Cobros] CHECK CONSTRAINT [FK_Cobros_Clientes_ClienteId]
+GO
+ALTER TABLE [dbo].[Cobros]  WITH CHECK ADD  CONSTRAINT [FK_Cobros_Funcionarios] FOREIGN KEY([FuncionarioId])
+REFERENCES [dbo].[Funcionarios] ([IdFuncionario])
+GO
+ALTER TABLE [dbo].[Cobros] CHECK CONSTRAINT [FK_Cobros_Funcionarios]
+GO
+ALTER TABLE [dbo].[Cobros]  WITH CHECK ADD  CONSTRAINT [FK_Cobros_Productos] FOREIGN KEY([ProductoId])
+REFERENCES [dbo].[Productos] ([IdProducto])
+GO
+ALTER TABLE [dbo].[Cobros] CHECK CONSTRAINT [FK_Cobros_Productos]
+GO
+ALTER TABLE [dbo].[Cobros]  WITH CHECK ADD  CONSTRAINT [FK_Cobros_Servicios] FOREIGN KEY([ServicioId])
+REFERENCES [dbo].[Servicios] ([Id])
+GO
+ALTER TABLE [dbo].[Cobros] CHECK CONSTRAINT [FK_Cobros_Servicios]
+GO
+ALTER TABLE [dbo].[Cobros]  WITH CHECK ADD  CONSTRAINT [FK_Cobros_Tenants] FOREIGN KEY([TenantId])
+REFERENCES [dbo].[Tenants] ([Id])
+GO
+ALTER TABLE [dbo].[Cobros] CHECK CONSTRAINT [FK_Cobros_Tenants]
+GO
+ALTER TABLE [dbo].[ComprobanteCobroLineas]  WITH CHECK ADD  CONSTRAINT [FK_ComprobanteCobroLineas_ComprobantesCobro_ComprobanteCobroId] FOREIGN KEY([ComprobanteCobroId])
+REFERENCES [dbo].[ComprobantesCobro] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[ComprobanteCobroLineas] CHECK CONSTRAINT [FK_ComprobanteCobroLineas_ComprobantesCobro_ComprobanteCobroId]
+GO
+ALTER TABLE [dbo].[ComprobantesCobro]  WITH CHECK ADD  CONSTRAINT [FK_ComprobantesCobro_Clientes_ClienteId] FOREIGN KEY([ClienteId])
+REFERENCES [dbo].[Clientes] ([Id])
+GO
+ALTER TABLE [dbo].[ComprobantesCobro] CHECK CONSTRAINT [FK_ComprobantesCobro_Clientes_ClienteId]
+GO
+ALTER TABLE [dbo].[ComprobantesCobro]  WITH CHECK ADD  CONSTRAINT [FK_ComprobantesCobro_Cobros_CobroId] FOREIGN KEY([CobroId])
+REFERENCES [dbo].[Cobros] ([IdCobro])
+GO
+ALTER TABLE [dbo].[ComprobantesCobro] CHECK CONSTRAINT [FK_ComprobantesCobro_Cobros_CobroId]
+GO
+ALTER TABLE [dbo].[ComprobantesCobro]  WITH CHECK ADD  CONSTRAINT [FK_ComprobantesCobro_Funcionarios_FuncionarioId] FOREIGN KEY([FuncionarioId])
+REFERENCES [dbo].[Funcionarios] ([IdFuncionario])
+GO
+ALTER TABLE [dbo].[ComprobantesCobro] CHECK CONSTRAINT [FK_ComprobantesCobro_Funcionarios_FuncionarioId]
+GO
+ALTER TABLE [dbo].[ContractAcceptanceRecords]  WITH CHECK ADD  CONSTRAINT [FK_ContractAcceptanceRecords_AspNetUsers_UserId] FOREIGN KEY([UserId])
+REFERENCES [dbo].[AspNetUsers] ([Id])
+GO
+ALTER TABLE [dbo].[ContractAcceptanceRecords] CHECK CONSTRAINT [FK_ContractAcceptanceRecords_AspNetUsers_UserId]
+GO
+ALTER TABLE [dbo].[ContractAcceptanceRecords]  WITH CHECK ADD  CONSTRAINT [FK_ContractAcceptanceRecords_ContractDocuments_ContractDocumentId] FOREIGN KEY([ContractDocumentId])
+REFERENCES [dbo].[ContractDocuments] ([Id])
+GO
+ALTER TABLE [dbo].[ContractAcceptanceRecords] CHECK CONSTRAINT [FK_ContractAcceptanceRecords_ContractDocuments_ContractDocumentId]
+GO
+ALTER TABLE [dbo].[DetalleCobroProductos]  WITH CHECK ADD  CONSTRAINT [FK_DetalleCobroProductos_Cobros] FOREIGN KEY([CobroId])
+REFERENCES [dbo].[Cobros] ([IdCobro])
+GO
+ALTER TABLE [dbo].[DetalleCobroProductos] CHECK CONSTRAINT [FK_DetalleCobroProductos_Cobros]
+GO
+ALTER TABLE [dbo].[DetalleCobroProductos]  WITH CHECK ADD  CONSTRAINT [FK_DetalleCobroProductos_Productos] FOREIGN KEY([ProductoId])
+REFERENCES [dbo].[Productos] ([IdProducto])
+GO
+ALTER TABLE [dbo].[DetalleCobroProductos] CHECK CONSTRAINT [FK_DetalleCobroProductos_Productos]
+GO
+ALTER TABLE [dbo].[DetalleCobroProductos]  WITH CHECK ADD  CONSTRAINT [FK_DetalleCobroProductos_Tenants] FOREIGN KEY([TenantId])
+REFERENCES [dbo].[Tenants] ([Id])
+GO
+ALTER TABLE [dbo].[DetalleCobroProductos] CHECK CONSTRAINT [FK_DetalleCobroProductos_Tenants]
+GO
+ALTER TABLE [dbo].[Egresos]  WITH CHECK ADD  CONSTRAINT [FK_Egresos_Categorias_CategoriaId] FOREIGN KEY([CategoriaId])
+REFERENCES [dbo].[Categorias] ([Id])
+GO
+ALTER TABLE [dbo].[Egresos] CHECK CONSTRAINT [FK_Egresos_Categorias_CategoriaId]
+GO
+ALTER TABLE [dbo].[Egresos]  WITH CHECK ADD  CONSTRAINT [FK_Egresos_Tenants] FOREIGN KEY([TenantId])
+REFERENCES [dbo].[Tenants] ([Id])
+GO
+ALTER TABLE [dbo].[Egresos] CHECK CONSTRAINT [FK_Egresos_Tenants]
+GO
+ALTER TABLE [dbo].[Facturas]  WITH CHECK ADD FOREIGN KEY([TenantId])
+REFERENCES [dbo].[Tenants] ([Id])
+GO
+ALTER TABLE [dbo].[Facturas]  WITH CHECK ADD  CONSTRAINT [FK_Facturas_PagosSuscripcion_PagoSuscripcionId] FOREIGN KEY([PagoSuscripcionId])
+REFERENCES [dbo].[PagosSuscripcion] ([Id])
+GO
+ALTER TABLE [dbo].[Facturas] CHECK CONSTRAINT [FK_Facturas_PagosSuscripcion_PagoSuscripcionId]
+GO
+ALTER TABLE [dbo].[Facturas]  WITH CHECK ADD  CONSTRAINT [FK_Facturas_Suscripciones_SuscripcionId] FOREIGN KEY([SuscripcionId])
+REFERENCES [dbo].[Suscripciones] ([Id])
+GO
+ALTER TABLE [dbo].[Facturas] CHECK CONSTRAINT [FK_Facturas_Suscripciones_SuscripcionId]
+GO
+ALTER TABLE [dbo].[FuncionarioPortalPermisos]  WITH CHECK ADD  CONSTRAINT [FK_FuncionarioPortalPermisos_Funcionarios_FuncionarioId] FOREIGN KEY([FuncionarioId])
+REFERENCES [dbo].[Funcionarios] ([IdFuncionario])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[FuncionarioPortalPermisos] CHECK CONSTRAINT [FK_FuncionarioPortalPermisos_Funcionarios_FuncionarioId]
+GO
+ALTER TABLE [dbo].[Funcionarios]  WITH CHECK ADD  CONSTRAINT [FK_Funcionarios_AspNetUsers_AppUsuarioId] FOREIGN KEY([AppUsuarioId])
+REFERENCES [dbo].[AspNetUsers] ([Id])
+ON DELETE SET NULL
+GO
+ALTER TABLE [dbo].[Funcionarios] CHECK CONSTRAINT [FK_Funcionarios_AspNetUsers_AppUsuarioId]
+GO
+ALTER TABLE [dbo].[Funcionarios]  WITH CHECK ADD  CONSTRAINT [FK_Funcionarios_Puestos_IdPuesto] FOREIGN KEY([IdPuesto])
+REFERENCES [dbo].[Puestos] ([IdPuesto])
+GO
+ALTER TABLE [dbo].[Funcionarios] CHECK CONSTRAINT [FK_Funcionarios_Puestos_IdPuesto]
+GO
+ALTER TABLE [dbo].[Funcionarios]  WITH CHECK ADD  CONSTRAINT [FK_Funcionarios_Tenants] FOREIGN KEY([TenantId])
+REFERENCES [dbo].[Tenants] ([Id])
+GO
+ALTER TABLE [dbo].[Funcionarios] CHECK CONSTRAINT [FK_Funcionarios_Tenants]
+GO
+ALTER TABLE [dbo].[HistorialSuscripciones]  WITH CHECK ADD FOREIGN KEY([SuscripcionId])
+REFERENCES [dbo].[Suscripciones] ([Id])
+GO
+ALTER TABLE [dbo].[InvestorAgreements]  WITH CHECK ADD  CONSTRAINT [FK_InvestorAgreements_TenantInvestors_InvestorId] FOREIGN KEY([InvestorId])
+REFERENCES [dbo].[TenantInvestors] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[InvestorAgreements] CHECK CONSTRAINT [FK_InvestorAgreements_TenantInvestors_InvestorId]
+GO
+ALTER TABLE [dbo].[InvestorDistributionPayments]  WITH CHECK ADD  CONSTRAINT [FK_InvestorDistributionPayments_InvestorStatements_StatementId] FOREIGN KEY([StatementId])
+REFERENCES [dbo].[InvestorStatements] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[InvestorDistributionPayments] CHECK CONSTRAINT [FK_InvestorDistributionPayments_InvestorStatements_StatementId]
+GO
+ALTER TABLE [dbo].[InvestorPolicyExpenseCategories]  WITH CHECK ADD  CONSTRAINT [FK_InvestorPolicyExpenseCategories_Categorias_CategoriaId] FOREIGN KEY([CategoriaId])
+REFERENCES [dbo].[Categorias] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[InvestorPolicyExpenseCategories] CHECK CONSTRAINT [FK_InvestorPolicyExpenseCategories_Categorias_CategoriaId]
+GO
+ALTER TABLE [dbo].[InvestorPolicyExpenseCategories]  WITH CHECK ADD  CONSTRAINT [FK_InvestorPolicyExpenseCategories_InvestorProfitPolicies_PolicyId] FOREIGN KEY([PolicyId])
+REFERENCES [dbo].[InvestorProfitPolicies] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[InvestorPolicyExpenseCategories] CHECK CONSTRAINT [FK_InvestorPolicyExpenseCategories_InvestorProfitPolicies_PolicyId]
+GO
+ALTER TABLE [dbo].[InvestorStatementAdjustments]  WITH CHECK ADD  CONSTRAINT [FK_InvestorStatementAdjustments_InvestorStatements_StatementId] FOREIGN KEY([StatementId])
+REFERENCES [dbo].[InvestorStatements] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[InvestorStatementAdjustments] CHECK CONSTRAINT [FK_InvestorStatementAdjustments_InvestorStatements_StatementId]
+GO
+ALTER TABLE [dbo].[InvestorStatementEmailLogs]  WITH CHECK ADD  CONSTRAINT [FK_InvestorStatementEmailLogs_InvestorStatements_StatementId] FOREIGN KEY([StatementId])
+REFERENCES [dbo].[InvestorStatements] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[InvestorStatementEmailLogs] CHECK CONSTRAINT [FK_InvestorStatementEmailLogs_InvestorStatements_StatementId]
+GO
+ALTER TABLE [dbo].[InvestorStatements]  WITH CHECK ADD  CONSTRAINT [FK_InvestorStatements_InvestorAgreements_AgreementId] FOREIGN KEY([AgreementId])
+REFERENCES [dbo].[InvestorAgreements] ([Id])
+ON DELETE SET NULL
+GO
+ALTER TABLE [dbo].[InvestorStatements] CHECK CONSTRAINT [FK_InvestorStatements_InvestorAgreements_AgreementId]
+GO
+ALTER TABLE [dbo].[InvestorStatements]  WITH CHECK ADD  CONSTRAINT [FK_InvestorStatements_TenantInvestors_InvestorId] FOREIGN KEY([InvestorId])
+REFERENCES [dbo].[TenantInvestors] ([Id])
+GO
+ALTER TABLE [dbo].[InvestorStatements] CHECK CONSTRAINT [FK_InvestorStatements_TenantInvestors_InvestorId]
+GO
+ALTER TABLE [dbo].[LiquidacionesSemanales]  WITH CHECK ADD  CONSTRAINT [FK_LiquidacionesSemanales_Egresos_EgresoId] FOREIGN KEY([EgresoId])
+REFERENCES [dbo].[Egresos] ([IdEgreso])
+GO
+ALTER TABLE [dbo].[LiquidacionesSemanales] CHECK CONSTRAINT [FK_LiquidacionesSemanales_Egresos_EgresoId]
+GO
+ALTER TABLE [dbo].[LiquidacionesSemanalesDetalle]  WITH CHECK ADD  CONSTRAINT [FK_LiquidacionesSemanalesDetalle_Funcionarios_FuncionarioId] FOREIGN KEY([FuncionarioId])
+REFERENCES [dbo].[Funcionarios] ([IdFuncionario])
+GO
+ALTER TABLE [dbo].[LiquidacionesSemanalesDetalle] CHECK CONSTRAINT [FK_LiquidacionesSemanalesDetalle_Funcionarios_FuncionarioId]
+GO
+ALTER TABLE [dbo].[LiquidacionesSemanalesDetalle]  WITH CHECK ADD  CONSTRAINT [FK_LiquidacionesSemanalesDetalle_LiquidacionesSemanales_LiquidacionSemanalId] FOREIGN KEY([LiquidacionSemanalId])
+REFERENCES [dbo].[LiquidacionesSemanales] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[LiquidacionesSemanalesDetalle] CHECK CONSTRAINT [FK_LiquidacionesSemanalesDetalle_LiquidacionesSemanales_LiquidacionSemanalId]
+GO
+ALTER TABLE [dbo].[LiquidacionesSemanalesDistribucionMensual]  WITH CHECK ADD  CONSTRAINT [FK_LiquidacionesSemanalesDistribucionMensual_LiquidacionesSemanales_LiquidacionSemanalId] FOREIGN KEY([LiquidacionSemanalId])
+REFERENCES [dbo].[LiquidacionesSemanales] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[LiquidacionesSemanalesDistribucionMensual] CHECK CONSTRAINT [FK_LiquidacionesSemanalesDistribucionMensual_LiquidacionesSemanales_LiquidacionSemanalId]
+GO
+ALTER TABLE [dbo].[MovimientosInventario]  WITH CHECK ADD  CONSTRAINT [FK_MovimientosInventario_Productos] FOREIGN KEY([ProductoId])
+REFERENCES [dbo].[Productos] ([IdProducto])
+GO
+ALTER TABLE [dbo].[MovimientosInventario] CHECK CONSTRAINT [FK_MovimientosInventario_Productos]
+GO
+ALTER TABLE [dbo].[MovimientosInventario]  WITH CHECK ADD  CONSTRAINT [FK_MovimientosInventario_Tenants] FOREIGN KEY([TenantId])
+REFERENCES [dbo].[Tenants] ([Id])
+GO
+ALTER TABLE [dbo].[MovimientosInventario] CHECK CONSTRAINT [FK_MovimientosInventario_Tenants]
+GO
+ALTER TABLE [dbo].[PagosFuncionarios]  WITH CHECK ADD  CONSTRAINT [FK_PagoFuncionario] FOREIGN KEY([FuncionarioId])
+REFERENCES [dbo].[Funcionarios] ([IdFuncionario])
+GO
+ALTER TABLE [dbo].[PagosFuncionarios] CHECK CONSTRAINT [FK_PagoFuncionario]
+GO
+ALTER TABLE [dbo].[PagosFuncionarios]  WITH CHECK ADD  CONSTRAINT [FK_PagosFuncionarios_Tenants] FOREIGN KEY([TenantId])
+REFERENCES [dbo].[Tenants] ([Id])
+GO
+ALTER TABLE [dbo].[PagosFuncionarios] CHECK CONSTRAINT [FK_PagosFuncionarios_Tenants]
+GO
+ALTER TABLE [dbo].[PagosSuscripcion]  WITH CHECK ADD  CONSTRAINT [FK_PagosSuscripcion_Planes_PlanId] FOREIGN KEY([PlanId])
+REFERENCES [dbo].[Planes] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[PagosSuscripcion] CHECK CONSTRAINT [FK_PagosSuscripcion_Planes_PlanId]
+GO
+ALTER TABLE [dbo].[PagosSuscripcion]  WITH CHECK ADD  CONSTRAINT [FK_PagosSuscripcion_Tenants_TenantId] FOREIGN KEY([TenantId])
+REFERENCES [dbo].[Tenants] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[PagosSuscripcion] CHECK CONSTRAINT [FK_PagosSuscripcion_Tenants_TenantId]
+GO
+ALTER TABLE [dbo].[PlanFeatures]  WITH CHECK ADD FOREIGN KEY([FeatureId])
+REFERENCES [dbo].[Features] ([Id])
+GO
+ALTER TABLE [dbo].[PlanFeatures]  WITH CHECK ADD FOREIGN KEY([PlanId])
+REFERENCES [dbo].[Planes] ([Id])
+GO
+ALTER TABLE [dbo].[Productos]  WITH CHECK ADD  CONSTRAINT [FK_Productos_Tenants] FOREIGN KEY([TenantId])
+REFERENCES [dbo].[Tenants] ([Id])
+GO
+ALTER TABLE [dbo].[Productos] CHECK CONSTRAINT [FK_Productos_Tenants]
+GO
+ALTER TABLE [dbo].[PromotionalCodeRedemptions]  WITH CHECK ADD  CONSTRAINT [FK_PromotionalCodeRedemptions_PromotionalCodes_PromotionalCodeId] FOREIGN KEY([PromotionalCodeId])
+REFERENCES [dbo].[PromotionalCodes] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[PromotionalCodeRedemptions] CHECK CONSTRAINT [FK_PromotionalCodeRedemptions_PromotionalCodes_PromotionalCodeId]
+GO
+ALTER TABLE [dbo].[PromotionalCodeRedemptions]  WITH CHECK ADD  CONSTRAINT [FK_PromotionalCodeRedemptions_TenantCommercialAccessGrants_TenantCommercialAccessGrantId] FOREIGN KEY([TenantCommercialAccessGrantId])
+REFERENCES [dbo].[TenantCommercialAccessGrants] ([Id])
+GO
+ALTER TABLE [dbo].[PromotionalCodeRedemptions] CHECK CONSTRAINT [FK_PromotionalCodeRedemptions_TenantCommercialAccessGrants_TenantCommercialAccessGrantId]
+GO
+ALTER TABLE [dbo].[PromotionalCodes]  WITH CHECK ADD  CONSTRAINT [FK_PromotionalCodes_Planes_PlanId] FOREIGN KEY([PlanId])
+REFERENCES [dbo].[Planes] ([Id])
+GO
+ALTER TABLE [dbo].[PromotionalCodes] CHECK CONSTRAINT [FK_PromotionalCodes_Planes_PlanId]
+GO
+ALTER TABLE [dbo].[Puestos]  WITH CHECK ADD  CONSTRAINT [FK_Puestos_Tenants] FOREIGN KEY([TenantId])
+REFERENCES [dbo].[Tenants] ([Id])
+GO
+ALTER TABLE [dbo].[Puestos] CHECK CONSTRAINT [FK_Puestos_Tenants]
+GO
+ALTER TABLE [dbo].[RecurringScheduleExceptions]  WITH CHECK ADD  CONSTRAINT [FK_RecurringScheduleExceptions_Funcionarios_FuncionarioId] FOREIGN KEY([FuncionarioId])
+REFERENCES [dbo].[Funcionarios] ([IdFuncionario])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[RecurringScheduleExceptions] CHECK CONSTRAINT [FK_RecurringScheduleExceptions_Funcionarios_FuncionarioId]
+GO
+ALTER TABLE [dbo].[RecurringScheduleExceptions]  WITH CHECK ADD  CONSTRAINT [FK_RecurringScheduleExceptions_RecurringScheduleRules_RuleId] FOREIGN KEY([RuleId])
+REFERENCES [dbo].[RecurringScheduleRules] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[RecurringScheduleExceptions] CHECK CONSTRAINT [FK_RecurringScheduleExceptions_RecurringScheduleRules_RuleId]
+GO
+ALTER TABLE [dbo].[RecurringScheduleRules]  WITH CHECK ADD  CONSTRAINT [FK_RecurringScheduleRules_RecurringScheduleRules_ReglaOrigenId] FOREIGN KEY([ReglaOrigenId])
+REFERENCES [dbo].[RecurringScheduleRules] ([Id])
+GO
+ALTER TABLE [dbo].[RecurringScheduleRules] CHECK CONSTRAINT [FK_RecurringScheduleRules_RecurringScheduleRules_ReglaOrigenId]
+GO
+ALTER TABLE [dbo].[RecurringScheduleRuleTargets]  WITH CHECK ADD  CONSTRAINT [FK_RecurringScheduleRuleTargets_Funcionarios_FuncionarioId] FOREIGN KEY([FuncionarioId])
+REFERENCES [dbo].[Funcionarios] ([IdFuncionario])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[RecurringScheduleRuleTargets] CHECK CONSTRAINT [FK_RecurringScheduleRuleTargets_Funcionarios_FuncionarioId]
+GO
+ALTER TABLE [dbo].[RecurringScheduleRuleTargets]  WITH CHECK ADD  CONSTRAINT [FK_RecurringScheduleRuleTargets_RecurringScheduleRules_RuleId] FOREIGN KEY([RuleId])
+REFERENCES [dbo].[RecurringScheduleRules] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[RecurringScheduleRuleTargets] CHECK CONSTRAINT [FK_RecurringScheduleRuleTargets_RecurringScheduleRules_RuleId]
+GO
+ALTER TABLE [dbo].[Servicios]  WITH CHECK ADD  CONSTRAINT [FK_Servicios_Tenants] FOREIGN KEY([TenantId])
+REFERENCES [dbo].[Tenants] ([Id])
+GO
+ALTER TABLE [dbo].[Servicios] CHECK CONSTRAINT [FK_Servicios_Tenants]
+GO
+ALTER TABLE [dbo].[SubscriptionPaymentIncidents]  WITH CHECK ADD  CONSTRAINT [FK_SubscriptionPaymentIncidents_Tenants_TenantId] FOREIGN KEY([TenantId])
+REFERENCES [dbo].[Tenants] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[SubscriptionPaymentIncidents] CHECK CONSTRAINT [FK_SubscriptionPaymentIncidents_Tenants_TenantId]
+GO
+ALTER TABLE [dbo].[Suscripciones]  WITH CHECK ADD FOREIGN KEY([PlanId])
+REFERENCES [dbo].[Planes] ([Id])
+GO
+ALTER TABLE [dbo].[Suscripciones]  WITH CHECK ADD FOREIGN KEY([TenantId])
+REFERENCES [dbo].[Tenants] ([Id])
+GO
+ALTER TABLE [dbo].[TenantBookingFuncionarioServices]  WITH CHECK ADD  CONSTRAINT [FK_TenantBookingFuncionarioServices_Funcionarios_FuncionarioId] FOREIGN KEY([FuncionarioId])
+REFERENCES [dbo].[Funcionarios] ([IdFuncionario])
+GO
+ALTER TABLE [dbo].[TenantBookingFuncionarioServices] CHECK CONSTRAINT [FK_TenantBookingFuncionarioServices_Funcionarios_FuncionarioId]
+GO
+ALTER TABLE [dbo].[TenantBookingFuncionarioServices]  WITH CHECK ADD  CONSTRAINT [FK_TenantBookingFuncionarioServices_Servicios_ServicioId] FOREIGN KEY([ServicioId])
+REFERENCES [dbo].[Servicios] ([Id])
+GO
+ALTER TABLE [dbo].[TenantBookingFuncionarioServices] CHECK CONSTRAINT [FK_TenantBookingFuncionarioServices_Servicios_ServicioId]
+GO
+ALTER TABLE [dbo].[TenantBookingServiceSettings]  WITH CHECK ADD  CONSTRAINT [FK_TenantBookingServiceSettings_Servicios_ServicioId] FOREIGN KEY([ServicioId])
+REFERENCES [dbo].[Servicios] ([Id])
+GO
+ALTER TABLE [dbo].[TenantBookingServiceSettings] CHECK CONSTRAINT [FK_TenantBookingServiceSettings_Servicios_ServicioId]
+GO
+ALTER TABLE [dbo].[TenantBookingSettings]  WITH CHECK ADD  CONSTRAINT [FK_TenantBookingSettings_Tenants_TenantId] FOREIGN KEY([TenantId])
+REFERENCES [dbo].[Tenants] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[TenantBookingSettings] CHECK CONSTRAINT [FK_TenantBookingSettings_Tenants_TenantId]
+GO
+ALTER TABLE [dbo].[TenantCommercialAccessGrants]  WITH CHECK ADD  CONSTRAINT [FK_TenantCommercialAccessGrants_Planes_PlanId] FOREIGN KEY([PlanId])
+REFERENCES [dbo].[Planes] ([Id])
+GO
+ALTER TABLE [dbo].[TenantCommercialAccessGrants] CHECK CONSTRAINT [FK_TenantCommercialAccessGrants_Planes_PlanId]
+GO
+ALTER TABLE [dbo].[TenantCommercialAccessGrants]  WITH CHECK ADD  CONSTRAINT [FK_TenantCommercialAccessGrants_PromotionalCodes_PromotionalCodeId] FOREIGN KEY([PromotionalCodeId])
+REFERENCES [dbo].[PromotionalCodes] ([Id])
+GO
+ALTER TABLE [dbo].[TenantCommercialAccessGrants] CHECK CONSTRAINT [FK_TenantCommercialAccessGrants_PromotionalCodes_PromotionalCodeId]
+GO
+ALTER TABLE [dbo].[TenantCommercialAccessGrants]  WITH CHECK ADD  CONSTRAINT [FK_TenantCommercialAccessGrants_Tenants_TenantId] FOREIGN KEY([TenantId])
+REFERENCES [dbo].[Tenants] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[TenantCommercialAccessGrants] CHECK CONSTRAINT [FK_TenantCommercialAccessGrants_Tenants_TenantId]
+GO
+ALTER TABLE [dbo].[TenantInvestors]  WITH CHECK ADD  CONSTRAINT [FK_TenantInvestors_Associates_AssociateId] FOREIGN KEY([AssociateId])
+REFERENCES [dbo].[Associates] ([Id])
+GO
+ALTER TABLE [dbo].[TenantInvestors] CHECK CONSTRAINT [FK_TenantInvestors_Associates_AssociateId]
+GO
+ALTER TABLE [dbo].[TenantPublicAssets]  WITH CHECK ADD  CONSTRAINT [FK_TenantPublicAssets_Servicios_ServicioId] FOREIGN KEY([ServicioId])
+REFERENCES [dbo].[Servicios] ([Id])
+GO
+ALTER TABLE [dbo].[TenantPublicAssets] CHECK CONSTRAINT [FK_TenantPublicAssets_Servicios_ServicioId]
+GO
+ALTER TABLE [dbo].[TenantPublicAssets]  WITH CHECK ADD  CONSTRAINT [FK_TenantPublicAssets_TenantPublicPages_TenantPublicPageId] FOREIGN KEY([TenantPublicPageId])
+REFERENCES [dbo].[TenantPublicPages] ([Id])
+GO
+ALTER TABLE [dbo].[TenantPublicAssets] CHECK CONSTRAINT [FK_TenantPublicAssets_TenantPublicPages_TenantPublicPageId]
+GO
+ALTER TABLE [dbo].[TenantPublicAssets]  WITH CHECK ADD  CONSTRAINT [FK_TenantPublicAssets_Tenants_TenantId] FOREIGN KEY([TenantId])
+REFERENCES [dbo].[Tenants] ([Id])
+GO
+ALTER TABLE [dbo].[TenantPublicAssets] CHECK CONSTRAINT [FK_TenantPublicAssets_Tenants_TenantId]
+GO
+ALTER TABLE [dbo].[TenantPublicPageDailyMetrics]  WITH CHECK ADD  CONSTRAINT [FK_TenantPublicPageDailyMetrics_Servicios_ServicioId] FOREIGN KEY([ServicioId])
+REFERENCES [dbo].[Servicios] ([Id])
+GO
+ALTER TABLE [dbo].[TenantPublicPageDailyMetrics] CHECK CONSTRAINT [FK_TenantPublicPageDailyMetrics_Servicios_ServicioId]
+GO
+ALTER TABLE [dbo].[TenantPublicPageDailyMetrics]  WITH CHECK ADD  CONSTRAINT [FK_TenantPublicPageDailyMetrics_Tenants_TenantId] FOREIGN KEY([TenantId])
+REFERENCES [dbo].[Tenants] ([Id])
+GO
+ALTER TABLE [dbo].[TenantPublicPageDailyMetrics] CHECK CONSTRAINT [FK_TenantPublicPageDailyMetrics_Tenants_TenantId]
+GO
+ALTER TABLE [dbo].[TenantPublicPages]  WITH CHECK ADD  CONSTRAINT [FK_TenantPublicPages_Tenants_TenantId] FOREIGN KEY([TenantId])
+REFERENCES [dbo].[Tenants] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[TenantPublicPages] CHECK CONSTRAINT [FK_TenantPublicPages_Tenants_TenantId]
+GO
+ALTER TABLE [dbo].[Tenants]  WITH CHECK ADD  CONSTRAINT [FK_Tenants_Planes_ForcedPlanId] FOREIGN KEY([ForcedPlanId])
+REFERENCES [dbo].[Planes] ([Id])
+GO
+ALTER TABLE [dbo].[Tenants] CHECK CONSTRAINT [FK_Tenants_Planes_ForcedPlanId]
+GO
+ALTER TABLE [dbo].[TenantSubscriptionAddons]  WITH CHECK ADD  CONSTRAINT [FK_TenantSubscriptionAddons_Planes_PlanId] FOREIGN KEY([PlanId])
+REFERENCES [dbo].[Planes] ([Id])
+GO
+ALTER TABLE [dbo].[TenantSubscriptionAddons] CHECK CONSTRAINT [FK_TenantSubscriptionAddons_Planes_PlanId]
+GO
+ALTER TABLE [dbo].[TenantSubscriptionAddons]  WITH CHECK ADD  CONSTRAINT [FK_TenantSubscriptionAddons_Tenants_TenantId] FOREIGN KEY([TenantId])
+REFERENCES [dbo].[Tenants] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[TenantSubscriptionAddons] CHECK CONSTRAINT [FK_TenantSubscriptionAddons_Tenants_TenantId]
+GO
+ALTER TABLE [dbo].[TenantWhatsAppSettings]  WITH CHECK ADD  CONSTRAINT [FK_TenantWhatsAppSettings_Tenants_TenantId] FOREIGN KEY([TenantId])
+REFERENCES [dbo].[Tenants] ([Id])
+ON DELETE CASCADE
+GO
+ALTER TABLE [dbo].[TenantWhatsAppSettings] CHECK CONSTRAINT [FK_TenantWhatsAppSettings_Tenants_TenantId]
+GO
+ALTER TABLE [dbo].[WhatsAppMessageLogs]  WITH CHECK ADD  CONSTRAINT [FK_WhatsAppMessageLogs_Citas_CitaId] FOREIGN KEY([CitaId])
+REFERENCES [dbo].[Citas] ([Id])
+ON DELETE SET NULL
+GO
+ALTER TABLE [dbo].[WhatsAppMessageLogs] CHECK CONSTRAINT [FK_WhatsAppMessageLogs_Citas_CitaId]
+GO
+
+-- ===== Stored procedures =====
+CREATE   PROCEDURE ObtenerCitasProximas
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        Nombre,
+        CorreoElectronico,
+        NumeroTelefono,
+        FechaUltimaVisita,
+        FrecuenciaVisita,
+        DATEADD(DAY, FrecuenciaVisita, FechaUltimaVisita) AS FechaProximaVisita
+    FROM Clientes
+    WHERE
+        DATEADD(DAY, FrecuenciaVisita, FechaUltimaVisita) =
+		CAST(DATEADD(DAY, 3, GETDATE()) AS DATE)
+END;
+GO
+
+-- ===== Row-Level Security policy (FILTER + BLOCK predicates) =====
+CREATE SECURITY POLICY [dbo].[TenantSecurityPolicy]
+ADD FILTER PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[Categorias],
+ADD FILTER PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[Citas],
+ADD FILTER PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[Clientes],
+ADD FILTER PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[ClienteVisitas],
+ADD FILTER PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[Cobros],
+ADD FILTER PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[DetalleCobroProductos],
+ADD FILTER PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[Egresos],
+ADD FILTER PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[Funcionarios],
+ADD FILTER PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[MovimientosInventario],
+ADD FILTER PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[PagosFuncionarios],
+ADD FILTER PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[Productos],
+ADD FILTER PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[Puestos],
+ADD FILTER PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[Servicios],
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[Clientes] AFTER INSERT,
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[Citas] AFTER INSERT,
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[Productos] AFTER INSERT,
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[Servicios] AFTER INSERT,
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[Clientes] AFTER UPDATE,
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[Citas] AFTER UPDATE,
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[Categorias] AFTER INSERT,
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[Categorias] AFTER UPDATE,
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[ClienteVisitas] AFTER INSERT,
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[ClienteVisitas] AFTER UPDATE,
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[Cobros] AFTER INSERT,
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[Cobros] AFTER UPDATE,
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[DetalleCobroProductos] AFTER INSERT,
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[DetalleCobroProductos] AFTER UPDATE,
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[Egresos] AFTER INSERT,
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[Egresos] AFTER UPDATE,
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[Funcionarios] AFTER INSERT,
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[Funcionarios] AFTER UPDATE,
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[MovimientosInventario] AFTER INSERT,
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[MovimientosInventario] AFTER UPDATE,
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[PagosFuncionarios] AFTER INSERT,
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[PagosFuncionarios] AFTER UPDATE,
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[Productos] AFTER UPDATE,
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[Puestos] AFTER INSERT,
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[Puestos] AFTER UPDATE,
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[Servicios] AFTER UPDATE,
+ADD FILTER PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[WhatsAppMessageLogs],
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[WhatsAppMessageLogs] AFTER INSERT,
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[WhatsAppMessageLogs] AFTER UPDATE,
+ADD FILTER PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[TenantWhatsAppSettings],
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[TenantWhatsAppSettings] AFTER INSERT,
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[TenantWhatsAppSettings] AFTER UPDATE,
+ADD FILTER PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[TenantInvestors],
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[TenantInvestors] AFTER INSERT,
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[TenantInvestors] AFTER UPDATE,
+ADD FILTER PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[InvestorAgreements],
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[InvestorAgreements] AFTER INSERT,
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[InvestorAgreements] AFTER UPDATE,
+ADD FILTER PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[InvestorProfitPolicies],
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[InvestorProfitPolicies] AFTER INSERT,
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[InvestorProfitPolicies] AFTER UPDATE,
+ADD FILTER PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[InvestorPolicyExpenseCategories],
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[InvestorPolicyExpenseCategories] AFTER INSERT,
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[InvestorPolicyExpenseCategories] AFTER UPDATE,
+ADD FILTER PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[InvestorStatements],
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[InvestorStatements] AFTER INSERT,
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[InvestorStatements] AFTER UPDATE,
+ADD FILTER PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[InvestorStatementAdjustments],
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[InvestorStatementAdjustments] AFTER INSERT,
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[InvestorStatementAdjustments] AFTER UPDATE,
+ADD FILTER PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[InvestorDistributionPayments],
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[InvestorDistributionPayments] AFTER INSERT,
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[InvestorDistributionPayments] AFTER UPDATE,
+ADD FILTER PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[InvestorStatementEmailLogs],
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[InvestorStatementEmailLogs] AFTER INSERT,
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[InvestorStatementEmailLogs] AFTER UPDATE,
+ADD FILTER PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[RecurringScheduleRules],
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[RecurringScheduleRules] AFTER INSERT,
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[RecurringScheduleRules] AFTER UPDATE,
+ADD FILTER PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[RecurringScheduleRuleTargets],
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[RecurringScheduleRuleTargets] AFTER INSERT,
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[RecurringScheduleRuleTargets] AFTER UPDATE,
+ADD FILTER PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[RecurringScheduleExceptions],
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[RecurringScheduleExceptions] AFTER INSERT,
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[RecurringScheduleExceptions] AFTER UPDATE,
+ADD FILTER PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[Associates],
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[Associates] AFTER INSERT,
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[Associates] AFTER UPDATE,
+ADD FILTER PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[AssociateTypes],
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[AssociateTypes] AFTER INSERT,
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[AssociateTypes] AFTER UPDATE,
+ADD FILTER PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[AssociatePermissions],
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[AssociatePermissions] AFTER INSERT,
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[AssociatePermissions] AFTER UPDATE,
+ADD FILTER PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[LiquidacionesSemanales],
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[LiquidacionesSemanales] AFTER INSERT,
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[LiquidacionesSemanales] AFTER UPDATE,
+ADD FILTER PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[LiquidacionesSemanalesDetalle],
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[LiquidacionesSemanalesDetalle] AFTER INSERT,
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[LiquidacionesSemanalesDetalle] AFTER UPDATE,
+ADD FILTER PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[LiquidacionesSemanalesDistribucionMensual],
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[LiquidacionesSemanalesDistribucionMensual] AFTER INSERT,
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[LiquidacionesSemanalesDistribucionMensual] AFTER UPDATE,
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[ComprobantesCobro] AFTER INSERT,
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[ComprobantesCobro] AFTER UPDATE,
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[ComprobanteCobroLineas] AFTER INSERT,
+ADD BLOCK PREDICATE [dbo].[fnTenantAccess]([TenantId]) ON [dbo].[ComprobanteCobroLineas] AFTER UPDATE
+WITH (STATE = ON, SCHEMABINDING = ON)
+GO
+
+-- ===== EF Core migration history (schema version metadata only) =====
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260121200257_creacionInicialIdentity', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260121201933_camposUsuarios', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260410011807_saasPaymentsTilopay', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260410015617_funcionarioPuestoRelationshipFix', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260410233059_addValidationPlan', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260413022711_platformCommercialAccess', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260414033014_clientFuncionarioManagementFixes', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260417030449_weeklyEmployeeLiquidations', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260421234226_contractAcceptanceVersioning', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260422215037_optimizeClientesModule', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260423043350_optimizeFuncionariosModule', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260423174550_optimizeCobrosModule', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260423191843_optimizeEgresosModule', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260423200303_optimizeDashboardFinancieroQueries', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260424000552_optimizeProductosModule', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260424181416_optimizeCalendarModule', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260528190337_AddMetaWhatsAppNotifications', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260601195214_AddTenantWhatsAppSettings', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260603203751_AddWhatsAppConsentOptIn', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260604235705_AddTilopayRecurringSubscriptions', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260610175944_CrmPhase1_ClienteServicioRealizado_CobroClienteId', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260610200000_AddCitaClienteIndex', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260614205728_AddWhatsAppAutomationScheduling', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260616181158_AddCitaServicioPersonalizado', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260616183906_AddFuncionarioRebajarImpuestosComision', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260616230524_AddFuncionarioPortalAccess', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260617001605_AddFuncionarioPortalPermissions', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260618125700_AddComprobantesCobro', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260618140104_AddReservasOnline', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260618230933_AddTenantNotifications', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260618235953_AddPlatformAuditLog', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260623055612_AddPlanBillingCycle', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260623194337_AddPlanChangeIntent', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260629172555_AddCobroServicioPersonalizado', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260701011537_AddFiscalEngine', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260701221503_AddBookingServicesAndFuncionarioPhotos', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260702044546_AddMonthlyBusinessReports', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260702182142_AddBookingRequestSubmissionToken', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260702220730_AddModalidadIvaColaborador', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260703234033_AddMonthlyReportAutomationAndRecipients', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260705204328_AddPlatformWorkerHeartbeats', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260707215846_AddTenantPublicPage', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260707233140_AddTenantPublicAssets', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260708165144_AddTenantPublicPageDailyMetrics', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260708212040_AddPlatformCommercialSnapshots', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260708222942_AddTenantPublicPagePremiumFields', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260709193706_AddLandingRefinementFields', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260715192001_AddPlanChangeOldCancellationRetryState', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260716170739_AddSubscriptionProviderExpiry', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260716201514_AddSubscriptionCancellationLifecycle', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260717125831_AddSubscriptionPaymentIncidents', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260723204423_AddWhatsAppAddonCancellationLifecycle', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260723205357_AddPaymentIncidentAddonScope', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260727224107_AddWhatsAppAddonBillingSource', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260730045256_AddProviderAddonAuditAndCancellationScope', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260730062345_AddInvestorDistributionAndRecurringSchedule', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260821223412_AddAssociatesModule', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260825194609_AddInvestorCutoffDay', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260827195941_AddPublicPageAccentColor', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260828002432_AddBookingRequestAssignedFuncionario', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260901175515_AddWhatsAppInboundAutoReply', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260915040514_AddFinancialHardeningSystemCategoryAndIdempotency', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260915051321_AddFinancialPhase4CobroSnapshotAndLiquidacionRls', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260915061159_AddFinancialPhase5CommissionSnapshotAndComprobanteRls', N'10.0.2');
+INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion]) VALUES (N'20260917030933_AddBookingWeeklyBusinessHours', N'10.0.2');
+GO

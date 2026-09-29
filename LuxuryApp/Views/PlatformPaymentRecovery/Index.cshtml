@@ -1,0 +1,327 @@
+@using LuxuryApp.Models.SaaS
+@model LuxuryApp.Models.Platform.PaymentRecoveryConsoleViewModel
+@{
+    ViewData["Title"] = "Recuperación de pago";
+
+    string FormatUtc(DateTime? value) =>
+        value.HasValue ? value.Value.ToString("yyyy-MM-dd HH:mm") + " UTC" : "—";
+
+    (string Label, string Badge) StatusInfo(PaymentIncidentStatus status) => status switch
+    {
+        PaymentIncidentStatus.Open => ("Abierto (gracia)", "text-bg-warning"),
+        PaymentIncidentStatus.GraceExpired => ("Gracia vencida", "text-bg-danger"),
+        PaymentIncidentStatus.ManualReview => ("Revisión manual", "text-bg-secondary"),
+        PaymentIncidentStatus.Resolved => ("Resuelto", "text-bg-success"),
+        PaymentIncidentStatus.Ignored => ("Ignorado", "text-bg-secondary"),
+        _ => (status.ToString(), "text-bg-secondary")
+    };
+}
+
+@* Scripts ARRIBA: la vista hace `return;` temprano cuando no hay incidentes vivos y una sección
+   declarada al final no llegaría a registrarse (el botón de confirmación quedaría deshabilitado). *@
+@section Scripts {
+    <script>
+        document.querySelectorAll('form[data-require-confirm]').forEach(function (form) {
+            var input = form.querySelector('[data-confirm-input]');
+            var submit = form.querySelector('[data-confirm-submit]');
+            if (input && submit) {
+                var word = form.getAttribute('data-confirm-word') || 'RESOLVER';
+                input.addEventListener('input', function () {
+                    submit.disabled = input.value.trim() !== word;
+                });
+            }
+        });
+    </script>
+}
+
+<div class="container py-4">
+    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
+        <div>
+            <h1 class="h3 mb-1">Recuperación de pago</h1>
+            <p class="text-muted mb-0">
+                Incidentes de pago fallido en curso, gracia vencida y revisión manual.
+                <a asp-controller="PlatformBillingHealth" asp-action="Index">Billing Health</a>
+            </p>
+        </div>
+        <span class="badge text-bg-dark">Solo plataforma</span>
+    </div>
+
+    @if (TempData["PlatformSuccess"] is string ok)
+    {
+        <div class="alert alert-success"><i class="bi bi-check2-circle"></i> @ok</div>
+    }
+    @if (TempData["PlatformError"] is string err)
+    {
+        <div class="alert alert-danger"><i class="bi bi-exclamation-triangle"></i> @err</div>
+    }
+
+    @if (!Model.AdminEnabled)
+    {
+        <div class="alert alert-warning">La integración admin de TiloPay está deshabilitada: no se puede generar el enlace de actualización.</div>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(Model.GeneratedUpdateUrl))
+    {
+        <div class="alert @(Model.GeneratedUrlUsedFallback ? "alert-warning" : "alert-info")">
+            <div class="fw-semibold mb-1">
+                <i class="bi bi-link-45deg"></i> Enlace de actualización generado
+                @if (!string.IsNullOrWhiteSpace(Model.GeneratedUrlTenantName))
+                {
+                    <span class="text-muted">— @Model.GeneratedUrlTenantName</span>
+                }
+            </div>
+            @if (Model.GeneratedUrlUsedFallback)
+            {
+                <p class="small mb-2">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <strong>El enlace fue generado con contrato fallback (id_plan+aliases).</strong>
+                    Si TiloPay muestra "la suscripción solicitada no existe", el contrato real aún no está confirmado: contactá soporte antes de enviárselo al cliente.
+                </p>
+            }
+            else
+            {
+                <p class="small mb-2">Copialo y envialo al cliente por un canal seguro. No se guarda: al recargar esta página desaparece.</p>
+            }
+            <input type="text" class="form-control form-control-sm font-monospace" readonly value="@Model.GeneratedUpdateUrl" onclick="this.select();" />
+        </div>
+    }
+
+    @* ── Cierres automáticos SIN evidencia de pago (bug previo: proveedor Active + mismo expire) ──
+       Se listan solo si NO hay pago confirmado posterior al fallo, NO hay expire avanzado y NO hay un
+       incidente más reciente. Reabrir restaura la gracia ORIGINAL (no la extiende) y aplica la
+       política vigente de gracia vencida. Nada se hace automáticamente. *@
+    @if (Model.UnverifiedResolutions.Count > 0)
+    {
+        <div class="card shadow-sm border-0 border-start border-4 border-danger mb-4">
+            <div class="card-body">
+                <h2 class="h6 mb-1"><i class="bi bi-shield-exclamation"></i> Recuperaciones cerradas sin evidencia de pago</h2>
+                <p class="small text-muted mb-3">
+                    La reconciliación las cerró porque TiloPay decía "Active", pero no hubo cobro confirmado ni avance del período.
+                    Revisá cada caso y reabrilo para que la gracia y la política de suspensión se apliquen correctamente.
+                </p>
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0">
+                        <thead>
+                            <tr class="small text-muted">
+                                <th>Tenant</th>
+                                <th>Plan</th>
+                                <th>Fallo detectado</th>
+                                <th>Gracia original</th>
+                                <th>Cerrado</th>
+                                <th>Proveedor (último visto)</th>
+                                <th class="text-end">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var unverified in Model.UnverifiedResolutions)
+                            {
+                                <tr>
+                                    <td class="small fw-semibold">@(unverified.TenantName ?? unverified.TenantId.ToString())</td>
+                                    <td class="small">@(unverified.PlanCode ?? "—")</td>
+                                    <td class="small">@FormatUtc(unverified.FailureDetectedAtUtc)</td>
+                                    <td class="small">@FormatUtc(unverified.GraceEndsAtUtc)</td>
+                                    <td class="small">@FormatUtc(unverified.ResolvedAtUtc)</td>
+                                    <td class="small">
+                                        <div>@(unverified.ProviderStatusRaw ?? "—")</div>
+                                        <div class="text-muted">expire @(unverified.ProviderExpiryRaw ?? "—")</div>
+                                    </td>
+                                    <td class="text-end">
+                                        <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#reopenModal-@unverified.IncidentId">
+                                            Reabrir
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        @foreach (var unverified in Model.UnverifiedResolutions)
+        {
+            <div class="modal fade" id="reopenModal-@unverified.IncidentId" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <form asp-action="ReopenUnverified" asp-route-incidentId="@unverified.IncidentId" method="post" data-require-confirm data-confirm-word="REABRIR">
+                            @Html.AntiForgeryToken()
+                            <div class="modal-header"><h5 class="modal-title">Reabrir recuperación</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                            <div class="modal-body">
+                                <p class="small mb-2">
+                                    Se reabrirá el incidente de <strong>@(unverified.TenantName ?? unverified.TenantId.ToString())</strong> con su gracia
+                                    ORIGINAL (@FormatUtc(unverified.GraceEndsAtUtc)). Si esa gracia ya venció, se aplica en el acto la política vigente
+                                    (AutoSuspendAfterGrace). No se toca TiloPay ni se crean pagos.
+                                </p>
+                                <label class="form-label small">Motivo <span class="text-danger">*</span></label>
+                                <textarea name="reason" class="form-control mb-2" rows="2" maxlength="200" required placeholder="Ej: cierre automático sin cobro (expire no avanzó)"></textarea>
+                                <label class="form-label small">Escribí <strong>REABRIR</strong> para confirmar:</label>
+                                <input type="text" name="confirm" class="form-control" autocomplete="off" placeholder="REABRIR" data-confirm-input />
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Volver</button>
+                                <button type="submit" class="btn btn-danger" data-confirm-submit disabled>Reabrir</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+
+    @if (Model.Incidents.Count == 0)
+    {
+        <div class="card shadow-sm border-0">
+            <div class="card-body text-center text-muted py-5">
+                <i class="bi bi-check2-circle fs-3 d-block mb-2"></i>
+                Sin incidentes de recuperación de pago vivos. Nada que atender.
+            </div>
+        </div>
+        return;
+    }
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                    <thead>
+                        <tr class="small text-muted">
+                            <th>Tenant / cliente</th>
+                            <th>Plan / suscriptor</th>
+                            <th>Estado</th>
+                            <th class="text-center">Fallos</th>
+                            <th>Detectado</th>
+                            <th>Gracia hasta</th>
+                            <th>Notificaciones</th>
+                            <th>Proveedor</th>
+                            <th class="text-end">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.Incidents)
+                        {
+                            var info = StatusInfo(item.Status);
+                            <tr>
+                                <td class="small">
+                                    <div class="fw-semibold">@(item.TenantName ?? item.TenantId.ToString())</div>
+                                    <div class="text-muted">@(item.ClienteEmail ?? "—")</div>
+                                </td>
+                                <td class="small">
+                                    <div>
+                                        @(item.PlanCode ?? "—")
+                                        @if (item.Scope == LuxuryApp.Models.SaaS.PaymentIncidentScope.WhatsAppAddon)
+                                        {
+                                            <span class="badge text-bg-info ms-1">add-on</span>
+                                        }
+                                    </div>
+                                    <div class="font-monospace text-muted">@(item.ProviderSubscriberSuffix ?? "—")</div>
+                                </td>
+                                <td>
+                                    <span class="badge @info.Badge">@info.Label</span>
+                                    @if (item.SuspendedForNonPayment)
+                                    {
+                                        <span class="badge text-bg-danger ms-1">acceso suspendido</span>
+                                    }
+                                </td>
+                                <td class="text-center">@item.FailureCount</td>
+                                <td class="small">@FormatUtc(item.FailureDetectedAtUtc)</td>
+                                <td class="small">@FormatUtc(item.GraceEndsAtUtc)</td>
+                                <td class="small">
+                                    <div>@item.NotificationCount enviada(s)</div>
+                                    <div class="text-muted">Inicial: @FormatUtc(item.LastNotificationAtUtc)</div>
+                                    <div class="text-muted">Recordatorio: @FormatUtc(item.LastReminderAtUtc)</div>
+                                </td>
+                                <td class="small">
+                                    <div>@(item.ProviderResultCode ?? "—")</div>
+                                    @if (!string.IsNullOrWhiteSpace(item.ProviderResultMessage))
+                                    {
+                                        <div class="text-muted">@item.ProviderResultMessage</div>
+                                    }
+                                </td>
+                                <td class="text-end">
+                                    <div class="d-flex flex-column gap-1 align-items-end">
+                                        <div class="btn-group btn-group-sm">
+                                            <a class="btn btn-outline-secondary" asp-controller="PlatformTenant" asp-action="Ficha" asp-route-tenantId="@item.TenantId" title="Ver ficha del tenant">
+                                                <i class="bi bi-person-lines-fill"></i>
+                                            </a>
+                                            <a class="btn btn-outline-secondary" asp-controller="PlatformProviderSubscription" asp-action="Manage" asp-route-tenantId="@item.TenantId" title="Gestionar suscripción">
+                                                <i class="bi bi-gear"></i>
+                                            </a>
+                                        </div>
+                                        @if (Model.AdminEnabled)
+                                        {
+                                            <form asp-action="GenerateUpdateUrl" asp-route-incidentId="@item.IncidentId" method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn btn-sm btn-outline-primary">
+                                                    <i class="bi bi-credit-card"></i> Generar enlace@(item.Scope == LuxuryApp.Models.SaaS.PaymentIncidentScope.WhatsAppAddon ? " (add-on)" : "")
+                                                </button>
+                                            </form>
+                                        }
+                                        <div class="btn-group btn-group-sm">
+                                            <button type="button" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#resolveModal-@item.IncidentId">
+                                                Resolver
+                                            </button>
+                                            <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#ignoreModal-@item.IncidentId">
+                                                Ignorar
+                                            </button>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <p class="small text-muted mt-3 mb-0">
+                <i class="bi bi-info-circle"></i>
+                "Gracia vencida" con la config actual puede NO suspender el acceso (AutoSuspendAfterGrace=false);
+                "acceso suspendido" indica que el acceso sí se cortó. Generar el enlace NUNCA guarda la recurrentUrl.
+            </p>
+        </div>
+    </div>
+</div>
+
+@foreach (var item in Model.Incidents)
+{
+    <div class="modal fade" id="resolveModal-@item.IncidentId" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <form asp-action="Resolve" asp-route-incidentId="@item.IncidentId" method="post" data-require-confirm>
+                    @Html.AntiForgeryToken()
+                    <div class="modal-header"><h5 class="modal-title">Resolver incidente</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                    <div class="modal-body">
+                        <p class="mb-2">
+                            Se cerrará el incidente de <strong>@(item.TenantName ?? item.TenantId.ToString())</strong> y se limpiará
+                            el estado de recuperación. Esto NO reactiva un acceso suspendido (usá gestión de suscripción para eso).
+                        </p>
+                        <label class="form-label small">Escribí <strong>RESOLVER</strong> para confirmar:</label>
+                        <input type="text" name="confirm" class="form-control" autocomplete="off" placeholder="RESOLVER" data-confirm-input />
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Volver</button>
+                        <button type="submit" class="btn btn-success" data-confirm-submit disabled>Resolver</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="ignoreModal-@item.IncidentId" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <form asp-action="Ignore" asp-route-incidentId="@item.IncidentId" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="modal-header"><h5 class="modal-title">Ignorar incidente</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                    <div class="modal-body">
+                        <p class="mb-2">Marcar como ignorado (no accionable) el incidente de <strong>@(item.TenantName ?? item.TenantId.ToString())</strong>.</p>
+                        <label class="form-label small">Motivo <span class="text-danger">*</span></label>
+                        <textarea name="reason" class="form-control" rows="2" maxlength="250" required placeholder="Ej: pago regularizado por otra vía"></textarea>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Volver</button>
+                        <button type="submit" class="btn btn-outline-danger">Ignorar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}

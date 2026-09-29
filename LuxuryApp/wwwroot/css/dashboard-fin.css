@@ -1,0 +1,534 @@
+﻿/* ==========================================================
+   dashboard-fin.css — Scoped styles for Dashboard Financiero
+   Only affects .dfin-* classes. Does NOT touch other modules.
+   Uses CSS variables defined in private-layout.css.
+   ========================================================== */
+
+/* Chart legend dot colors — set by JS from chart palette */
+.dashboard-wrapper {
+    --dfin-c1: var(--private-accent);
+    --dfin-c2: #16a34a;
+    --dfin-c3: #d97706;
+}
+
+/* ── A. HEADER ─────────────────────────────────────────── */
+.dfin-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 2rem;
+}
+
+.dfin-header-right {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.dfin-nav-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 50%;
+    text-decoration: none;
+    color: var(--private-surface-text, #111827);
+    background: var(--private-row-bg, rgba(15, 23, 42, 0.06));
+    border: 1px solid var(--private-surface-border, rgba(15, 23, 42, 0.1));
+    transition: background 0.18s ease, transform 0.18s ease;
+    flex-shrink: 0;
+}
+
+.dfin-nav-btn:hover {
+    color: var(--private-surface-text, #111827);
+    background: var(--private-row-hover-bg, rgba(15, 23, 42, 0.1));
+    transform: scale(1.08);
+}
+
+.dfin-period-form {
+    display: flex;
+    gap: 0.45rem;
+    align-items: center;
+}
+
+.dfin-select {
+    padding: 0.38rem 0.7rem;
+    border-radius: 0.75rem;
+    border: 1px solid var(--private-input-border, rgba(15, 23, 42, 0.14));
+    background: var(--private-input-bg, #fff);
+    color: var(--private-input-text, #111827);
+    font-size: 0.85rem;
+    cursor: pointer;
+    appearance: auto;
+}
+
+.dfin-select:focus {
+    outline: none;
+    border-color: rgba(var(--private-accent-soft-rgb), 0.55);
+    box-shadow: 0 0 0 0.18rem var(--private-focus-ring, rgba(37, 140, 251, 0.28));
+}
+
+/* ── B. SUMMARY STRIP ──────────────────────────────────── */
+.dfin-summary {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr auto 1fr;
+    align-items: stretch;
+    margin-bottom: 1.5rem;
+    border-radius: 1.15rem;
+    border: 1px solid var(--private-surface-border, rgba(15, 23, 42, 0.1));
+    background: linear-gradient(135deg,
+        rgba(var(--private-accent-rgb), 0.09) 0%,
+        rgba(var(--private-accent-alt-rgb), 0.07) 50%,
+        rgba(6, 182, 212, 0.06) 100%);
+    overflow: hidden;
+}
+
+.dfin-summary-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 1.5rem 1.25rem;
+    gap: 0.3rem;
+}
+
+.dfin-summary-sep {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 0.75rem;
+    font-size: 1.5rem;
+    font-weight: 300;
+    color: var(--private-muted-text, #64748b);
+    opacity: 0.45;
+    border-left: 1px solid var(--private-surface-border, rgba(15, 23, 42, 0.08));
+    border-right: 1px solid var(--private-surface-border, rgba(15, 23, 42, 0.08));
+}
+
+.dfin-sum-label {
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--private-muted-text, #64748b);
+}
+
+.dfin-sum-value {
+    font-size: 1.7rem;
+    font-weight: 700;
+    line-height: 1.1;
+}
+
+.dfin-sum-sub {
+    font-size: 0.74rem;
+    color: var(--private-muted-text, #64748b);
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.dfin-badge-margen {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.12rem 0.45rem;
+    border-radius: 999px;
+    background: rgba(22, 163, 74, 0.14);
+    color: var(--private-chart-success, #16a34a);
+    font-size: 0.7rem;
+    font-weight: 700;
+}
+.dfin-badge-margen.dfin-color-danger {
+    background: rgba(220, 38, 38, 0.12);
+}
+
+/* ── B1. MOVIMIENTO DE CAJA ─────────────────────────────
+   Secundario a propósito: no participa de la ecuación de ganancia, que es por devengado. */
+.dfin-caja-strip {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem 1.25rem;
+    padding: 0.85rem 1.15rem;
+    margin-bottom: 1.5rem;
+    border-radius: 0.9rem;
+    border: 1px dashed var(--private-surface-border, rgba(15, 23, 42, 0.16));
+    background: var(--private-surface-soft, rgba(15, 23, 42, 0.02));
+}
+
+.dfin-caja-main {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.5rem 0.75rem;
+}
+
+.dfin-caja-label {
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--private-muted-text, #64748b);
+}
+
+.dfin-caja-value {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--private-surface-text, #111827);
+}
+
+.dfin-caja-help {
+    flex: 1 1 22rem;
+    margin: 0;
+    font-size: 0.74rem;
+    line-height: 1.35;
+    color: var(--private-muted-text, #64748b);
+}
+
+@media (max-width: 575.98px) {
+    .dfin-caja-strip { flex-direction: column; align-items: flex-start; }
+    .dfin-caja-help  { flex: 1 1 auto; }
+}
+
+.dfin-color-income   { color: var(--private-chart-accent,   var(--private-accent)); }
+.dfin-color-expenses { color: var(--private-surface-text,  #111827); }
+.dfin-color-profit   { color: var(--private-chart-success, #16a34a); }
+.dfin-color-warning  { color: var(--private-chart-warning, #d97706); }
+.dfin-color-danger   { color: var(--private-chart-danger,  #dc2626); }
+.dfin-color-neutral  { color: var(--private-surface-text,  #6b7280); }
+
+/* ── C. KPI GRID ───────────────────────────────────────── */
+.dfin-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+/* flex layout inside each kpi-card */
+.dfin-kpi-card {
+    display: flex !important;
+    align-items: center;
+    gap: 1rem;
+}
+
+/* suppress hover lift on chart cards */
+.dfin-chart-card.kpi-card:hover {
+    transform: none;
+}
+
+.dfin-kpi-icon {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.8rem;
+    height: 2.8rem;
+    border-radius: 0.85rem;
+    font-size: 1.15rem;
+    color: #fff;
+}
+
+.dfin-kpi-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    min-width: 0;
+}
+
+.dfin-kpi-label-text {
+    font-size: 0.67rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--private-muted-text, #64748b);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.dfin-kpi-value-text {
+    font-size: 1.2rem;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--private-surface-text, #111827);
+}
+
+/* Icon gradient variants */
+.dfin-icon-blue    { background: linear-gradient(135deg, var(--private-accent), #0891b2); }
+.dfin-icon-yellow  { background: linear-gradient(135deg, #d97706, #f59e0b); }
+.dfin-icon-neutral { background: linear-gradient(135deg, #475569, #64748b); }
+.dfin-icon-green   { background: linear-gradient(135deg, #16a34a, #059669); }
+
+.dfin-new-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.1rem 0.38rem;
+    border-radius: 999px;
+    background: linear-gradient(135deg, var(--private-accent), var(--private-accent-alt));
+    color: #fff;
+    font-size: 0.58rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    vertical-align: middle;
+    margin-left: 0.3rem;
+}
+
+/* ── D. CHARTS ─────────────────────────────────────────── */
+.dfin-charts-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.dfin-chart-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: var(--private-surface-text, #111827);
+}
+
+/* Donut: canvas left, custom legend right */
+.dfin-donut-layout {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    min-height: 180px;
+}
+
+.dfin-donut-wrap {
+    flex: 0 0 170px;
+    height: 170px;
+    position: relative;
+}
+
+.dfin-donut-wrap canvas {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.dfin-donut-legend {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.dfin-legend-row {
+    display: grid;
+    grid-template-columns: auto 1fr auto auto;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.dfin-legend-dot {
+    width: 0.65rem;
+    height: 0.65rem;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.dfin-legend-name { color: var(--private-surface-text, #111827); font-weight: 500; font-size: 0.83rem; }
+.dfin-legend-amt  { color: var(--private-muted-text, #64748b); text-align: right; font-size: 0.78rem; }
+.dfin-legend-pct  { min-width: 2.4rem; text-align: right; font-weight: 700; font-size: 0.78rem; color: var(--private-chart-accent, var(--private-accent)); }
+
+/* Bar chart container */
+.dfin-bar-wrap {
+    position: relative;
+    width: 100%;
+    height: 260px;
+}
+
+.dfin-bar-wrap canvas {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+}
+
+/* ── RESPONSIVE ────────────────────────────────────────── */
+
+@media (max-width: 1399.98px) {
+    .dfin-sum-value      { font-size: 1.45rem; }
+    .dfin-kpi-value-text { font-size: 1.08rem; }
+}
+
+@media (max-width: 1199.98px) {
+    .dfin-kpi-grid    { grid-template-columns: repeat(2, 1fr); }
+    .dfin-donut-wrap  { flex: 0 0 150px; height: 150px; }
+}
+
+@media (max-width: 991.98px) {
+    .dfin-charts-row { grid-template-columns: 1fr; }
+
+    .dfin-summary {
+        grid-template-columns: 1fr;
+    }
+    .dfin-summary-sep {
+        display: none;
+    }
+    .dfin-summary-col {
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid var(--private-surface-border, rgba(15, 23, 42, 0.08));
+    }
+    .dfin-summary-col:last-child { border-bottom: none; }
+}
+
+@media (max-width: 767.98px) {
+    .dfin-header { flex-direction: column; align-items: flex-start; }
+    .dfin-header-right { width: 100%; justify-content: space-between; }
+    .dfin-period-form { flex: 1; }
+    .dfin-select { flex: 1; min-width: 0; }
+    .dfin-kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .dfin-sum-value { font-size: 1.35rem; }
+    .dfin-bar-wrap  { height: 220px; }
+}
+
+@media (max-width: 575.98px) {
+    .dfin-kpi-grid { grid-template-columns: 1fr; }
+    .dfin-donut-layout { flex-direction: column; align-items: center; }
+    .dfin-donut-wrap { flex: 0 0 180px; width: 180px; height: 180px; }
+    .dfin-sum-value { font-size: 1.25rem; }
+    .dfin-bar-wrap  { height: 200px; }
+}
+
+/* ── B2. REPARTO DE LA GANANCIA (participación de asociados) ─────────────
+   Bloque contextual que cuelga del resumen: NO agrega una cuarta columna a
+   "Ingresos − Egresos = Ganancia" para no romper esa lectura. Solo aparece
+   cuando hay al menos una participación vigente en el periodo.            */
+.dfin-alloc {
+    margin: -0.75rem 0 1.5rem;
+    border-radius: 1.15rem;
+    border: 1px solid var(--private-surface-border, rgba(15, 23, 42, 0.1));
+    background: var(--private-surface-bg, rgba(255, 255, 255, 0.55));
+    overflow: hidden;
+}
+
+.dfin-alloc-head {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.85rem 1.25rem 0;
+    color: var(--private-muted-text, #64748b);
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.dfin-alloc-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    align-items: stretch;
+}
+
+.dfin-alloc-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 0.25rem;
+    padding: 1rem 1.25rem 1.25rem;
+}
+
+.dfin-alloc-col + .dfin-alloc-col {
+    border-left: 1px solid var(--private-surface-border, rgba(15, 23, 42, 0.08));
+}
+
+.dfin-alloc-label {
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--private-muted-text, #64748b);
+}
+
+.dfin-alloc-value {
+    font-size: 1.35rem;
+    font-weight: 700;
+    line-height: 1.1;
+}
+
+.dfin-alloc-sub {
+    font-size: 0.74rem;
+    color: var(--private-muted-text, #64748b);
+}
+
+.dfin-alloc-pct {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.12rem 0.45rem;
+    border-radius: 999px;
+    background: rgba(var(--private-accent-alt-rgb), 0.14);
+    color: var(--private-chart-accent, var(--private-accent-alt));
+    font-size: 0.7rem;
+    font-weight: 700;
+}
+
+.dfin-alloc-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin-left: auto;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: none;
+    text-decoration: none;
+    color: var(--private-chart-accent, var(--private-accent));
+}
+
+.dfin-alloc-link:hover { text-decoration: underline; }
+
+@media (max-width: 767.98px) {
+    .dfin-alloc-grid { grid-template-columns: 1fr; }
+    .dfin-alloc-col + .dfin-alloc-col {
+        border-left: none;
+        border-top: 1px solid var(--private-surface-border, rgba(15, 23, 42, 0.08));
+    }
+    .dfin-alloc-value { font-size: 1.2rem; }
+}
+
+/* Aclaración de alcance: el Dashboard mide el mes calendario y el corte contractual
+   del asociado puede ser otro rango de fechas. */
+.dfin-alloc-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.45rem;
+    margin: 0;
+    padding: 0 1.25rem 1rem;
+    font-size: 0.74rem;
+    line-height: 1.5;
+    color: var(--private-muted-text, #64748b);
+}
+
+.dfin-alloc-note i {
+    color: var(--private-chart-accent, var(--private-accent));
+    margin-top: 0.1rem;
+    flex-shrink: 0;
+}
+
+/* Desglose de "Costos y gastos del mes": liquidaciones devengadas + gastos operativos.
+   Apilado siempre — en una sola línea no cabe en móvil y partir el número es peor que bajarlo. */
+.dfin-sum-breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    line-height: 1.35;
+}
+
+.dfin-sum-breakdown b {
+    font-weight: 700;
+    white-space: nowrap;
+}

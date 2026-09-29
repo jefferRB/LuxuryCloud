@@ -1,0 +1,902 @@
+﻿@using LuxuryApp.Models.Funcionarios
+@using LuxuryApp.Models.Fiscal
+@model LuxuryApp.Models.Funcionarios.PagosSemanaPageViewModel
+
+@{
+    var inicio          = Model.InicioSemana;
+    var fin             = Model.FinSemana;
+    var ahora           = Model.FechaPagoSugerida;
+    var metodosPago     = Model.MetodosPago;
+    var periodo         = Model.PeriodoTipo.ToString();
+
+    var hayIvaColabEquipo = Model.TotalIvaColaboradorGeneral > 0;
+
+    var esPersonalizado = Model.PeriodoTipo == PayrollPeriodType.Personalizado;
+    var pendientes      = Model.Funcionarios.Where(f => f.MontoPendiente > 0).ToList();
+    var hayPendiente    = Model.TotalPendienteGeneral > 0m;
+    var hayExcedente    = Model.TotalExcedenteGeneral > 0m;
+
+    var resumenTitulo = Model.PeriodoTipo switch
+    {
+        PayrollPeriodType.Quincenal     => "Resumen de la quincena",
+        PayrollPeriodType.Personalizado => "Resumen del rango",
+        _                               => "Resumen de la semana"
+    };
+    var confirmarTexto = Model.PeriodoTipo switch
+    {
+        PayrollPeriodType.Quincenal     => "Confirmar pago de quincena",
+        PayrollPeriodType.Personalizado => "Confirmar pago del rango",
+        _                               => "Confirmar pago de semana"
+    };
+}
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+<link rel="stylesheet" href="~/css/funcionarios.css" asp-append-version="true">
+
+<div class="kpi-card func-main-card">
+
+    <!-- ── CABECERA COMPACTA ── -->
+    <div class="func-header">
+        <div class="func-header-left module-heading">
+            <span class="module-eyebrow">Planilla de liquidación</span>
+            <h2 class="module-title"><i class="bi bi-wallet2 module-title-icon" aria-hidden="true"></i>Liquidación</h2>
+            <p class="module-subtitle">Producción, IVA, comisiones y pagos del equipo.</p>
+        </div>
+
+        <div class="func-header-stats">
+            <div class="func-stat-chip func-stat-chip--sm">
+                <i class="bi bi-people func-stat-icon"></i>
+                <span class="func-stat-num">@Model.Funcionarios.Count()</span>
+                <span class="func-stat-sub">colaboradores</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── ALERTAS ── -->
+    @if (TempData["Mensaje"] != null)
+    {
+        <div class="func-alert-wrap">
+            <div class="func-alert func-alert--success">
+                <i class="bi bi-check-circle-fill"></i> @TempData["Mensaje"]
+            </div>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="func-alert-wrap">
+            <div class="func-alert func-alert--danger">
+                <i class="bi bi-exclamation-triangle-fill"></i> @TempData["Error"]
+            </div>
+        </div>
+    }
+
+    <!-- ══════════ BARRA COMPACTA DE PERIODO Y ACCIONES ══════════ -->
+    <div class="lq-filterbar" id="lqFilterbar"
+         data-tipo="@periodo"
+         data-inicio="@inicio.ToString("yyyy-MM-dd")"
+         data-fin="@fin.ToString("yyyy-MM-dd")"
+         data-has-query="@(Context.Request.QueryString.HasValue ? "1" : "0")">
+
+        <!-- Tabs de periodo -->
+        <div class="lq-period-tabs" role="tablist">
+            <a class="lq-period-tab @(Model.PeriodoTipo == PayrollPeriodType.Semanal ? "is-active" : "")"
+               asp-action="PagosSemana"
+               asp-route-fecha="@Model.Hoy.ToString("yyyy-MM-dd")"
+               asp-route-periodo="Semanal">Semanal</a>
+            <a class="lq-period-tab @(Model.PeriodoTipo == PayrollPeriodType.Quincenal ? "is-active" : "")"
+               asp-action="PagosSemana"
+               asp-route-fecha="@Model.Hoy.ToString("yyyy-MM-dd")"
+               asp-route-periodo="Quincenal">Quincenal</a>
+            <a class="lq-period-tab @(esPersonalizado ? "is-active" : "")"
+               asp-action="PagosSemana"
+               asp-route-periodo="Personalizado"
+               asp-route-desde="@inicio.ToString("yyyy-MM-dd")"
+               asp-route-hasta="@fin.ToString("yyyy-MM-dd")">Rango</a>
+        </div>
+
+        @if (!esPersonalizado)
+        {
+            <!-- Navegación semanal / quincenal -->
+            <div class="lq-period-nav">
+                <a class="lq-nav-btn"
+                   asp-action="PagosSemana"
+                   asp-route-fecha="@Model.PeriodoReferenciaAnterior.ToString("yyyy-MM-dd")"
+                   asp-route-periodo="@periodo"
+                   aria-label="Periodo anterior">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+                <div class="lq-period-range">
+                    <span class="lq-period-range-value">@Model.PeriodoEtiqueta</span>
+                </div>
+                <a class="lq-nav-btn"
+                   asp-action="PagosSemana"
+                   asp-route-fecha="@Model.PeriodoReferenciaSiguiente.ToString("yyyy-MM-dd")"
+                   asp-route-periodo="@periodo"
+                   aria-label="Periodo siguiente">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            </div>
+
+            <form method="get" asp-action="PagosSemana" class="lq-goto">
+                <input type="hidden" name="periodo" value="@periodo" />
+                <label class="lq-goto-label">Fecha base</label>
+                <input type="date" name="fecha" class="func-input func-input--no-icon lq-goto-input"
+                       value="@inicio.ToString("yyyy-MM-dd")" onchange="this.form.submit()" />
+            </form>
+        }
+        else
+        {
+            <!-- Rango personalizado -->
+            <form method="get" asp-action="PagosSemana" class="lq-range-form" id="rangoForm">
+                <input type="hidden" name="periodo" value="Personalizado" />
+                <div class="lq-range-field">
+                    <label class="lq-goto-label">Desde</label>
+                    <input type="date" name="desde" id="rangoDesde" required
+                           class="func-input func-input--no-icon lq-goto-input"
+                           value="@inicio.ToString("yyyy-MM-dd")" />
+                </div>
+                <div class="lq-range-field">
+                    <label class="lq-goto-label">Hasta</label>
+                    <input type="date" name="hasta" id="rangoHasta" required
+                           class="func-input func-input--no-icon lq-goto-input"
+                           value="@fin.ToString("yyyy-MM-dd")" />
+                </div>
+                <button type="submit" class="func-btn func-btn--ghost lq-range-apply">
+                    <i class="bi bi-check2"></i> Aplicar
+                </button>
+            </form>
+        }
+
+        <!-- Acciones a la derecha -->
+        <div class="lq-filter-actions">
+            <a class="func-btn func-btn--ghost func-btn--sm"
+               asp-action="ExportarPagosExcel"
+               asp-route-inicioSemana="@inicio.ToString("yyyy-MM-dd")"
+               asp-route-finSemana="@fin.ToString("yyyy-MM-dd")"
+               asp-route-periodo="@periodo">
+                <i class="bi bi-file-earmark-excel"></i> Exportar Excel
+            </a>
+            @if (hayPendiente)
+            {
+                <button type="button" class="func-btn func-btn--primary func-btn--sm"
+                        data-bs-toggle="modal" data-bs-target="#modalPagoPeriodo">
+                    <i class="bi bi-coin"></i> @Model.PeriodoCtaTexto
+                </button>
+            }
+            else if (Model.TotalAPagarColaboradoresGeneral > 0)
+            {
+                <span class="lq-paid-chip" title="Todos los colaboradores del periodo están al día.">
+                    <i class="bi bi-check-circle-fill"></i> Periodo pagado
+                </span>
+            }
+        </div>
+    </div>
+
+    <!-- ══════════ RESUMEN DEL PERIODO (título dinámico + 3 cuadros ejecutivos) ══════════ -->
+    <div class="lq-section-head">
+        <h3 class="lq-section-title">
+            <i class="bi bi-clipboard-data"></i>
+            @resumenTitulo
+        </h3>
+        <span class="lq-section-sub">@Model.PeriodoEtiqueta</span>
+    </div>
+
+    <div class="lq-sum-grid">
+
+        <!-- ── CUADRO 1 — VENTAS ── -->
+        <section class="lq-sum">
+            <div class="lq-sum-head">
+                <span class="lq-sum-eyebrow">Ventas</span>
+                <span class="lq-sum-icon"><i class="bi bi-cash-stack"></i></span>
+            </div>
+            <div class="lq-sum-primary">
+                <span class="lq-sum-primary-label">Total cobrado a clientes</span>
+                <span class="lq-sum-primary-value">₡ @Model.TotalGeneradoGeneral.ToString("N0")</span>
+            </div>
+            <div class="lq-sum-rows">
+                <div class="lq-sum-row">
+                    <span class="lq-sum-label">Base ventas sin IVA</span>
+                    <span class="lq-sum-value">₡ @Model.TotalBaseVentaSinIvaGeneral.ToString("N0")</span>
+                </div>
+                <div class="lq-sum-row">
+                    <span class="lq-sum-label" title="IVA incluido dentro del total cobrado, separado para control fiscal.">
+                        IVA ventas incluido <i class="bi bi-info-circle lq-sum-hint"></i>
+                    </span>
+                    <span class="lq-sum-value lq-sum-value--red">₡ @Model.TotalIvaVentaIncluidoGeneral.ToString("N0")</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- ── CUADRO 2 — LIQUIDACIÓN DEL EQUIPO ── -->
+        <section class="lq-sum">
+            <div class="lq-sum-head">
+                <span class="lq-sum-eyebrow">Liquidación del equipo</span>
+                <span class="lq-sum-icon lq-sum-icon--blue"><i class="bi bi-people"></i></span>
+            </div>
+            <div class="lq-sum-primary">
+                <span class="lq-sum-primary-label">Total planilla colaboradores</span>
+                <span class="lq-sum-primary-value lq-sum-primary-value--blue">₡ @Model.TotalAPagarColaboradoresGeneral.ToString("N0")</span>
+            </div>
+            <div class="lq-sum-rows">
+                <div class="lq-sum-row">
+                    <span class="lq-sum-label" title="IVA de venta total − IVA facturado por colaboradores independientes que aplican.">
+                        IVA neto negocio <i class="bi bi-info-circle lq-sum-hint"></i>
+                    </span>
+                    <span class="lq-sum-value">₡ @Model.TotalIvaNetoNegocioGeneral.ToString("N0")</span>
+                </div>
+                <div class="lq-sum-row">
+                    <span class="lq-sum-label">IVA pagado a colaboradores</span>
+                    @if (hayIvaColabEquipo)
+                    {
+                        <span class="lq-sum-value lq-sum-value--amber">₡ @Model.TotalIvaColaboradorGeneral.ToString("N0")</span>
+                    }
+                    else
+                    {
+                        <span class="lq-sum-value lq-sum-value--muted" title="Ningún colaborador del periodo factura IVA.">₡ 0 · No aplica</span>
+                    }
+                </div>
+            </div>
+        </section>
+
+        <!-- ── CUADRO 3 — PAGOS Y RESULTADOS ── -->
+        <section class="lq-sum">
+            <div class="lq-sum-head">
+                <span class="lq-sum-eyebrow">Pagos y resultados</span>
+                <span class="lq-sum-icon lq-sum-icon--green"><i class="bi bi-graph-up-arrow"></i></span>
+            </div>
+            <div class="lq-sum-primary">
+                <span class="lq-sum-primary-label">Total pagado</span>
+                <span class="lq-sum-primary-value lq-sum-primary-value--green">₡ @Model.TotalPagadoGeneral.ToString("N0")</span>
+            </div>
+            <div class="lq-sum-rows">
+                <div class="lq-sum-row">
+                    <span class="lq-sum-label">Pendiente</span>
+                    <span class="lq-sum-value @(Model.TotalPendienteGeneral > 0 ? "lq-sum-value--amber" : "lq-sum-value--green")">₡ @Model.TotalPendienteGeneral.ToString("N0")</span>
+                </div>
+                @if (hayExcedente)
+                {
+                    <div class="lq-sum-row">
+                        <span class="lq-sum-label" title="Pagos por encima de lo devengado en el periodo (sobrepago).">
+                            Excedente <i class="bi bi-info-circle lq-sum-hint"></i>
+                        </span>
+                        <span class="lq-sum-value lq-sum-value--amber">₡ @Model.TotalExcedenteGeneral.ToString("N0")</span>
+                    </div>
+                }
+                <div class="lq-sum-row lq-sum-row--result">
+                    <span class="lq-sum-label" title="Resultado estimado según ventas, liquidación e IVA, antes de otros gastos operativos.">
+                        Ganancia negocio estimada <i class="bi bi-info-circle lq-sum-hint"></i>
+                    </span>
+                    <span class="lq-sum-value lq-sum-value--strong">₡ @Model.GananciaNegocio.ToString("N0")</span>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- ══════════ DESGLOSE POR COLABORADOR ══════════ -->
+    <div class="lq-section-head lq-section-head--list">
+        <h3 class="lq-section-title">
+            <i class="bi bi-people"></i>
+            Desglose por colaborador
+        </h3>
+        <span class="lq-section-sub">Detalle de producción, IVA, comisión, pagos y pendientes por cada colaborador.</span>
+    </div>
+
+    <!-- ══════════ CARDS DE COLABORADORES ══════════ -->
+    <div class="lq-list">
+        @foreach (var f in Model.Funcionarios)
+        {
+            var inicial     = !string.IsNullOrEmpty(f.Nombre) ? char.ToUpper(f.Nombre[0]).ToString() : "?";
+            var facturaIva  = f.TipoRelacionColaborador == TipoRelacionColaborador.Independiente && f.ColaboradorFacturaIva;
+            var sinPendiente = f.MontoPendiente <= 0;
+            var conExcedente = f.Excedente > 0;
+            var parcial     = !sinPendiente && f.MontoPagado > 0;
+            var pagoTexto   = sinPendiente
+                ? (conExcedente ? "Pagado con excedente" : (f.TotalAPagarColaborador > 0 ? "Pagado" : "Al día"))
+                : (parcial ? "Parcial" : "Pendiente");
+            var pagoClase   = sinPendiente ? "lq-state--ok" : (parcial ? "lq-state--partial" : "lq-state--pending");
+            var sobreTotal  = f.ComisionCalculadaSobre == ComisionCalculadaSobre.TotalCobrado;
+            var baseComision = f.BaseComisionServicios + f.BaseComisionProductos;
+            var formula     = FuncionarioLiquidacionDisplay.FormulaComision(f);
+            // Color persistido del funcionario; fallback elegante al acento del tema.
+            var accentColor = string.IsNullOrWhiteSpace(f.ColorCalendario)
+                ? "var(--private-chart-accent, var(--private-accent))"
+                : f.ColorCalendario;
+
+            <div class="lq-card lq-card--accented" style="--lq-accent:@accentColor;">
+
+                <div class="lq-card-head">
+                    <div class="lq-id">
+                        <div class="lq-avatar lq-avatar--tinted">@inicial</div>
+                        <div class="lq-id-text">
+                            <span class="lq-name">@f.Nombre</span>
+                            <span class="lq-state @pagoClase">
+                                @if (sinPendiente) { <i class="bi bi-check-circle-fill"></i> } else { <i class="bi bi-clock-fill"></i> }
+                                @pagoTexto
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="lq-badges">
+                        <span class="lq-badge lq-badge--rel">@FuncionarioLiquidacionDisplay.Relacion(f.TipoRelacionColaborador)</span>
+                        <span class="lq-badge @(sobreTotal ? "lq-badge--info" : "lq-badge--neutral")">@FuncionarioLiquidacionDisplay.ComisionSobre(f.ComisionCalculadaSobre)</span>
+                        @if (facturaIva)
+                        {
+                            <span class="lq-badge lq-badge--warning">Factura IVA</span>
+                        }
+                        @if (conExcedente)
+                        {
+                            <span class="lq-badge lq-badge--warning">Excedente ₡ @f.Excedente.ToString("N0")</span>
+                        }
+                    </div>
+
+                    <div class="lq-head-actions">
+                        @if (f.MontoPendiente > 0)
+                        {
+                            <button type="button" class="func-pagos-pay-btn"
+                                    data-bs-toggle="modal" data-bs-target="#modalPago"
+                                    data-fid="@f.FuncionarioId" data-nombre="@f.Nombre"
+                                    data-monto="@f.MontoPendiente" data-pagofinal="@f.PagoFinal" data-pagado="@f.MontoPagado"
+                                    onclick="setPagoFromBtn(this)">
+                                <i class="bi bi-coin"></i> Pagar
+                            </button>
+                        }
+                        <button class="lq-expand-btn" type="button"
+                                data-bs-toggle="collapse" data-bs-target="#detalle_@f.FuncionarioId"
+                                aria-expanded="false" aria-label="Ver detalle de @f.Nombre">
+                            <i class="bi bi-chevron-down"></i>
+                            <span>Ver detalle</span>
+                        </button>
+                    </div>
+                </div>
+
+                @if (FuncionarioLiquidacionDisplay.RequiereFacturaPendiente(f))
+                {
+                    <div class="lq-warn-note">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        Requiere factura antes de pagar.
+                    </div>
+                }
+
+                <!-- Fila tipo planilla: 6 métricas con Total a pagar destacado -->
+                <div class="lq-card-body">
+                    <div class="lq-metrics lq-metrics--6">
+                        <div class="lq-metric">
+                            <span class="lq-metric-label">Producción</span>
+                            <span class="lq-metric-val">₡ @f.TotalCobrado.ToString("N0")</span>
+                        </div>
+                        <div class="lq-metric">
+                            <span class="lq-metric-label">IVA de venta incluido</span>
+                            <span class="lq-metric-val func-amount--red">₡ @f.IvaVentaIncluido.ToString("N0")</span>
+                        </div>
+                        <div class="lq-metric">
+                            <span class="lq-metric-label">Monto colaborador</span>
+                            <span class="lq-metric-val">₡ @f.MontoColaborador.ToString("N0")</span>
+                        </div>
+                        <div class="lq-metric lq-metric--primary">
+                            <span class="lq-metric-label">Total a pagar</span>
+                            <span class="lq-metric-val">₡ @f.TotalAPagarColaborador.ToString("N0")</span>
+                        </div>
+                        <div class="lq-metric">
+                            <span class="lq-metric-label">Pagado</span>
+                            <span class="lq-metric-val func-amount--green">₡ @f.MontoPagado.ToString("N0")</span>
+                        </div>
+                        @if (conExcedente)
+                        {
+                            <div class="lq-metric lq-metric--warn">
+                                <span class="lq-metric-label">Excedente</span>
+                                <span class="lq-metric-val func-amount--amber">₡ @f.Excedente.ToString("N0")</span>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="lq-metric @(f.MontoPendiente > 0 ? "lq-metric--warn" : "")">
+                                <span class="lq-metric-label">Pendiente</span>
+                                <span class="lq-metric-val @(f.MontoPendiente > 0 ? "func-amount--amber" : "func-amount--green")">₡ @f.MontoPendiente.ToString("N0")</span>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="lq-explain">
+                        <p class="lq-explain-line">
+                            <i class="bi bi-info-circle"></i>
+                            @FuncionarioLiquidacionDisplay.ExplicacionIva(f)
+                        </p>
+                        @if (!string.IsNullOrEmpty(formula))
+                        {
+                            <p class="lq-explain-line lq-explain-formula">
+                                <i class="bi bi-calculator"></i>
+                                <text>@formula</text>
+                            </p>
+                        }
+                    </div>
+                </div>
+
+                <div class="collapse lq-detail" id="detalle_@f.FuncionarioId">
+                    <partial name="_PagoDetalleInner" model="f" />
+                </div>
+
+            </div>
+        }
+    </div>
+
+    @if (!Model.Funcionarios.Any())
+    {
+        <div class="func-empty">
+            <i class="bi bi-people func-empty-icon"></i>
+            <span class="func-empty-text">No hay colaboradores con actividad en este periodo</span>
+        </div>
+    }
+
+    <!-- ── NOTA LEGAL/CONTABLE DISCRETA ── -->
+    <div class="lq-legal-note">
+        <i class="bi bi-info-circle"></i>
+        Esta liquidación es un reporte interno de pagos y comisiones. No sustituye factura
+        electrónica, planilla de la CCSS ni criterio contable o legal.
+    </div>
+
+</div>
+
+<!-- ── MODAL: REGISTRAR PAGO DE LIQUIDACIÓN (PERIODO COMPLETO) ── -->
+@* ── MODAL: REVERTIR PAGO ──
+   Un pago de liquidación no se edita. Si está mal, se revierte (se deshace la operación
+   completa: liquidación, detalles, distribución y egreso) y se vuelve a registrar. *@
+<div class="modal fade func-modal" id="modalRevertirPago" tabindex="-1" aria-labelledby="lblModalRevertirPago">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" asp-action="RevertirPago" id="formRevertirPago">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="liquidacionId" id="revertirLiquidacionId" value="" />
+                <input type="hidden" name="fecha" value="@inicio.ToString("yyyy-MM-dd")" />
+                <input type="hidden" name="periodo" value="@periodo" />
+                @if (esPersonalizado)
+                {
+                    <input type="hidden" name="desde" value="@inicio.ToString("yyyy-MM-dd")" />
+                    <input type="hidden" name="hasta" value="@fin.ToString("yyyy-MM-dd")" />
+                }
+
+                <div class="modal-header">
+                    <div style="display:flex;align-items:center;gap:0.65rem;">
+                        <div class="func-brand-icon" style="width:2.2rem;height:2.2rem;font-size:1rem;flex-shrink:0;background:linear-gradient(135deg,rgba(217,119,6,0.18),rgba(180,83,9,0.18));">
+                            <i class="bi bi-arrow-counterclockwise" style="color:#d97706;"></i>
+                        </div>
+                        <div>
+                            <h5 class="func-modal-title" id="lblModalRevertirPago" style="margin:0;">Revertir pago</h5>
+                            <span class="lq-modal-subtitle">El monto volverá a quedar pendiente</span>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="lq-revert-summary">
+                        <div class="lq-revert-row"><span>Colaborador</span><b id="revertirFuncionario">—</b></div>
+                        <div class="lq-revert-row"><span>Monto</span><b id="revertirMonto" class="func-amount--green">—</b></div>
+                        <div class="lq-revert-row"><span>Fecha</span><b id="revertirFecha">—</b></div>
+                        <div class="lq-revert-row"><span>Periodo</span><b id="revertirPeriodo">—</b></div>
+                        <div class="lq-revert-row"><span>Método</span><b id="revertirMetodo">—</b></div>
+                    </div>
+
+                    <p class="lq-revert-help">
+                        Esta acción eliminará la aplicación del pago y el monto volverá a quedar
+                        pendiente. <strong>La producción y la comisión generada no cambian.</strong>
+                    </p>
+
+                    <div class="lq-modal-fields">
+                        <label class="func-label" for="revertirMotivo">
+                            Motivo de la reversión <span style="color:#dc2626;">*</span>
+                        </label>
+                        <input type="text"
+                               class="func-input"
+                               id="revertirMotivo"
+                               name="motivo"
+                               maxlength="500"
+                               required
+                               placeholder="Ej.: se registró en la semana equivocada" />
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="func-btn func-btn--ghost" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="func-btn func-btn--amber">
+                        <i class="bi bi-arrow-counterclockwise"></i> Revertir pago
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade func-modal" id="modalPagoPeriodo" tabindex="-1" aria-labelledby="lblModalPagoPeriodo">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <form method="post" asp-action="PagarTodaLaSemana" id="formPagarPeriodo">
+                @Html.AntiForgeryToken()
+                @* Identifica esta INTENCIÓN de pago: un doble click o un reenvío del formulario
+                   llegan con la misma clave y el servidor registra una sola operación. *@
+                <input type="hidden" name="idempotencyKey" value="@Guid.NewGuid()" />
+                <input type="hidden" name="inicioSemana" value="@inicio.ToString("yyyy-MM-dd")" />
+                <input type="hidden" name="finSemana" value="@fin.ToString("yyyy-MM-dd")" />
+                <input type="hidden" name="periodo" value="@periodo" />
+                @if (esPersonalizado)
+                {
+                    <input type="hidden" name="desde" value="@inicio.ToString("yyyy-MM-dd")" />
+                    <input type="hidden" name="hasta" value="@fin.ToString("yyyy-MM-dd")" />
+                }
+
+                <div class="modal-header">
+                    <div style="display:flex;align-items:center;gap:0.65rem;">
+                        <div class="func-brand-icon" style="width:2.2rem;height:2.2rem;font-size:1rem;flex-shrink:0;background:linear-gradient(135deg,rgba(22,163,74,0.18),rgba(5,150,105,0.18));">
+                            <i class="bi bi-coin" style="color:#16a34a;"></i>
+                        </div>
+                        <div>
+                            <h5 class="func-modal-title func-modal-title--green" id="lblModalPagoPeriodo" style="margin:0;">Registrar pago de liquidación</h5>
+                            <p style="font-size:0.73rem;color:var(--private-muted-text,#64748b);margin:0;line-height:1.3;">@Model.PeriodoTipoLabel · @Model.PeriodoEtiqueta</p>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+
+                <div class="modal-body">
+
+                    <!-- Resumen del periodo -->
+                    <div class="lq-modal-summary">
+                        <div class="lq-modal-summary-item">
+                            <span class="lq-modal-summary-label">Total a pagar</span>
+                            <span class="lq-modal-summary-val">₡ @Model.TotalAPagarColaboradoresGeneral.ToString("N0")</span>
+                        </div>
+                        <div class="lq-modal-summary-item">
+                            <span class="lq-modal-summary-label">Ya pagado</span>
+                            <span class="lq-modal-summary-val func-amount--green">₡ @Model.TotalPagadoGeneral.ToString("N0")</span>
+                        </div>
+                        <div class="lq-modal-summary-item">
+                            <span class="lq-modal-summary-label">Pendiente</span>
+                            <span class="lq-modal-summary-val func-amount--amber">₡ @Model.TotalPendienteGeneral.ToString("N0")</span>
+                        </div>
+                        @if (hayExcedente)
+                        {
+                            <div class="lq-modal-summary-item">
+                                <span class="lq-modal-summary-label">Excedente</span>
+                                <span class="lq-modal-summary-val func-amount--amber">₡ @Model.TotalExcedenteGeneral.ToString("N0")</span>
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Campos de pago -->
+                    <div class="lq-modal-fields">
+                        <div class="func-modal-field">
+                            <label class="func-modal-label">Método de pago <span class="func-required">*</span></label>
+                            <div class="func-modal-input-wrap">
+                                <span class="func-modal-input-icon"><i class="bi bi-credit-card"></i></span>
+                                <select name="metodoPago" class="func-modal-input func-modal-input--with-icon func-modal-select" required>
+                                    @foreach (var metodo in metodosPago)
+                                    {
+                                        <option value="@metodo">@metodo</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                        <div class="func-modal-field">
+                            <label class="func-modal-label">Fecha de pago</label>
+                            <div class="func-modal-input-wrap">
+                                <span class="func-modal-input-icon"><i class="bi bi-calendar3"></i></span>
+                                <input type="datetime-local" name="fechaPago"
+                                       class="func-modal-input func-modal-input--with-icon"
+                                       value="@ahora.ToString("yyyy-MM-ddTHH:mm")" style="color-scheme:dark;" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="func-modal-field">
+                        <label class="func-modal-label">Observación (opcional)</label>
+                        <div class="func-modal-input-wrap">
+                            <span class="func-modal-input-icon func-modal-input-icon--top"><i class="bi bi-chat-left-text"></i></span>
+                            <input type="text" name="observacion" class="func-modal-input func-modal-input--with-icon"
+                                   placeholder="Ej: Liquidación @Model.PeriodoTipoLabel.ToLower() completa" />
+                        </div>
+                    </div>
+
+                    <!-- Colaboradores con pendiente -->
+                    <div class="lq-modal-list-head">
+                        <span><i class="bi bi-people"></i> Colaboradores a liquidar</span>
+                        <span class="lq-modal-list-count">@pendientes.Count</span>
+                    </div>
+
+                    @if (pendientes.Any())
+                    {
+                        <div class="lq-modal-list">
+                            <div class="lq-modal-list-row lq-modal-list-row--head">
+                                <span>Colaborador</span>
+                                <span>A pagar</span>
+                                <span>Pagado</span>
+                                <span>Pendiente</span>
+                            </div>
+                            @foreach (var f in pendientes)
+                            {
+                                <div class="lq-modal-list-row">
+                                    <span class="lq-modal-list-name">@f.Nombre</span>
+                                    <span>₡ @f.TotalAPagarColaborador.ToString("N0")</span>
+                                    <span class="func-amount--green">₡ @f.MontoPagado.ToString("N0")</span>
+                                    <span class="func-amount--amber">₡ @f.MontoPendiente.ToString("N0")</span>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="lq-empty-inline"><i class="bi bi-check-circle"></i> No hay colaboradores con pendiente en este periodo.</div>
+                    }
+
+                    <div class="lq-modal-note">
+                        <i class="bi bi-shield-check"></i>
+                        Se registrará el pago pendiente de este periodo para los colaboradores correspondientes.
+                        El sistema recalculará los saldos antes de guardar para evitar sobrepagos.
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="func-btn func-btn--ghost" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" id="btnPagarPeriodo" class="func-btn func-btn--primary" @(pendientes.Any() ? "" : "disabled")>
+                        <i class="bi bi-check-lg"></i> @confirmarTexto
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ── MODAL: REGISTRAR PAGO INDIVIDUAL ── -->
+<div class="modal fade func-modal" id="modalPago" tabindex="-1" aria-labelledby="lblModalPago">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" asp-action="RegistrarPago" id="formRegistrarPago">
+                <input type="hidden" name="idempotencyKey" value="@Guid.NewGuid()" />
+                @Html.AntiForgeryToken()
+                <div class="modal-header">
+                    <div style="display:flex;align-items:center;gap:0.65rem;">
+                        <div class="func-brand-icon" style="width:2.2rem;height:2.2rem;font-size:1rem;flex-shrink:0;background:linear-gradient(135deg,rgba(22,163,74,0.18),rgba(5,150,105,0.18));">
+                            <i class="bi bi-coin" style="color:#16a34a;"></i>
+                        </div>
+                        <div>
+                            <h5 class="func-modal-title func-modal-title--green" id="lblModalPago" style="margin:0;">Registrar pago</h5>
+                            <p style="font-size:0.73rem;color:var(--private-muted-text,#64748b);margin:0;line-height:1.3;">Pago completo o parcial al colaborador</p>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+
+                <div class="modal-body">
+                    <input type="hidden" name="funcionarioId" id="funcionarioId" />
+                    <input type="hidden" name="inicioSemana" value="@inicio.ToString("yyyy-MM-dd")" />
+                    <input type="hidden" name="finSemana" value="@fin.ToString("yyyy-MM-dd")" />
+                    <input type="hidden" name="periodo" value="@periodo" />
+                    @if (esPersonalizado)
+                    {
+                        <input type="hidden" name="desde" value="@inicio.ToString("yyyy-MM-dd")" />
+                        <input type="hidden" name="hasta" value="@fin.ToString("yyyy-MM-dd")" />
+                    }
+
+                    <div class="func-pago-summary">
+                        <div class="func-pago-summary-avatar" id="pagoSummaryAvatar">?</div>
+                        <div class="func-pago-summary-info">
+                            <span class="func-pago-summary-name" id="pagoSummaryNombre"></span>
+                            <div class="func-pago-summary-grid">
+                                <div class="func-pago-summary-item">
+                                    <span class="func-pago-summary-label">A pagar</span>
+                                    <span class="func-pago-summary-val func-pago-summary-val--green" id="pagoSummaryTotal">—</span>
+                                </div>
+                                <div class="func-pago-summary-item">
+                                    <span class="func-pago-summary-label">Pagado</span>
+                                    <span class="func-pago-summary-val func-pago-summary-val--green" id="pagoSummaryPagado">—</span>
+                                </div>
+                                <div class="func-pago-summary-item">
+                                    <span class="func-pago-summary-label">Pendiente</span>
+                                    <span class="func-pago-summary-val func-pago-summary-val--amber" id="pagoSummaryPendiente">—</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="func-modal-field">
+                        <label class="func-modal-label">Monto a pagar <span class="func-required">*</span></label>
+                        <div class="func-modal-input-wrap">
+                            <span class="func-modal-input-icon"><i class="bi bi-currency-dollar"></i></span>
+                            <input type="number" name="monto" id="montoPago"
+                                   class="func-modal-input func-modal-input--with-icon func-modal-input--prominent func-modal-input--with-max"
+                                   min="0.01" step="0.01" required placeholder="0" />
+                            <button type="button" id="btnMaxPago" class="func-modal-max-btn"
+                                    onclick="setMaxPago()" title="Llenar con el monto pendiente máximo" disabled>MAX</button>
+                        </div>
+                        <span class="func-modal-hint">Puedes registrar pagos completos o parciales.</span>
+                    </div>
+
+                    <div class="func-modal-field">
+                        <label class="func-modal-label">Método de pago <span class="func-required">*</span></label>
+                        <div class="func-modal-input-wrap">
+                            <span class="func-modal-input-icon"><i class="bi bi-credit-card"></i></span>
+                            <select name="metodoPago" class="func-modal-input func-modal-input--with-icon func-modal-select" required>
+                                @foreach (var metodo in metodosPago)
+                                {
+                                    <option value="@metodo">@metodo</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="func-modal-field">
+                        <label class="func-modal-label">Fecha real del pago</label>
+                        <div class="func-modal-input-wrap">
+                            <span class="func-modal-input-icon"><i class="bi bi-calendar3"></i></span>
+                            <input type="datetime-local" name="fechaPago"
+                                   class="func-modal-input func-modal-input--with-icon"
+                                   value="@ahora.ToString("yyyy-MM-ddTHH:mm")" style="color-scheme:dark;" />
+                        </div>
+                    </div>
+
+                    <div class="func-modal-field">
+                        <label class="func-modal-label">Observaciones (opcional)</label>
+                        <div class="func-modal-input-wrap">
+                            <span class="func-modal-input-icon func-modal-input-icon--top"><i class="bi bi-chat-left-text"></i></span>
+                            <textarea name="observacion" class="func-modal-input func-modal-input--with-icon"
+                                      style="resize:vertical;min-height:4rem;" placeholder="Ej: Pago completo, adelanto, etc."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="func-btn func-btn--ghost" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" id="btnRegistrarPago" class="func-btn func-btn--primary">
+                        <i class="bi bi-check-lg"></i> Registrar pago
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function formatCRC(value) {
+        return "₡ " + parseFloat(value || 0).toLocaleString("es-CR", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    }
+
+    function setPagoFromBtn(btn) {
+        var nombre    = btn.dataset.nombre || "";
+        var inicial   = nombre.length > 0 ? nombre[0].toUpperCase() : "?";
+        var pendiente = parseFloat(btn.dataset.monto || 0);
+
+        document.getElementById("funcionarioId").value = btn.dataset.fid;
+        document.getElementById("montoPago").value     = pendiente > 0 ? pendiente : "";
+
+        document.getElementById("pagoSummaryAvatar").textContent    = inicial;
+        document.getElementById("pagoSummaryNombre").textContent    = nombre;
+        document.getElementById("pagoSummaryTotal").textContent     = formatCRC(btn.dataset.pagofinal);
+        document.getElementById("pagoSummaryPagado").textContent    = formatCRC(btn.dataset.pagado);
+        document.getElementById("pagoSummaryPendiente").textContent = formatCRC(btn.dataset.monto);
+
+        var maxBtn = document.getElementById("btnMaxPago");
+        if (maxBtn) { maxBtn.dataset.max = pendiente; maxBtn.disabled = pendiente <= 0; }
+
+        var btnSubmit = document.getElementById("btnRegistrarPago");
+        if (btnSubmit) { btnSubmit.disabled = false; btnSubmit.innerHTML = '<i class="bi bi-check-lg"></i> Registrar pago'; }
+    }
+
+    function setMaxPago() {
+        var maxBtn = document.getElementById("btnMaxPago");
+        if (!maxBtn || maxBtn.disabled) return;
+        var max = parseFloat(maxBtn.dataset.max || 0);
+        if (max > 0) {
+            document.getElementById("montoPago").value = max;
+            document.getElementById("montoPago").focus();
+        }
+    }
+
+    document.getElementById("formRegistrarPago").addEventListener("submit", function () {
+        var btn = document.getElementById("btnRegistrarPago");
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Registrando...';
+        }
+    });
+
+    // ── Pago del periodo completo: anti doble-submit + loading ──
+    var formPeriodo = document.getElementById("formPagarPeriodo");
+    if (formPeriodo) {
+        formPeriodo.addEventListener("submit", function () {
+            var btn = document.getElementById("btnPagarPeriodo");
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Procesando...';
+            }
+        });
+    }
+
+    // ── Recordar la última selección del usuario en este navegador (localStorage) ──
+    (function () {
+        var KEY_TIPO = "luxury_liquidacion_periodo_tipo";
+        var KEY_INI  = "luxury_liquidacion_rango_inicio";
+        var KEY_FIN  = "luxury_liquidacion_rango_fin";
+
+        var bar = document.getElementById("lqFilterbar");
+        if (!bar) return;
+
+        var tipoActual = bar.dataset.tipo;                 // "Semanal" | "Quincenal" | "Personalizado"
+        var tieneQuery = bar.dataset.hasQuery === "1";     // ¿el usuario llegó con una selección explícita?
+
+        var storage;
+        try { storage = window.localStorage; } catch (e) { storage = null; }
+        if (!storage) return;
+
+        if (tieneQuery) {
+            // El usuario eligió algo → lo persistimos como su preferencia.
+            storage.setItem(KEY_TIPO, tipoActual);
+            if (tipoActual === "Personalizado") {
+                storage.setItem(KEY_INI, bar.dataset.inicio);
+                storage.setItem(KEY_FIN, bar.dataset.fin);
+            }
+            return;
+        }
+
+        // Sin selección explícita (entrada limpia al módulo) → restaurar preferencia si existe.
+        var tipoGuardado = storage.getItem(KEY_TIPO);
+        if (!tipoGuardado || tipoGuardado === tipoActual) return;
+
+        var url = "?periodo=" + encodeURIComponent(tipoGuardado);
+        if (tipoGuardado === "Personalizado") {
+            var i = storage.getItem(KEY_INI), f = storage.getItem(KEY_FIN);
+            if (i && f) { url += "&desde=" + i + "&hasta=" + f; }
+        }
+        // Semanal/Quincenal se restauran SIN fecha → el servidor usa hoy y muestra el periodo actual.
+        window.location.replace(url);
+    })();
+
+    // ── Rango personalizado: validación cliente (inicio <= fin, ambas requeridas) ──
+    var rangoForm = document.getElementById("rangoForm");
+    if (rangoForm) {
+        rangoForm.addEventListener("submit", function (e) {
+            var desde = document.getElementById("rangoDesde");
+            var hasta = document.getElementById("rangoHasta");
+            if (!desde.value || !hasta.value) {
+                e.preventDefault();
+                alert("Debes indicar la fecha inicial y la fecha final del rango.");
+                return;
+            }
+            if (desde.value > hasta.value) {
+                e.preventDefault();
+                alert("La fecha inicial no puede ser mayor que la fecha final.");
+            }
+        });
+    }
+
+    // ── Revertir pago: el modal se llena desde el botón que lo abrió ──
+    var modalRevertir = document.getElementById("modalRevertirPago");
+    if (modalRevertir) {
+        modalRevertir.addEventListener("show.bs.modal", function (event) {
+            var boton = event.relatedTarget;
+            if (!boton) { return; }
+
+            var set = function (id, valor) {
+                var el = document.getElementById(id);
+                if (el) { el.textContent = valor || "—"; }
+            };
+
+            document.getElementById("revertirLiquidacionId").value = boton.getAttribute("data-liquidacion") || "";
+            set("revertirFuncionario", boton.getAttribute("data-funcionario"));
+            set("revertirMonto", boton.getAttribute("data-monto"));
+            set("revertirFecha", boton.getAttribute("data-fecha"));
+            set("revertirPeriodo", boton.getAttribute("data-periodo"));
+            set("revertirMetodo", boton.getAttribute("data-metodo"));
+
+            var motivo = document.getElementById("revertirMotivo");
+            if (motivo) { motivo.value = ""; }
+        });
+
+        // Evita el doble envío accidental (defensa de UX; la de verdad es la del servidor).
+        var formRevertir = document.getElementById("formRevertirPago");
+        if (formRevertir) {
+            formRevertir.addEventListener("submit", function () {
+                var btn = formRevertir.querySelector("button[type=submit]");
+                if (btn) { btn.disabled = true; }
+            });
+        }
+    }
+</script>

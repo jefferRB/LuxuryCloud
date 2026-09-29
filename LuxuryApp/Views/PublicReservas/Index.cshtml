@@ -1,0 +1,824 @@
+@model LuxuryApp.Models.Reservas.PublicBookingPageViewModel
+@using System.Globalization
+@{
+    Layout = null;
+    ViewData["Title"] = $"Reservar en {Model.NombreNegocio}";
+    var pasoFuncionario = Model.PermiteElegirFuncionario;
+    var crCulture = CultureInfo.GetCultureInfo("es-CR");
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>@ViewData["Title"]</title>
+    <link rel="stylesheet" href="~/css/public-reservas.css" asp-append-version="true" />
+</head>
+<body>
+    <div class="pb-wrap">
+        <header class="pb-header">
+            <div class="pb-logo">@(string.IsNullOrEmpty(Model.NombreNegocio) ? "R" : Model.NombreNegocio.Substring(0, 1).ToUpper())</div>
+            <span class="pb-eyebrow">Reservá tu cita</span>
+            <h1 class="pb-negocio">@Model.NombreNegocio</h1>
+            @if (!string.IsNullOrWhiteSpace(Model.MensajeBienvenida))
+            {
+                <p class="pb-bienvenida">@Model.MensajeBienvenida</p>
+            }
+            else
+            {
+                <p class="pb-bienvenida">Solicitá tu cita en pocos pasos. El negocio la confirmará y te avisará.</p>
+            }
+        </header>
+
+        <main class="pb-card" id="pbCard">
+            <!-- Paso 1: Servicio (selector compacto buscable) -->
+            <section class="pb-step">
+                <span class="pb-label"><span class="pb-num">1</span> Elegí el servicio</span>
+                @if (Model.Servicios.Count == 0)
+                {
+                    <p class="pb-msg">Por ahora no hay servicios disponibles para reservar en línea.</p>
+                }
+                else
+                {
+                    <button type="button" class="pb-select-trigger" id="pbServicioTrigger" aria-haspopup="dialog" aria-expanded="false">
+                        <span class="pb-select-trigger-text" id="pbServicioTriggerText">Seleccioná un servicio</span>
+                        <span class="pb-select-caret" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                        </span>
+                    </button>
+                    @if (!string.IsNullOrWhiteSpace(Model.PreselectedServiceName))
+                    {
+                        <p class="pb-msg">Servicio seleccionado: @Model.PreselectedServiceName. PodÃ©s cambiarlo si querÃ©s.</p>
+                    }
+                }
+            </section>
+
+            @if (pasoFuncionario)
+            {
+                <!-- Paso 2: Profesional -->
+                <section class="pb-step" id="pbProfStep" hidden>
+                    <span class="pb-label"><span class="pb-num">2</span> Elegí el profesional</span>
+                    <div class="pb-prof-grid" id="pbProfGrid">
+                        @if (Model.PermiteCualquierFuncionario)
+                        {
+                            <button type="button" class="pb-prof-card" role="radio" aria-checked="false" data-id="" data-any="1">
+                                <span class="pb-prof-avatar pb-prof-any" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                                </span>
+                                <span class="pb-prof-info">
+                                    <span class="pb-prof-name">Cualquier profesional</span>
+                                    <span class="pb-prof-role">Más horarios disponibles</span>
+                                </span>
+                            </button>
+                        }
+                        @foreach (var f in Model.Funcionarios)
+                        {
+                            <button type="button" class="pb-prof-card" role="radio" aria-checked="false"
+                                    data-id="@f.Id" data-nombre="@f.Nombre" hidden>
+                                @if (!string.IsNullOrWhiteSpace(f.FotoUrl))
+                                {
+                                    <img class="pb-prof-avatar" src="@f.FotoUrl" alt="Foto de @f.Nombre" />
+                                }
+                                else
+                                {
+                                    <span class="pb-prof-avatar" style="background-color:@f.ColorAvatar;" aria-hidden="true">
+                                        @(f.Nombre.Length > 0 ? char.ToUpper(f.Nombre[0]).ToString() : "?")
+                                    </span>
+                                }
+                                <span class="pb-prof-info">
+                                    <span class="pb-prof-name">@f.Nombre</span>
+                                    @if (!string.IsNullOrWhiteSpace(f.Puesto))
+                                    {
+                                        <span class="pb-prof-role">@f.Puesto</span>
+                                    }
+                                    <span class="pb-prof-hint">Disponible para este servicio</span>
+                                </span>
+                            </button>
+                        }
+                    </div>
+                    <p class="pb-msg" id="pbProfEmpty" hidden>Este servicio aún no tiene profesionales disponibles para reservas online.</p>
+                </section>
+            }
+            else
+            {
+                <p class="pb-assign-note" id="pbAssignNote" hidden>Te asignaremos un profesional disponible para este servicio.</p>
+            }
+
+            @* Atajo a los pasos 3 y 4: no es un paso nuevo, solo evita que el cliente tenga que
+               adivinar fechas a mano. Alimenta el mismo flujo, no lo reemplaza.
+
+               Esta sección es UNA sola y se MUEVE según el estado: mientras no hay fecha vive acá,
+               debajo del selector; en cuanto hay fecha pasa a ser el último hijo del paso de hora,
+               para que las horas del día elegido siempre manden. Ver colocarNext(). *@
+            <section id="pbNextStep" hidden>
+                <div class="pb-next pb-next-standalone">
+                    <p class="pb-next-title" id="pbNextTitle">Próximos espacios disponibles</p>
+                    <div id="pbNextList" class="pb-next-list" role="group" aria-labelledby="pbNextTitle"></div>
+                    <p class="pb-next-hint" id="pbNextHint" hidden></p>
+                </div>
+            </section>
+
+            <!-- Paso 3: Fecha -->
+            <section class="pb-step" id="pbFechaStep" hidden>
+                <label class="pb-label" for="pbFecha"><span class="pb-num">@(pasoFuncionario ? 3 : 2)</span> Elegí la fecha</label>
+                <input type="date" id="pbFecha" class="pb-input" min="@Model.MinDateIso" max="@Model.MaxDateIso" />
+            </section>
+
+            <!-- Paso 4: Hora -->
+            <section class="pb-step" id="pbHoraStep" hidden>
+                <span class="pb-label"><span class="pb-num">@(pasoFuncionario ? 4 : 3)</span> Elegí la hora</span>
+                <div id="pbHorarios" class="pb-horarios"></div>
+                <p id="pbHorariosMsg" class="pb-msg"></p>
+
+                <!-- Sugerencia: ver con cualquier profesional -->
+                <button type="button" id="pbVerCualquiera" class="pb-btn pb-btn-ghost pb-suggest-btn" hidden>
+                    Ver con cualquier profesional disponible
+                </button>
+
+            </section>
+
+            <!-- Paso 5: Datos -->
+            <section class="pb-step pb-datos" id="pbFormWrap" hidden>
+                <span class="pb-label"><span class="pb-num">@(pasoFuncionario ? 5 : 4)</span> Tus datos</span>
+                <input type="text" id="pbNombre" class="pb-input" placeholder="Nombre completo" maxlength="100" autocomplete="name" />
+                <input type="tel" id="pbTelefono" class="pb-input" placeholder="Teléfono" maxlength="30" autocomplete="tel" />
+                @if (Model.MostrarWhatsApp)
+                {
+                    <label class="pb-check">
+                        <input type="checkbox" id="pbWhatsApp" checked />
+                        <span>Quiero recibir la confirmación por WhatsApp.</span>
+                    </label>
+                }
+                <input type="text" id="pbWebsite" class="pb-honeypot" tabindex="-1" autocomplete="off" aria-hidden="true" />
+
+                <button type="button" id="pbEnviar" class="pb-btn">Enviar solicitud</button>
+                <div id="pbError" class="pb-error" hidden></div>
+            </section>
+        </main>
+
+        <input type="hidden" id="pbSubmissionToken" value="@Model.SubmissionToken" />
+
+        @* Selector visual de servicios (buscable). Overlay: bottom-sheet en móvil, popover en desktop. *@
+        @if (Model.Servicios.Count > 0)
+        {
+            <div class="pb-sheet-backdrop" id="pbServicioBackdrop" hidden></div>
+            <div class="pb-sheet" id="pbServicioPanel" role="dialog" aria-modal="true" aria-label="Elegí el servicio" hidden>
+                <div class="pb-sheet-head">
+                    <span class="pb-sheet-title">Elegí el servicio</span>
+                    <button type="button" class="pb-sheet-close" id="pbServicioClose" aria-label="Cerrar">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                    </button>
+                </div>
+                <div class="pb-sheet-search">
+                    <input type="text" id="pbServicioSearch" class="pb-input" placeholder="Buscar servicio…" autocomplete="off" />
+                </div>
+                <div class="pb-sheet-list" id="pbServicioList">
+                    @foreach (var s in Model.Servicios)
+                    {
+                        <button type="button" class="pb-service-item" role="option" aria-selected="false"
+                                data-id="@s.Id" data-dur="@s.DuracionMinutos" data-nombre="@s.Nombre"
+                                data-funcs="@string.Join(",", s.FuncionarioIds)"
+                                data-precio="@(s.Precio.HasValue ? "₡" + s.Precio.Value.ToString("N0", crCulture) : "")"
+                                data-search="@($"{s.Nombre} {s.Categoria} {s.Descripcion}")">
+                            <span class="pb-service-item-main">
+                                <span class="pb-service-name">@s.Nombre</span>
+                                @if (!string.IsNullOrWhiteSpace(s.Categoria))
+                                {
+                                    <span class="pb-service-cat">@s.Categoria</span>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(s.Descripcion))
+                                {
+                                    <span class="pb-service-desc">@s.Descripcion</span>
+                                }
+                            </span>
+                            <span class="pb-service-item-side">
+                                <span class="pb-badge">@s.DuracionMinutos min</span>
+                                @if (s.Precio.HasValue)
+                                {
+                                    <span class="pb-price">₡@s.Precio.Value.ToString("N0", crCulture)</span>
+                                }
+                            </span>
+                        </button>
+                    }
+                    <p class="pb-msg pb-sheet-empty" id="pbServicioEmpty" hidden>No encontramos servicios con esa búsqueda.</p>
+                </div>
+            </div>
+        }
+
+        <!-- Éxito -->
+        <section class="pb-card pb-success" id="pbSuccess" hidden>
+            <div class="pb-success-icon">
+                <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+            </div>
+            <h2>Solicitud enviada</h2>
+            <p id="pbSuccessMsg">El negocio revisará tu solicitud y te confirmará por WhatsApp si corresponde.</p>
+
+            <div class="pb-resumen">
+                <div class="pb-resumen-row"><span>Servicio</span><strong id="pbResServicio">—</strong></div>
+                <div class="pb-resumen-row" id="pbResFuncWrap" hidden><span>Profesional</span><strong id="pbResFunc">—</strong></div>
+                <div class="pb-resumen-row"><span>Fecha</span><strong id="pbResFecha">—</strong></div>
+                <div class="pb-resumen-row"><span>Hora</span><strong id="pbResHora">—</strong></div>
+            </div>
+
+            <button type="button" id="pbOtra" class="pb-btn pb-btn-ghost">Solicitar otra cita</button>
+        </section>
+
+        <footer class="pb-footer">
+            <span>Reservas con tecnología <strong>LuxuryCloud</strong></span>
+        </footer>
+    </div>
+
+    @Html.AntiForgeryToken()
+
+    <script>
+        (function () {
+            // Guard de inicialización única: si el script se incluyera dos veces, no se
+            // registran listeners duplicados (defensa extra contra envíos duplicados).
+            if (window.__pbBookingInit) { return; }
+            window.__pbBookingInit = true;
+
+            const slug = @Json.Serialize(Model.Slug);
+            const permiteFuncionario = @Json.Serialize(Model.PermiteElegirFuncionario);
+            const permiteCualquiera = @Json.Serialize(Model.PermiteCualquierFuncionario);
+            const preselectedServiceId = @Json.Serialize(Model.PreselectedServiceId);
+            const submissionToken = @Json.Serialize(Model.SubmissionToken);
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            const dispUrl = `/reservar/${slug}/disponibilidad`;
+            const proximosUrl = `/reservar/${slug}/proximos`;
+            const submitUrl = `/reservar/${slug}/solicitar`;
+
+            const $card = document.getElementById('pbCard');
+            const $success = document.getElementById('pbSuccess');
+            const $profStep = document.getElementById('pbProfStep');
+            const $profGrid = document.getElementById('pbProfGrid');
+            const $profEmpty = document.getElementById('pbProfEmpty');
+            const $assignNote = document.getElementById('pbAssignNote');
+            const $fechaStep = document.getElementById('pbFechaStep');
+            const $fecha = document.getElementById('pbFecha');
+            const $horaStep = document.getElementById('pbHoraStep');
+            const $horarios = document.getElementById('pbHorarios');
+            const $horariosMsg = document.getElementById('pbHorariosMsg');
+            const $verCualquiera = document.getElementById('pbVerCualquiera');
+            const $next = document.getElementById('pbNextStep');
+            const $nextTitle = document.getElementById('pbNextTitle');
+            const $nextList = document.getElementById('pbNextList');
+            const $nextHint = document.getElementById('pbNextHint');
+            const $formWrap = document.getElementById('pbFormWrap');
+            const $error = document.getElementById('pbError');
+            const $enviar = document.getElementById('pbEnviar');
+            const $whatsApp = document.getElementById('pbWhatsApp');
+
+            const state = {
+                servicioId: null, dur: null, servicioNombre: null, funcs: [],
+                funcionarioId: null, funcionarioNombre: null, anyProf: false,
+                fecha: null, hora: null, horaLabel: null
+            };
+            let enviando = false;
+            let pendingHora = null;
+
+            // Secuencia ÚNICA para todas las consultas de disponibilidad (horas del día y próximos
+            // espacios). Una respuesta vieja nunca puede pisar un estado más nuevo, y la consulta
+            // anterior se aborta apenas cambia el servicio, el profesional o la fecha.
+            let reqId = 0;
+            let inflight = null;
+
+            function nuevaConsulta() {
+                if (inflight) { inflight.abort(); }
+                inflight = new AbortController();
+                return { id: ++reqId, signal: inflight.signal };
+            }
+            function vigente(id) { return id === reqId; }
+
+            function setMsg(text) { $horariosMsg.textContent = text || ''; $horariosMsg.hidden = !text; }
+            function showError(msg) { $error.textContent = msg || ''; $error.hidden = !msg; }
+
+            function clearHoras() {
+                state.hora = null; state.horaLabel = null;
+                $horarios.innerHTML = '';
+                $formWrap.hidden = true;
+                $verCualquiera.hidden = true;
+                showError('');
+            }
+
+            // ── Próximos espacios: ÚNICA sección, ÚNICO render, compartidos por las dos consultas ──
+
+            // Los tres estados posibles de la sección. Cada uno define su copy y DÓNDE se muestra;
+            // no hay más lugares donde se decida el título o el texto de ayuda.
+            const NEXT_MODOS = {
+                // Todavía no eligió fecha: el atajo va debajo del selector de fecha.
+                sinFecha: {
+                    titulo: 'Próximos espacios disponibles',
+                    hint: 'Elegí una fecha o seleccioná uno de los próximos horarios disponibles.',
+                    dentroDeHora: false
+                },
+                // Eligió fecha y ese día tiene horas: las horas mandan, esto son alternativas.
+                otras: {
+                    titulo: 'Otras opciones próximas',
+                    hint: '¿Ninguno te sirve? También podés elegir uno de estos próximos horarios.',
+                    dentroDeHora: true
+                },
+                // Eligió fecha y ese día no tiene nada: no son "otras", son las únicas.
+                sinEspacio: {
+                    titulo: 'Próximos espacios disponibles',
+                    hint: 'Seleccioná uno de estos horarios o probá con otra fecha.',
+                    dentroDeHora: true
+                }
+            };
+
+            // Mueve el MISMO nodo (con sus listeners, su contenido y su estado) al lugar que
+            // corresponde. No se clona ni se duplica markup: en el DOM siempre hay una sola
+            // sección de sugerencias. Es idempotente para no mover el nodo sin necesidad.
+            function colocarNext(dentroDeHora) {
+                if (dentroDeHora) {
+                    // Último hijo del paso de hora ⇒ siempre debajo de la cuadrícula y del mensaje.
+                    if ($next.parentNode !== $horaStep || $next.nextSibling !== null) {
+                        $horaStep.appendChild($next);
+                    }
+                    return;
+                }
+                // Justo después del selector de fecha y antes del paso de hora (que está oculto).
+                if ($next.parentNode !== $card || $next.nextSibling !== $horaStep) {
+                    $card.insertBefore($next, $horaStep);
+                }
+            }
+
+            function ocultarNext() {
+                $next.hidden = true;
+                $nextList.innerHTML = '';
+                $nextHint.hidden = true;
+            }
+
+            function nextCargando(modo) {
+                colocarNext(modo.dentroDeHora);
+                $nextTitle.textContent = 'Buscando próximos espacios…';
+                $nextList.innerHTML = '';
+                // Tantos huecos como sugerencias devuelve el backend como máximo: así la altura
+                // que se reserva es la misma que ocupará el resultado y la página no salta.
+                for (let i = 0; i < 5; i++) {
+                    const ph = document.createElement('span');
+                    ph.className = 'pb-next-skeleton';
+                    $nextList.appendChild(ph);
+                }
+                $nextHint.hidden = true;
+                $next.hidden = false;
+            }
+
+            function renderNext(slots, modo) {
+                if (!slots || slots.length === 0) { ocultarNext(); return; }
+
+                colocarNext(modo.dentroDeHora);
+                $nextTitle.textContent = modo.titulo;
+                $nextList.innerHTML = '';
+
+                slots.forEach(slot => {
+                    // textContent en todo lo que viene del servidor: el nombre del profesional lo
+                    // escribe el negocio y no puede terminar interpretándose como HTML.
+                    const quien = slot.funcionarioNombre ? ' · ' + slot.funcionarioNombre : '';
+
+                    const fecha = document.createElement('span');
+                    fecha.className = 'pb-next-fecha';
+                    fecha.textContent = slot.fechaLabel;
+
+                    const hora = document.createElement('span');
+                    hora.className = 'pb-next-hora';
+                    hora.textContent = slot.horaLabel + quien;
+
+                    const item = document.createElement('button');
+                    item.type = 'button';
+                    item.className = 'pb-next-item';
+                    item.setAttribute('aria-label', `Elegir ${slot.fechaLabel} a las ${slot.horaLabel}${quien}`);
+                    item.appendChild(fecha);
+                    item.appendChild(hora);
+                    item.addEventListener('click', () => elegirSugerencia(slot));
+                    $nextList.appendChild(item);
+                });
+
+                $nextHint.textContent = modo.hint;
+                $nextHint.hidden = false;
+                $next.hidden = false;
+            }
+
+            function renderNextVacio(modo, mensaje) {
+                colocarNext(modo.dentroDeHora);
+                $nextTitle.textContent = modo.titulo;
+                $nextList.innerHTML = '';
+                const p = document.createElement('p');
+                p.className = 'pb-msg';
+                p.textContent = mensaje;
+                $nextList.appendChild(p);
+                $nextHint.hidden = true;
+                $next.hidden = false;
+            }
+
+            // Dispatcher: decide qué consulta hace falta. Con fecha elegida las sugerencias ya
+            // viajan dentro de la respuesta de disponibilidad, así que nunca se piden dos veces.
+            function refrescar() {
+                if (state.fecha) { maybeLoad(); return; }
+
+                $horaStep.hidden = true;
+                cargarProximos();
+            }
+
+            // Servicio listo y, si el negocio deja elegir, profesional ya definido (concreto o
+            // "cualquiera"): recién ahí sabemos qué preguntar.
+            function puedeConsultarProximos() {
+                if (!state.servicioId) { return false; }
+                if (!permiteFuncionario) { return true; }
+                return state.anyProf || !!state.funcionarioId;
+            }
+
+            async function cargarProximos() {
+                if (!puedeConsultarProximos()) { ocultarNext(); return; }
+
+                nextCargando(NEXT_MODOS.sinFecha);
+                const { id, signal } = nuevaConsulta();
+
+                const params = new URLSearchParams({ servicioId: state.servicioId });
+                if (state.funcionarioId) { params.append('funcionarioId', state.funcionarioId); }
+
+                let data;
+                try {
+                    const resp = await fetch(`${proximosUrl}?${params.toString()}`, { signal });
+                    if (!vigente(id)) { return; }
+                    if (!resp.ok) { throw new Error(); }
+                    data = await resp.json();
+                } catch {
+                    // Que falle la sugerencia NO puede bloquear el formulario: el selector manual
+                    // de fecha sigue disponible y el flujo normal continúa.
+                    if (vigente(id)) { ocultarNext(); }
+                    return;
+                }
+                if (!vigente(id)) { return; }
+
+                if (data.nextAvailableSlots && data.nextAvailableSlots.length > 0) {
+                    renderNext(data.nextAvailableSlots, NEXT_MODOS.sinFecha);
+                } else {
+                    renderNextVacio(
+                        NEXT_MODOS.sinFecha,
+                        data.mensaje || 'No encontramos espacios disponibles próximamente. Probá eligiendo otra fecha.');
+                }
+            }
+
+            // ── Paso 1: selector visual buscable de servicios ──
+            const $svcTrigger = document.getElementById('pbServicioTrigger');
+            const $svcTriggerText = document.getElementById('pbServicioTriggerText');
+            const $svcPanel = document.getElementById('pbServicioPanel');
+            const $svcBackdrop = document.getElementById('pbServicioBackdrop');
+            const $svcClose = document.getElementById('pbServicioClose');
+            const $svcSearch = document.getElementById('pbServicioSearch');
+            const $svcList = document.getElementById('pbServicioList');
+            const $svcEmpty = document.getElementById('pbServicioEmpty');
+            const svcItems = $svcList ? Array.from($svcList.querySelectorAll('.pb-service-item')) : [];
+
+            function normalizar(txt) {
+                return (txt || '').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+            }
+
+            function abrirSelector() {
+                if (!$svcPanel) return;
+                $svcBackdrop.hidden = false;
+                $svcPanel.hidden = false;
+                $svcTrigger.setAttribute('aria-expanded', 'true');
+                $svcSearch.value = '';
+                filtrarServicios('');
+                setTimeout(() => $svcSearch.focus(), 30);
+            }
+            function cerrarSelector() {
+                if (!$svcPanel) return;
+                $svcPanel.hidden = true;
+                $svcBackdrop.hidden = true;
+                $svcTrigger.setAttribute('aria-expanded', 'false');
+            }
+            function filtrarServicios(q) {
+                const needle = normalizar(q);
+                let visibles = 0;
+                svcItems.forEach(item => {
+                    const hay = normalizar(item.dataset.search).includes(needle);
+                    item.hidden = !hay;
+                    if (hay) visibles++;
+                });
+                if ($svcEmpty) $svcEmpty.hidden = visibles > 0;
+            }
+
+            if ($svcTrigger) { $svcTrigger.addEventListener('click', abrirSelector); }
+            if ($svcClose) { $svcClose.addEventListener('click', cerrarSelector); }
+            if ($svcBackdrop) { $svcBackdrop.addEventListener('click', cerrarSelector); }
+            if ($svcSearch) { $svcSearch.addEventListener('input', e => filtrarServicios(e.target.value)); }
+            document.addEventListener('keydown', e => { if (e.key === 'Escape' && $svcPanel && !$svcPanel.hidden) cerrarSelector(); });
+
+            svcItems.forEach(item => {
+                item.addEventListener('click', () => { aplicarServicio(item); cerrarSelector(); });
+            });
+
+            function aplicarServicio(item) {
+                svcItems.forEach(i => i.setAttribute('aria-selected', 'false'));
+                item.setAttribute('aria-selected', 'true');
+
+                state.servicioId = item.dataset.id;
+                state.dur = parseInt(item.dataset.dur, 10);
+                state.servicioNombre = item.dataset.nombre;
+                state.funcs = (item.dataset.funcs || '').split(',').filter(x => x).map(x => parseInt(x, 10));
+
+                // Refleja la selección en el campo compacto.
+                const precio = item.dataset.precio ? ` · ${item.dataset.precio}` : '';
+                $svcTriggerText.textContent = `${state.servicioNombre} · ${state.dur} min${precio}`;
+                $svcTrigger.classList.add('pb-select-filled');
+
+                // Reset de lo posterior al cambiar de servicio.
+                state.funcionarioId = null; state.funcionarioNombre = null; state.anyProf = false;
+                clearHoras();
+
+                if (permiteFuncionario) {
+                    renderProfesionales();
+                } else if ($assignNote) {
+                    $assignNote.hidden = false;
+                }
+
+                $fechaStep.hidden = false;
+                refrescar();
+            }
+
+            // ── Paso 2: profesionales (filtrados por compatibilidad) ──
+            if (preselectedServiceId) {
+                const preselected = svcItems.find(item => parseInt(item.dataset.id, 10) === preselectedServiceId);
+                if (preselected) {
+                    aplicarServicio(preselected);
+                }
+            }
+
+            function renderProfesionales() {
+                if (!$profStep) return;
+                let visibles = 0;
+                $profGrid.querySelectorAll('.pb-prof-card').forEach(card => {
+                    card.classList.remove('selected'); card.setAttribute('aria-checked', 'false');
+                    if (card.dataset.any === '1') {
+                        card.hidden = false; // "cualquiera" siempre visible si el tenant lo permite
+                        return;
+                    }
+                    const id = parseInt(card.dataset.id, 10);
+                    const compatible = state.funcs.includes(id);
+                    card.hidden = !compatible;
+                    if (compatible) visibles++;
+                });
+
+                const hayOpciones = visibles > 0 || permiteCualquiera;
+                $profEmpty.hidden = hayOpciones;
+                $profStep.hidden = false;
+            }
+
+            if ($profGrid) {
+                $profGrid.querySelectorAll('.pb-prof-card').forEach(card => {
+                    card.addEventListener('click', () => selectProfesional(card));
+                });
+            }
+
+            function selectProfesional(card) {
+                $profGrid.querySelectorAll('.pb-prof-card').forEach(c => {
+                    c.classList.remove('selected'); c.setAttribute('aria-checked', 'false');
+                });
+                card.classList.add('selected'); card.setAttribute('aria-checked', 'true');
+
+                if (card.dataset.any === '1') {
+                    state.funcionarioId = null; state.anyProf = true; state.funcionarioNombre = null;
+                } else {
+                    state.funcionarioId = card.dataset.id; state.anyProf = false;
+                    state.funcionarioNombre = card.dataset.nombre || null;
+                }
+                clearHoras();
+                refrescar();
+            }
+
+            // ── Paso 3: fecha ──
+            $fecha.addEventListener('change', function () {
+                state.fecha = this.value || null;
+                clearHoras();
+                refrescar();
+            });
+
+            // Determina si ya se puede consultar disponibilidad.
+            function maybeLoad() {
+                if (!state.servicioId) { ocultarNext(); return; }
+                if (!state.fecha) { $horaStep.hidden = true; return; }
+                // Si el tenant NO permite "cualquiera" y se exige elegir profesional:
+                if (permiteFuncionario && !permiteCualquiera && !state.funcionarioId) {
+                    $horaStep.hidden = false;
+                    setMsg('Elegí un profesional para ver los horarios.');
+                    // Sin profesional no hay nada que sugerir: se retiran las sugerencias del
+                    // servicio anterior para no dejar horas que ya no corresponden.
+                    ocultarNext();
+                    return;
+                }
+                $horaStep.hidden = false;
+                cargarHorarios();
+            }
+
+            // ── Paso 4: horarios ──
+            async function cargarHorarios() {
+                setMsg('Buscando horarios…');
+                $horarios.innerHTML = '';
+                $verCualquiera.hidden = true;
+                // Con fecha elegida la sección ya vive dentro del paso de hora, así que el estado
+                // de carga aparece en su sitio definitivo y el resultado no la hace saltar.
+                nextCargando(NEXT_MODOS.otras);
+                const { id, signal } = nuevaConsulta();
+
+                const params = new URLSearchParams({ servicioId: state.servicioId, fecha: state.fecha });
+                if (state.funcionarioId) { params.append('funcionarioId', state.funcionarioId); }
+
+                let data;
+                try {
+                    const resp = await fetch(`${dispUrl}?${params.toString()}`, { signal });
+                    if (!vigente(id)) { return; }
+                    if (!resp.ok) { throw new Error(); }
+                    data = await resp.json();
+                } catch {
+                    if (!vigente(id)) { return; }
+                    setMsg('No pudimos cargar los horarios. Intentá de nuevo.');
+                    ocultarNext();
+                    return;
+                }
+                if (!vigente(id)) { return; }
+
+                const sugerencias = data.nextAvailableSlots || [];
+
+                if (data.horas && data.horas.length > 0) {
+                    setMsg('');
+                    data.horas.forEach(h => {
+                        const btn = document.createElement('button');
+                        btn.type = 'button';
+                        btn.className = 'pb-hora';
+                        btn.textContent = formatHora(h);
+                        btn.setAttribute('aria-pressed', 'false');
+                        btn.addEventListener('click', () => seleccionarHora(btn, h));
+                        $horarios.appendChild(btn);
+                    });
+
+                    // El día elegido sí tiene espacio: las alternativas siguen a mano como "otras
+                    // opciones". El backend ya las buscó desde el día siguiente, así que no repiten
+                    // ninguna de las horas de arriba.
+                    renderNext(sugerencias, NEXT_MODOS.otras);
+
+                    // Auto-selección al venir de una sugerencia. Si ese espacio ya no está en la
+                    // lista, alguien lo tomó entre que se pintó y que se tocó: se avisa en vez de
+                    // dejar el paso en blanco. Mostrar un espacio nunca lo reserva.
+                    if (pendingHora) {
+                        const target = Array.from($horarios.querySelectorAll('.pb-hora'))
+                            .find(b => b.textContent === formatHora(pendingHora));
+                        if (target) {
+                            target.click();
+                        } else {
+                            setMsg('Ese espacio se acaba de ocupar. Elegí otra hora de las disponibles.');
+                        }
+                        pendingHora = null;
+                    }
+                    return;
+                }
+
+                // Sin horas: mensaje inteligente + sugerencias.
+                setMsg(data.mensaje || 'No hay espacios disponibles para ese día.');
+                pendingHora = null;
+
+                if (data.hasAvailabilityWithOtherEmployees && permiteCualquiera) {
+                    $verCualquiera.hidden = false;
+                }
+
+                if (sugerencias.length > 0) {
+                    renderNext(sugerencias, NEXT_MODOS.sinEspacio);
+                } else {
+                    renderNextVacio(
+                        NEXT_MODOS.sinEspacio,
+                        'No encontramos próximos espacios dentro del rango permitido de reservas.');
+                }
+            }
+
+            $verCualquiera.addEventListener('click', function () {
+                // Cambiar a "cualquier profesional" y reconsultar.
+                if ($profGrid) {
+                    const anyCard = $profGrid.querySelector('.pb-prof-card[data-any="1"]');
+                    if (anyCard) { selectProfesional(anyCard); return; }
+                }
+                state.funcionarioId = null; state.anyProf = true; state.funcionarioNombre = null;
+                clearHoras();
+                refrescar();
+            });
+
+            function elegirSugerencia(slot) {
+                // Ajusta fecha y, si aplica, profesional; luego recarga y auto-selecciona la hora.
+                state.fecha = slot.fecha;
+                $fecha.value = slot.fecha;
+                $fechaStep.hidden = false;
+
+                if (permiteFuncionario && slot.funcionarioId) {
+                    const card = $profGrid && $profGrid.querySelector(`.pb-prof-card[data-id="${slot.funcionarioId}"]`);
+                    if (card && !card.hidden) {
+                        $profGrid.querySelectorAll('.pb-prof-card').forEach(c => {
+                            c.classList.remove('selected'); c.setAttribute('aria-checked', 'false');
+                        });
+                        card.classList.add('selected'); card.setAttribute('aria-checked', 'true');
+                        state.funcionarioId = String(slot.funcionarioId);
+                        state.anyProf = false;
+                        state.funcionarioNombre = card.dataset.nombre || slot.funcionarioNombre || null;
+                    }
+                }
+
+                pendingHora = slot.hora;
+                clearHoras();
+                $horaStep.hidden = false;
+                cargarHorarios();
+                $horaStep.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+
+            function seleccionarHora(btn, h) {
+                state.hora = h;
+                state.horaLabel = btn.textContent;
+                $horarios.querySelectorAll('.pb-hora').forEach(b => {
+                    b.classList.remove('selected'); b.setAttribute('aria-pressed', 'false');
+                });
+                btn.classList.add('selected'); btn.setAttribute('aria-pressed', 'true');
+                $formWrap.hidden = false;
+                $formWrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+
+            function formatHora(h) {
+                // "HH:mm" → "9:00 a. m." (es-CR).
+                try {
+                    const [hh, mm] = h.split(':').map(x => parseInt(x, 10));
+                    const d = new Date(2000, 0, 1, hh, mm);
+                    return d.toLocaleTimeString('es-CR', { hour: 'numeric', minute: '2-digit', hour12: true });
+                } catch { return h; }
+            }
+
+            function formatearFecha(iso) {
+                try {
+                    const d = new Date(iso + 'T00:00:00');
+                    return d.toLocaleDateString('es-CR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+                } catch { return iso; }
+            }
+
+            // ── Envío ──
+            function mostrarExito(mensaje) {
+                document.getElementById('pbResServicio').textContent = state.servicioNombre || '—';
+                if (permiteFuncionario) {
+                    document.getElementById('pbResFunc').textContent =
+                        state.funcionarioId ? (state.funcionarioNombre || 'Profesional') : 'Cualquier profesional disponible';
+                    document.getElementById('pbResFuncWrap').hidden = false;
+                }
+                document.getElementById('pbResFecha').textContent = formatearFecha(state.fecha);
+                document.getElementById('pbResHora').textContent = state.horaLabel || formatHora(state.hora);
+                if (mensaje) document.getElementById('pbSuccessMsg').textContent = mensaje;
+                $card.hidden = true;
+                $success.hidden = false;
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+
+            document.getElementById('pbOtra').addEventListener('click', function () {
+                window.location.reload();
+            });
+
+            $enviar.addEventListener('click', async function () {
+                if (enviando) return;
+                showError('');
+                const nombre = document.getElementById('pbNombre').value.trim();
+                const telefono = document.getElementById('pbTelefono').value.trim();
+
+                if (!state.servicioId || !state.fecha || !state.hora) { showError('Completá el servicio, la fecha y la hora.'); return; }
+                if (!nombre) { showError('Indicá tu nombre completo.'); return; }
+                if (!telefono) { showError('Indicá tu número de teléfono.'); return; }
+
+                const body = new URLSearchParams({
+                    ServicioId: state.servicioId,
+                    Fecha: state.fecha,
+                    Hora: state.hora,
+                    Nombre: nombre,
+                    Telefono: telefono,
+                    AceptaWhatsApp: $whatsApp ? $whatsApp.checked : false,
+                    SubmissionToken: submissionToken || '',
+                    Website: document.getElementById('pbWebsite').value
+                });
+                if (permiteFuncionario && state.funcionarioId) { body.append('FuncionarioId', state.funcionarioId); }
+
+                enviando = true; $enviar.disabled = true; $enviar.textContent = 'Enviando…';
+                try {
+                    const resp = await fetch(submitUrl, {
+                        method: 'POST',
+                        headers: { 'RequestVerificationToken': token, 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: body.toString()
+                    });
+                    let data = null;
+                    try { data = await resp.json(); } catch { }
+                    if (resp.ok && data && data.success) {
+                        mostrarExito(data.message);
+                    } else {
+                        showError((data && data.message) || 'No pudimos enviar tu solicitud. Intentá de nuevo.');
+                    }
+                } catch {
+                    showError('No pudimos enviar tu solicitud. Intentá de nuevo.');
+                } finally {
+                    enviando = false; $enviar.disabled = false; $enviar.textContent = 'Enviar solicitud';
+                }
+            });
+        })();
+    </script>
+</body>
+</html>

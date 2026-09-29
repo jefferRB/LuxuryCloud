@@ -1,0 +1,188 @@
+@model LuxuryApp.Models.DataBase.ServicioRealizadoViewModel
+
+@{
+    ViewData["Title"] = "Registrar Servicio Realizado";
+    var inicial = Model.NombreCliente.Length > 0 ? char.ToUpper(Model.NombreCliente[0]).ToString() : "?";
+    var colorIdx = Model.ClienteId % 8;
+    const int MaxLength = 2000;
+    var currentLen = Model.DescripcionServicios?.Length ?? 0;
+}
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+<link rel="stylesheet" href="~/css/crm-shared.css" asp-append-version="true">
+<link rel="stylesheet" href="~/css/clientes.css" asp-append-version="true">
+
+<div class="clt-shell">
+
+    <!-- ── CABECERA ── -->
+    <div class="clt-header-section">
+        <div class="clt-header-left module-heading">
+            <span class="module-eyebrow">SERVICIOS DEL CLIENTE</span>
+            <h1 class="module-title"><i class="bi bi-scissors module-title-icon" aria-hidden="true"></i>Registrar <span style="font-weight:400;">Servicio Realizado</span></h1>
+            <p class="module-subtitle">Registra las notas de servicio realizadas internamente para el cliente seleccionado.</p>
+        </div>
+    </div>
+
+    <!-- ── FORMULARIO ── -->
+    <div class="clt-body-section">
+
+        <!-- Resumen del cliente -->
+        <div class="clt-client-summary">
+            <div class="clt-result-avatar clientes-avatar--color-@colorIdx" style="width:3.25rem;height:3.25rem;font-size:1.25rem;flex-shrink:0;">@inicial</div>
+
+            <div class="clt-client-summary-identity">
+                <span class="clt-client-summary-name">@Model.NombreCliente</span>
+                <span class="clt-client-summary-status">
+                    <i class="bi bi-check-circle-fill"></i>
+                    Cliente registrado
+                </span>
+            </div>
+
+            <div class="clt-client-summary-metas">
+                <div class="clt-client-summary-meta">
+                    <span class="clt-client-summary-meta-label">Teléfono</span>
+                    <span class="clt-client-summary-meta-val">@Model.NumeroTelefono</span>
+                </div>
+                <div class="clt-client-summary-meta">
+                    <span class="clt-client-summary-meta-label">Última visita</span>
+                    <span class="clt-client-summary-meta-val">@Model.FechaUltimaVisita.ToString("dd/MM/yyyy")</span>
+                </div>
+                <div class="clt-client-summary-meta">
+                    <span class="clt-client-summary-meta-label">Visitas totales</span>
+                    <span class="clt-client-summary-meta-val">@Model.TotalVisitas</span>
+                </div>
+            </div>
+        </div>
+
+        <form asp-action="RegistrarServicios" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="ClienteId" />
+            <input type="hidden" asp-for="NumeroTelefono" />
+
+            @if (!ViewData.ModelState.IsValid && ViewData.ModelState.Values.Any(v => v.Errors.Count > 0))
+            {
+                <div class="clt-validation-summary" role="alert">
+                    <div asp-validation-summary="ModelOnly"></div>
+                </div>
+            }
+
+            <div class="clt-form-grid" style="grid-template-columns:1fr 1fr;margin-bottom:1.25rem;">
+                <!-- Cliente (readonly) -->
+                <div class="clt-field">
+                    <label class="clt-label">Cliente</label>
+                    <div class="clt-input-wrap">
+                        <span class="clt-input-icon"><i class="bi bi-person"></i></span>
+                        <input type="text" class="clt-input" value="@Model.NombreCliente" readonly aria-readonly="true"
+                               style="background:var(--private-row-bg,rgba(15,23,42,0.04));cursor:default;" />
+                    </div>
+                </div>
+
+                <!-- Teléfono (readonly) -->
+                <div class="clt-field">
+                    <label class="clt-label">Teléfono</label>
+                    <div class="clt-input-wrap">
+                        <span class="clt-input-icon"><i class="bi bi-telephone"></i></span>
+                        <input type="text" class="clt-input" value="@Model.NumeroTelefono" readonly aria-readonly="true"
+                               style="background:var(--private-row-bg,rgba(15,23,42,0.04));cursor:default;" />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Descripción del servicio -->
+            <div class="clt-field" style="margin-bottom:0.5rem;">
+                <label asp-for="DescripcionServicios" class="clt-label">
+                    Descripción del servicio realizado
+                </label>
+                <textarea asp-for="DescripcionServicios"
+                          id="clt-srv-textarea"
+                          class="clt-textarea"
+                          rows="6"
+                          maxlength="@MaxLength"
+                          placeholder="Ejemplo: Corte clásico con degradado, perfilado de barba con navaja, aplicación de producto final..."></textarea>
+                <div class="clt-char-counter">
+                    <span id="clt-char-count">@currentLen</span> / @MaxLength
+                </div>
+                <span asp-validation-for="DescripcionServicios" class="clt-field-error"></span>
+            </div>
+
+            <!-- Chips de sugerencias rápidas -->
+            <div style="margin-bottom:1.5rem;">
+                <p style="font-size:0.78rem;font-weight:600;color:var(--private-muted-text,#64748b);margin:0 0 0.5rem 0;text-transform:uppercase;letter-spacing:0.06em;">Sugerencias rápidas</p>
+                <div class="clt-chips-row">
+                    <button type="button" class="clt-chip" data-sugerencia="Corte clásico">
+                        <i class="bi bi-scissors"></i> Corte clásico
+                    </button>
+                    <button type="button" class="clt-chip" data-sugerencia="Degradado bajo">
+                        <i class="bi bi-layers"></i> Degradado bajo
+                    </button>
+                    <button type="button" class="clt-chip" data-sugerencia="Barba definida">
+                        <i class="bi bi-person-bounding-box"></i> Barba definida
+                    </button>
+                    <button type="button" class="clt-chip" data-sugerencia="Perfilado con navaja">
+                        <i class="bi bi-pen"></i> Perfilado con navaja
+                    </button>
+                    <button type="button" class="clt-chip" data-sugerencia="Lavado y masaje">
+                        <i class="bi bi-droplet"></i> Lavado y masaje
+                    </button>
+                    <button type="button" class="clt-chip" data-sugerencia="Peinado y acabado">
+                        <i class="bi bi-stars"></i> Peinado y acabado
+                    </button>
+                </div>
+            </div>
+
+            <!-- Acciones -->
+            <div class="clt-actions">
+                <button type="submit" class="crm-btn crm-btn--primary">
+                    <i class="bi bi-floppy2-fill"></i>
+                    Guardar Registro
+                </button>
+                <a asp-action="Buscar" asp-route-criterio="@Model.NumeroTelefono" class="crm-btn crm-btn--outline">
+                    <i class="bi bi-arrow-left"></i>
+                    Volver
+                </a>
+            </div>
+
+        </form>
+    </div>
+
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        (function () {
+            var textarea = document.getElementById("clt-srv-textarea");
+            var counter  = document.getElementById("clt-char-count");
+            var maxLen   = @MaxLength;
+
+            if (textarea && counter) {
+                textarea.addEventListener("input", function () {
+                    var len = textarea.value.length;
+                    counter.textContent = len;
+                    counter.style.color = len >= maxLen * 0.9
+                        ? "#ef4444"
+                        : "var(--private-muted-text,#94a3b8)";
+                });
+            }
+
+            // Chips de sugerencias: agregan texto al textarea sin borrar lo existente
+            document.querySelectorAll(".clt-chip[data-sugerencia]").forEach(function (chip) {
+                chip.addEventListener("click", function () {
+                    if (!textarea) return;
+                    var sugerencia = chip.getAttribute("data-sugerencia");
+                    var current = textarea.value.trim();
+                    if (current.length === 0) {
+                        textarea.value = sugerencia + ". ";
+                    } else {
+                        var sep = current.endsWith(".") || current.endsWith(",") ? " " : ". ";
+                        textarea.value = current + sep + sugerencia + ". ";
+                    }
+                    textarea.dispatchEvent(new Event("input"));
+                    textarea.focus();
+                    textarea.selectionStart = textarea.selectionEnd = textarea.value.length;
+                });
+            });
+        })();
+    </script>
+}

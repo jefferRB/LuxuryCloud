@@ -1,0 +1,86 @@
+@model LuxuryApp.Models.Fiscal.ConfiguracionFiscalViewModel
+@*
+    Sección "Configuración fiscal" de Mi cuenta (antes: Opciones → Impuestos).
+
+    Sólo se renderiza para el Administrador; el POST sigue siendo
+    ConfiguracionFiscal/Index, que es [Authorize(Roles="Administrador")]. El TenantId NO viaja
+    en el formulario: lo resuelve el servidor desde la identidad.
+
+    La lógica fiscal no cambió: mismos campos, mismo aviso de impacto histórico con su casilla
+    de confirmación, mismo alcance hacia adelante.
+*@
+
+@{
+    // Ver la nota en Cuenta.cshtml: el resumen de errores de nivel modelo es de quien envió
+    // el formulario, no de toda la pantalla.
+    var muestraResumen = (ViewData["AccountFocusSection"] as string)
+        == LuxuryApp.Models.Identity.AccountSettingsSections.Fiscal;
+}
+
+<section class="finance-section" id="@LuxuryApp.Models.Identity.AccountSettingsSections.Fiscal">
+    <div class="finance-section-head">
+        <h2 class="finance-section-title"><i class="bi bi-percent"></i> Configuración fiscal</h2>
+        <p class="finance-section-sub">
+            Definí cómo se calcula el IVA en cobros, comprobantes y liquidaciones. Cada servicio o
+            producto puede tener su propia configuración; si no la define, hereda estos valores.
+        </p>
+    </div>
+
+    <form asp-controller="ConfiguracionFiscal" asp-action="Index" method="post" id="formFiscal">
+        @Html.AntiForgeryToken()
+
+        @if (muestraResumen)
+        {
+            <div asp-validation-summary="ModelOnly" class="account-validation-summary"></div>
+        }
+
+        <div class="finance-toggle-row">
+            <div class="finance-toggle-body">
+                <p class="finance-toggle-name">
+                    <label for="fiscal-incluye-iva">Los precios ya incluyen IVA</label>
+                </p>
+                <p class="finance-toggle-desc">
+                    Recomendado en Costa Rica. Si está activo, un precio de ₡10.000 es el total
+                    cobrado y la base sin IVA se calcula como ₡10.000 ÷ 1,13.
+                </p>
+            </div>
+            @* El tag helper mete su <input type="hidden"> entre el checkbox y el track: por eso
+               el CSS del switch usa el combinador ~ y no +. *@
+            <label class="finance-switch">
+                <input asp-for="PreciosIncluyenIva" type="checkbox" role="switch" id="fiscal-incluye-iva" />
+                <span class="finance-switch-track" aria-hidden="true"></span>
+            </label>
+        </div>
+
+        <div class="account-field account-field--narrow">
+            <label asp-for="TarifaIvaPorDefecto" class="account-field-label"></label>
+            <div class="account-input-group">
+                <input asp-for="TarifaIvaPorDefecto" class="account-input" type="number"
+                       step="0.01" min="0" max="100" />
+                <span class="account-input-suffix">%</span>
+            </div>
+            <span asp-validation-for="TarifaIvaPorDefecto" class="account-field-error"></span>
+        </div>
+
+        @{ var avisoHistorico = ViewData[LuxuryApp.Models.Fiscal.AvisoImpactoHistorico.CampoConfirmacion] as string; }
+        @if (!string.IsNullOrEmpty(avisoHistorico))
+        {
+            @await Html.PartialAsync("_AvisoImpactoHistorico", avisoHistorico)
+        }
+
+        @* Aviso permanente: no es descartable porque no es una notificación, es una regla. *@
+        <div class="finance-callout">
+            <i class="bi bi-clock-history" aria-hidden="true"></i>
+            <span>
+                Los cambios afectan los cálculos <strong>a futuro</strong>. Los cobros y
+                comprobantes ya emitidos conservan sus montos históricos.
+            </span>
+        </div>
+
+        <div class="finance-section-actions finance-section-actions--inline">
+            <button type="submit" class="finance-btn-primary" id="btnGuardarFiscal">
+                <i class="bi bi-floppy2-fill"></i> Guardar configuración fiscal
+            </button>
+        </div>
+    </form>
+</section>

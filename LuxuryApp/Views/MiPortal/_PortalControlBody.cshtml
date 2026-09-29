@@ -1,0 +1,120 @@
+@model LuxuryApp.Models.Funcionarios.PortalControlCitas
+@using System.Globalization
+@{
+    var cr = new CultureInfo("es-CR");
+    string Money(decimal v) => "₡" + v.ToString("#,##0.00", cr);
+    var puedeCobrar = (ViewData["PuedeRegistrarCobros"] as bool?) ?? false;
+}
+<p class="mpc-range"><i class="bi bi-calendar3"></i> @Model.Desde.ToString("dd/MM/yyyy", cr) – @Model.Hasta.ToString("dd/MM/yyyy", cr)</p>
+
+<div class="mpc-kpis">
+    <div class="mpc-kpi">
+        <div class="mpc-kpi-ic mpc-ic-violet"><i class="bi bi-calendar-check"></i></div>
+        <div class="mpc-kpi-body"><span class="mpc-kpi-label">Total citas</span><span class="mpc-kpi-val">@Model.Total</span></div>
+    </div>
+    <div class="mpc-kpi">
+        <div class="mpc-kpi-ic mpc-ic-green"><i class="bi bi-check2-circle"></i></div>
+        <div class="mpc-kpi-body"><span class="mpc-kpi-label">Cobradas</span><span class="mpc-kpi-val mpc-val-green">@Model.Cobradas</span></div>
+    </div>
+    <div class="mpc-kpi">
+        <div class="mpc-kpi-ic mpc-ic-amber"><i class="bi bi-clock-history"></i></div>
+        <div class="mpc-kpi-body"><span class="mpc-kpi-label">Pendientes</span><span class="mpc-kpi-val mpc-val-amber">@Model.Pendientes</span></div>
+    </div>
+    <div class="mpc-kpi">
+        <div class="mpc-kpi-ic mpc-ic-green"><i class="bi bi-cash-coin"></i></div>
+        <div class="mpc-kpi-body"><span class="mpc-kpi-label">Monto cobrado</span><span class="mpc-kpi-val mpc-val-green">@Money(Model.MontoCobrado)</span></div>
+    </div>
+    <div class="mpc-kpi">
+        <div class="mpc-kpi-ic mpc-ic-amber"><i class="bi bi-wallet2"></i></div>
+        <div class="mpc-kpi-body"><span class="mpc-kpi-label">Pendiente estimado</span><span class="mpc-kpi-val mpc-val-amber">@Money(Model.MontoPendienteEstimado)</span></div>
+    </div>
+</div>
+
+@if (Model.Items.Count == 0)
+{
+    <div class="mpc-empty">
+        <i class="bi bi-calendar-x"></i>
+        <span>No hay citas en este rango.</span>
+    </div>
+}
+else
+{
+    <!-- Desktop: tabla -->
+    <div class="table-responsive mpc-desktop">
+        <table class="mpc-table">
+            <thead>
+                <tr>
+                    <th>Fecha</th><th>Hora</th><th>Cliente</th><th>Servicio</th>
+                    <th class="text-end">Monto</th><th>Estado</th><th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var it in Model.Items)
+                {
+                    <tr>
+                        <td data-label="Fecha"><i class="bi bi-calendar3 mpc-cell-ic"></i> @it.FechaHora.ToString("dd/MM", cr)</td>
+                        <td data-label="Hora"><i class="bi bi-clock mpc-cell-ic"></i> @it.FechaHora.ToString("hh:mm tt", cr)</td>
+                        <td data-label="Cliente"><i class="bi bi-person mpc-cell-ic"></i> @it.Cliente</td>
+                        <td data-label="Servicio"><i class="bi bi-scissors mpc-cell-ic"></i> @it.Servicio</td>
+                        <td data-label="Monto" class="text-end fw-semibold">@(it.MontoMostrado.HasValue ? Money(it.MontoMostrado.Value) : "—")</td>
+                        <td data-label="Estado">
+                            @if (it.YaCobrada)
+                            {
+                                <span class="mpc-badge mpc-badge-ok"><i class="bi bi-check2-circle"></i> Cobrada</span>
+                            }
+                            else
+                            {
+                                <span class="mpc-badge mpc-badge-pend"><i class="bi bi-clock"></i> Pendiente</span>
+                            }
+                        </td>
+                        <td class="text-end" data-label="">
+                            @if (puedeCobrar && it.EsCobrable)
+                            {
+                                <button type="button" class="mpc-cobrar js-cobrar-btn"
+                                        data-cita-id="@it.Id" data-cliente="@it.Cliente" data-servicio="@it.Servicio"
+                                        data-email="@it.CorreoCliente"
+                                        data-precio="@(it.PrecioServicio?.ToString("0.##", CultureInfo.InvariantCulture) ?? "")">
+                                    <i class="bi bi-cash-coin"></i> Cobrar
+                                </button>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Móvil: cards -->
+    <div class="mpc-cards">
+        @foreach (var it in Model.Items)
+        {
+            <div class="mpc-rec">
+                <div class="mpc-rec-top">
+                    <span class="mpc-rec-when"><i class="bi bi-calendar3"></i> @it.FechaHora.ToString("dd/MM", cr) · @it.FechaHora.ToString("hh:mm tt", cr)</span>
+                    <span class="mpc-rec-monto">@(it.MontoMostrado.HasValue ? Money(it.MontoMostrado.Value) : "—")</span>
+                </div>
+                <div class="mpc-rec-cliente">@it.Cliente</div>
+                <div class="mpc-rec-serv"><i class="bi bi-scissors"></i> @it.Servicio</div>
+                <div class="mpc-rec-foot">
+                    @if (it.YaCobrada)
+                    {
+                        <span class="mpc-badge mpc-badge-ok"><i class="bi bi-check2-circle"></i> Cobrada</span>
+                    }
+                    else
+                    {
+                        <span class="mpc-badge mpc-badge-pend"><i class="bi bi-clock"></i> Pendiente</span>
+                    }
+                    @if (puedeCobrar && it.EsCobrable)
+                    {
+                        <button type="button" class="mpc-cobrar js-cobrar-btn"
+                                data-cita-id="@it.Id" data-cliente="@it.Cliente" data-servicio="@it.Servicio"
+                                data-email="@it.CorreoCliente"
+                                data-precio="@(it.PrecioServicio?.ToString("0.##", CultureInfo.InvariantCulture) ?? "")">
+                            <i class="bi bi-cash-coin"></i> Cobrar
+                        </button>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+}

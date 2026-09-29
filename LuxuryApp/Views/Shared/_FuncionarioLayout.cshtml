@@ -1,0 +1,372 @@
+@using LuxuryApp.Models.Funcionarios
+@{
+    var active = ViewData["PortalActive"] as string ?? "panel";
+    var perms = ViewData["PortalPerms"] as FuncionarioPortalPermisosSet;
+    var showCalendario = perms?.VerMiCalendario ?? false;
+    var showGanancias = perms?.VerMisGanancias ?? false;
+    var showPagos = perms?.VerMisPagos ?? false;
+    var showCobros = perms?.VerMisCobros ?? false;
+    string Cls(string key) => active == key ? "lp-nav-item lp-nav-item--active" : "lp-nav-item";
+    string TabCls(string key) => active == key ? "lp-tab lp-tab--active" : "lp-tab";
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Mi Portal | LuxuryCloud</title>
+    <partial name="_AppearanceBootstrap" />
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/private-layout.css" asp-append-version="true" />
+    @* Base del calendario (grilla, día, side-cita-card) reutilizada del módulo principal *@
+    <link rel="stylesheet" href="~/css/calendar.css" asp-append-version="true" />
+    @* Lenguaje visual de los módulos financieros (Ingresos/Egresos): cards KPI con ícono,
+       botones y tokens. Es theme-aware (usa --private-*), así el portal hereda el mismo look. *@
+    <link rel="stylesheet" href="~/css/finance-modules.css" asp-append-version="true" />
+    <style>
+        :root {
+            /* Tokens del portal mapeados al sistema principal de LuxuryCloud.
+               Acento = azul/morado del sistema; verde = montos positivos/cobrados;
+               ámbar = pendientes. Nada de dorado. */
+            --lp-accent:var(--private-chart-accent,var(--private-accent));
+            --lp-accent-strong:var(--private-accent-alt);
+            --lp-accent-soft:rgba(var(--private-accent-rgb), .14);
+            /* Alias retrocompatible: cualquier referencia vieja a --lp-gold ya NO es dorada */
+            --lp-gold:var(--lp-accent);
+            --lp-border:var(--private-surface-border,rgba(15,23,42,.08));
+            --lp-surface:var(--private-surface-bg,#fff);
+            --lp-text:var(--private-surface-text,#0f172a);
+            --lp-muted:var(--private-muted-text,#64748b);
+            --lp-green:var(--private-chart-success,#16a34a);
+            --lp-green-bg:rgba(22,163,74,.12);
+            --lp-amber:var(--private-chart-warning,#d97706);
+            --lp-amber-bg:rgba(217,119,6,.14);
+        }
+        body.lp-body { min-height:100vh; }
+        .lp-shell { min-height:100vh; display:flex; flex-direction:column; }
+        /* Navbar premium tipo pill, adaptado al tema (usa --private-navbar-bg como el navbar principal) */
+        .lp-topbar { display:flex; align-items:center; gap:1rem; margin:.7rem .7rem 0; padding:.55rem .9rem;
+            background:var(--private-navbar-bg, rgba(15,18,32,.92)); border:1px solid rgba(255,255,255,.10);
+            border-radius:16px; box-shadow:0 10px 30px rgba(2,6,23,.22); backdrop-filter:blur(14px);
+            position:sticky; top:.5rem; z-index:30; color:#f8fafc; }
+        .lp-brand { display:flex; align-items:center; gap:.6rem; font-weight:800; letter-spacing:.4px; font-size:1.02rem; color:#fff; flex-shrink:0; }
+        /* Logo cuadrado "L" con gradiente, igual al de los módulos principales/footer */
+        .lp-logo { width:2rem; height:2rem; border-radius:9px; flex-shrink:0; display:flex; align-items:center; justify-content:center;
+            font-size:1rem; font-weight:800; color:#fff; background:linear-gradient(135deg,var(--private-accent),var(--private-accent-alt));
+            box-shadow:0 4px 12px rgba(var(--private-accent-rgb), .35); }
+        .lp-brand small { font-weight:500; opacity:.65; font-size:.7rem; letter-spacing:.5px; }
+        @@media (max-width:420px){ .lp-brand-text small { display:none; } }
+        .lp-nav { display:flex; gap:.2rem; flex:1; overflow-x:auto; scrollbar-width:none; }
+        .lp-nav::-webkit-scrollbar { display:none; }
+        .lp-nav-item { flex:0 0 auto; display:inline-flex; align-items:center; gap:.4rem;
+            padding:.5rem .85rem; font-size:.86rem; font-weight:600; color:rgba(248,250,252,.72);
+            text-decoration:none; border-radius:10px; white-space:nowrap; transition:.15s; }
+        .lp-nav-item:hover { color:#fff; background:rgba(255,255,255,.08); }
+        /* Active estilo navbar principal: pill oscuro azulado con sombra (no dorado) */
+        .lp-nav-item--active { color:#fff; background:rgba(255,255,255,.14);
+            box-shadow:inset 0 0 0 1px rgba(255,255,255,.16), 0 4px 14px rgba(2,6,23,.35); }
+        .lp-nav-item--active i { color:#93c5fd; }
+        .lp-actions { display:flex; align-items:center; gap:.5rem; flex-shrink:0; }
+        .lp-topbtn { border:1px solid rgba(255,255,255,.28); background:transparent; color:#fff;
+            border-radius:.6rem; padding:.42rem .75rem; font-size:.8rem; font-weight:600; cursor:pointer;
+            display:inline-flex; align-items:center; gap:.4rem; transition:.15s; white-space:nowrap; }
+        .lp-topbtn:hover { background:rgba(255,255,255,.12); }
+        .lp-topbtn--solid { background:rgba(255,255,255,.12); }
+        .lp-topbtn.dropdown-toggle::after { margin-left:.1rem; }
+        .lp-main { width:100%; max-width:1280px; margin:0 auto; padding:1.25rem 1rem 5.5rem; flex:1; }
+        .lp-card { background:var(--private-surface-bg,#fff); border:1px solid var(--private-surface-border,rgba(15,23,42,.08));
+            border-radius:1.1rem; padding:1.15rem; box-shadow:0 6px 22px rgba(15,23,42,.06);
+            color:var(--private-surface-text,#0f172a); }
+        .lp-section-title { font-size:1rem; font-weight:800; margin:0 0 .85rem; display:flex; align-items:center; gap:.5rem;
+            color:var(--private-surface-text,#0f172a); }
+        .lp-muted { color:var(--private-muted-text,#64748b); }
+        .lp-btn { display:inline-flex; align-items:center; gap:.4rem; border:none; cursor:pointer;
+            border-radius:.65rem; padding:.6rem .95rem; font-size:.85rem; font-weight:700; text-decoration:none; transition:.15s; }
+        /* Botón principal: gradiente azul→morado del sistema (igual a .finance-btn-primary) */
+        .lp-btn--gold { background:linear-gradient(135deg,var(--private-accent),var(--private-accent-alt)); color:#fff;
+            box-shadow:0 6px 18px rgba(var(--private-accent-rgb), .3); }
+        .lp-btn--gold:hover { filter:brightness(1.05); color:#fff; }
+        .lp-btn--ghost { background:transparent; border:1px solid var(--private-surface-border,rgba(15,23,42,.15));
+            color:var(--private-surface-text,#0f172a); }
+        .lp-icon-btn { border:1px solid var(--lp-border); background:var(--lp-surface); color:var(--lp-text);
+            border-radius:.55rem; width:2rem; height:2rem; display:inline-flex; align-items:center; justify-content:center;
+            cursor:pointer; font-size:.92rem; transition:.15s; flex-shrink:0; }
+        .lp-icon-btn:hover { background:rgba(148,163,184,.16); }
+        .lp-icon-btn--danger { color:#b91c1c; border-color:rgba(220,38,38,.3); }
+        .lp-icon-btn--danger:hover { background:rgba(220,38,38,.1); }
+        /* Mini-calendario mensual estilo calendario principal */
+        .lp-cal { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
+        .lp-cal-dow { text-align:center; font-size:.66rem; font-weight:700; color:var(--lp-muted);
+            text-transform:uppercase; padding:.2rem 0; }
+        .lp-cal-cell { aspect-ratio:1/1; border:1px solid var(--lp-border); border-radius:.6rem; background:var(--lp-surface);
+            display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.1rem;
+            text-decoration:none; color:var(--lp-text); font-size:.85rem; font-weight:600; transition:.12s; position:relative; }
+        .lp-cal-cell:hover { border-color:var(--lp-accent); }
+        .lp-cal-cell--empty { border:none; background:transparent; cursor:default; }
+        .lp-cal-cell--today { box-shadow:inset 0 0 0 1.5px var(--lp-accent); }
+        .lp-cal-cell--active { background:linear-gradient(135deg,var(--private-accent),var(--private-accent-alt)); color:#fff; border-color:transparent; }
+        .lp-cal-badge { font-size:.58rem; font-weight:800; line-height:1; padding:.12rem .3rem; border-radius:999px;
+            background:var(--lp-accent-soft); color:var(--lp-accent); }
+        .lp-cal-cell--active .lp-cal-badge { background:rgba(255,255,255,.26); color:#fff; }
+        .cita-badge-cobrada { display:inline-flex; align-items:center; gap:.3rem; font-size:.72rem; font-weight:700;
+            color:#047857; background:rgba(16,185,129,.14); border-radius:999px; padding:.2rem .55rem; }
+        /* Contraste de badges en temas oscuros (glass/negro) */
+        html.surface-glass .cita-badge-cobrada, html.surface-dark .cita-badge-cobrada,
+        html.surface-glass .mpc-badge-ok, html.surface-dark .mpc-badge-ok,
+        html.surface-glass .cb-badge-ok, html.surface-dark .cb-badge-ok {
+            color:#86efac; background:rgba(22,163,74,.24); }
+        html.surface-glass .mpc-badge-pend, html.surface-dark .mpc-badge-pend {
+            color:#fcd34d; background:rgba(217,119,6,.26); }
+        html.surface-glass .cb-chip, html.surface-dark .cb-chip,
+        html.surface-glass .mpc-cell-ic, html.surface-dark .mpc-cell-ic { color:#cbd5e1; }
+        .lp-ac-item { display:block; width:100%; text-align:left; border:none; background:transparent;
+            padding:.55rem .75rem; font-size:.85rem; color:var(--lp-text); cursor:pointer; }
+        .lp-ac-item:hover { background:var(--lp-accent-soft); }
+        .lp-alert { border-radius:.75rem; padding:.7rem .95rem; font-size:.85rem; font-weight:600;
+            margin-bottom:1rem; display:flex; align-items:center; gap:.5rem; }
+        .lp-alert--ok { background:rgba(16,185,129,.12); color:#047857; }
+        .lp-alert--err { background:rgba(220,38,38,.12); color:#b91c1c; }
+        .lp-kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:.7rem; }
+        .lp-kpi { background:var(--private-surface-bg,#fff); border:1px solid var(--private-surface-border,rgba(15,23,42,.08));
+            border-radius:.95rem; padding:.9rem; box-shadow:0 4px 14px rgba(15,23,42,.04); }
+        .lp-kpi-label { font-size:.7rem; color:var(--private-muted-text,#64748b); font-weight:700; text-transform:uppercase; letter-spacing:.4px; }
+        .lp-kpi-value { font-size:1.3rem; font-weight:800; margin-top:.25rem; color:var(--private-surface-text,#0f172a); }
+        /* --gold queda como alias retrocompatible a verde para no dejar dorado en ningún KPI */
+        .lp-kpi-value--gold { color:var(--lp-green); }
+        .lp-kpi-value--green { color:var(--lp-green); }
+        .lp-kpi-value--amber { color:var(--lp-amber); }
+        .lp-footer { margin-top:2rem; padding:1.6rem 1.2rem 1rem; border-top:1px solid var(--private-surface-border,rgba(15,23,42,.08));
+            background:var(--private-surface-bg,rgba(255,255,255,.5)); }
+        .lp-footer-inner { max-width:1280px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap; }
+        .lp-footer-brand { display:flex; align-items:center; gap:.7rem; }
+        .lp-footer-logo { width:2.4rem; height:2.4rem; border-radius:12px; background:linear-gradient(135deg,var(--private-accent),var(--private-accent-alt));
+            color:#fff; font-weight:800; display:flex; align-items:center; justify-content:center; font-size:.9rem; }
+        .lp-footer-name { font-weight:800; color:var(--private-surface-text,#0f172a); }
+        .lp-footer-tag { font-size:.76rem; color:var(--private-muted-text,#64748b); }
+        .lp-footer-links { display:flex; flex-wrap:wrap; gap:1.1rem; }
+        .lp-footer-links a { font-size:.82rem; font-weight:600; color:var(--private-muted-text,#64748b); text-decoration:none; }
+        .lp-footer-links a:hover { color:var(--lp-accent); }
+        .lp-footer-copy { max-width:1280px; margin:1rem auto 0; text-align:center; font-size:.74rem; color:var(--private-muted-text,#94a3b8); }
+        .lp-tabbar { position:fixed; bottom:0; left:0; right:0; background:var(--private-surface-bg,rgba(255,255,255,.96));
+            backdrop-filter:blur(8px); border-top:1px solid var(--private-surface-border,rgba(15,23,42,.08)); display:none;
+            justify-content:space-around; padding:.4rem 0 .55rem; z-index:40; box-shadow:0 -2px 14px rgba(0,0,0,.12); }
+        .lp-tab { flex:1; text-align:center; color:var(--private-muted-text,#64748b); text-decoration:none; font-size:.64rem; font-weight:600;
+            display:flex; flex-direction:column; align-items:center; gap:.15rem; }
+        .lp-tab i { font-size:1.2rem; }
+        .lp-tab--active { color:var(--private-surface-text,#111827); }
+        .lp-tab--active i { color:var(--lp-accent); }
+
+        /* ── Componentes compartidos del portal (lenguaje finance, theme-aware) ── */
+        /* Hero premium de bienvenida/encabezado de sección */
+        .lp-hero { position:relative; overflow:hidden; border-radius:1.1rem; padding:1.4rem 1.5rem; margin-bottom:1.2rem;
+            background:linear-gradient(135deg, var(--lp-accent-soft), rgba(var(--private-accent-alt-rgb), .07));
+            border:1px solid var(--private-surface-border,rgba(15,23,42,.08)); box-shadow:0 10px 26px rgba(15,23,42,.06); }
+        .lp-hero h1 { font-size:1.4rem; font-weight:800; margin:0; color:var(--private-surface-text,#0f172a); }
+        .lp-hero-sub { margin:.3rem 0 0; color:var(--private-muted-text,#64748b); font-size:.88rem; }
+        .lp-hero-date { margin:.2rem 0 0; color:var(--private-muted-text,#94a3b8); font-size:.8rem; text-transform:capitalize; }
+        .lp-hero-chips { display:flex; flex-wrap:wrap; gap:.5rem; margin-top:1rem; }
+        .lp-hero-chip { display:inline-flex; align-items:center; gap:.45rem; padding:.45rem .8rem; border-radius:999px;
+            background:var(--private-surface-bg,rgba(255,255,255,.72)); border:1px solid var(--private-surface-border,rgba(15,23,42,.08));
+            font-size:.78rem; font-weight:700; color:var(--private-surface-text,#0f172a); }
+        .lp-hero-chip i { color:var(--lp-accent); }
+        .lp-hero-chip b { color:var(--private-surface-text,#0f172a); }
+
+        /* Metric cards: ícono en caja + label uppercase + valor grande (igual a finance-kpi-card) */
+        .lp-metrics { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:.85rem; margin-bottom:1.2rem; }
+        .lp-metric { display:flex; align-items:center; gap:.85rem; padding:1.05rem 1.1rem; border-radius:1rem;
+            background:var(--private-surface-bg,#fff); border:1px solid var(--private-surface-border,rgba(15,23,42,.08));
+            box-shadow:0 4px 14px rgba(15,23,42,.04); }
+        .lp-metric-ic { width:2.9rem; height:2.9rem; border-radius:13px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:1.3rem; }
+        .lp-metric-body { min-width:0; display:flex; flex-direction:column; gap:.12rem; }
+        .lp-metric-label { font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:var(--private-muted-text,#94a3b8); }
+        .lp-metric-value { font-size:1.4rem; font-weight:800; line-height:1.1; color:var(--private-surface-text,#0f172a); }
+        .lp-metric-value--green { color:var(--lp-green); }
+        .lp-metric-value--amber { color:var(--lp-amber); }
+        .lp-metric-sub { font-size:.72rem; color:var(--private-muted-text,#94a3b8); }
+        /* Tonos de ícono (mismos colores que finance-kpi-icon-*) */
+        .lp-ic-green  { background:rgba(22,163,74,.14);  border:1px solid rgba(22,163,74,.28);  color:var(--private-chart-success,#16a34a); }
+        .lp-ic-blue   { background:rgba(var(--private-accent-rgb), .14);  border:1px solid rgba(var(--private-accent-rgb), .28);  color:var(--private-chart-accent,var(--private-accent)); }
+        .lp-ic-amber  { background:rgba(217,119,6,.14);  border:1px solid rgba(217,119,6,.28);  color:var(--private-chart-warning,#d97706); }
+        .lp-ic-violet { background:rgba(var(--private-accent-alt-rgb), .14); border:1px solid rgba(var(--private-accent-alt-rgb), .28); color:var(--private-accent-alt-soft); }
+        .lp-ic-cyan   { background:rgba(8,145,178,.14);  border:1px solid rgba(8,145,178,.28);  color:var(--private-chart-info,#0891b2); }
+
+        /* Estado vacío premium */
+        .lp-empty { display:flex; flex-direction:column; align-items:center; gap:.55rem; padding:2.2rem 1rem; text-align:center; color:var(--private-muted-text,#94a3b8); }
+        .lp-empty-ic { width:3.2rem; height:3.2rem; border-radius:16px; display:flex; align-items:center; justify-content:center;
+            font-size:1.5rem; background:var(--lp-accent-soft); color:var(--lp-accent); }
+        .lp-empty-title { font-weight:800; color:var(--private-surface-text,#0f172a); font-size:.98rem; }
+        .lp-empty-text { font-size:.82rem; max-width:300px; margin:0; }
+
+        /* Lista de cards (citas, pagos, cobros) */
+        .lp-list { display:flex; flex-direction:column; gap:.6rem; }
+        /* Card de fila premium reutilizable (cliente + meta + monto/acciones a la derecha) */
+        .lp-row { display:flex; align-items:center; gap:.8rem; padding:.85rem .95rem; border-radius:.9rem;
+            background:var(--private-surface-bg,#fff); border:1px solid var(--private-surface-border,rgba(15,23,42,.08));
+            box-shadow:0 3px 12px rgba(15,23,42,.04); }
+        .lp-row-ic { width:2.6rem; height:2.6rem; border-radius:11px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:1.1rem; }
+        .lp-row-main { flex:1; min-width:0; }
+        .lp-row-title { font-weight:800; font-size:.95rem; color:var(--private-surface-text,#0f172a); }
+        .lp-row-meta { font-size:.78rem; color:var(--private-muted-text,#64748b); display:flex; flex-wrap:wrap; gap:.15rem .7rem; margin-top:.15rem; }
+        .lp-row-meta i { opacity:.8; }
+        .lp-row-right { text-align:right; flex-shrink:0; display:flex; flex-direction:column; align-items:flex-end; gap:.3rem; }
+        .lp-row-amount { font-weight:800; font-size:1rem; color:var(--private-surface-text,#0f172a); }
+        .lp-row-amount--green { color:var(--lp-green); }
+        /* Badges pequeños reutilizables */
+        .lp-badge { display:inline-flex; align-items:center; gap:.3rem; font-size:.7rem; font-weight:700; border-radius:999px; padding:.2rem .55rem; }
+        .lp-badge--ok { color:#15803d; background:rgba(22,163,74,.14); }
+        .lp-badge--pend { color:#b45309; background:rgba(217,119,6,.16); }
+        .lp-badge--muted { color:var(--private-surface-text,#475569); background:rgba(148,163,184,.18); }
+        html.surface-glass .lp-badge--ok, html.surface-dark .lp-badge--ok { color:#86efac; background:rgba(22,163,74,.24); }
+        html.surface-glass .lp-badge--pend, html.surface-dark .lp-badge--pend { color:#fcd34d; background:rgba(217,119,6,.26); }
+        html.surface-glass .lp-badge--muted, html.surface-dark .lp-badge--muted { color:#cbd5e1; }
+
+        @@media (max-width:560px){
+            .lp-metrics { grid-template-columns:1fr 1fr; gap:.6rem; }
+            .lp-metric { padding:.8rem; gap:.6rem; }
+            .lp-metric-ic { width:2.4rem; height:2.4rem; font-size:1.1rem; border-radius:11px; }
+            .lp-metric-value { font-size:1.18rem; }
+            .lp-hero { padding:1.15rem 1.15rem; }
+        }
+        @@media (max-width:640px){ .lp-nav { display:none; } .lp-tabbar { display:flex; } }
+    </style>
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body class="layout-background private-shell lp-body theme-bg-marble surface-classic theme-marble">
+    <script>
+        // Sincroniza las clases de tema del <body> con las que el applier ya puso en <html>,
+        // asi las cards/tablas del portal toman el tema correcto de inmediato (sin parpadeo
+        // blanco ni depender del timing de site.js). Las listas de fondos/superficies salen del
+        // catalogo compartido (window.luxuryAppearance), no de arreglos escritos a mano.
+        (function () {
+            try {
+                var presets = (window.luxuryAppearance && window.luxuryAppearance.presets) || {};
+                var el = document.documentElement, b = document.body, bg = null, sf = null;
+                el.classList.forEach(function (c) {
+                    if (c.indexOf("theme-bg-") === 0) bg = c.slice(9);
+                    else if (c.indexOf("surface-") === 0) sf = c.slice(8);
+                });
+                if (!bg && !sf) return;
+                Object.keys(presets).forEach(function (id) {
+                    b.classList.remove("theme-bg-" + presets[id].background);
+                    b.classList.remove("theme-" + presets[id].background);
+                    b.classList.remove("surface-" + presets[id].surface);
+                });
+                if (bg) { b.classList.add("theme-bg-" + bg); b.classList.add("theme-" + bg); }
+                if (sf) { b.classList.add("surface-" + sf); }
+            } catch (e) { }
+        })();
+    </script>
+    <div class="lp-shell">
+        <header class="lp-topbar">
+            <div class="lp-brand"><span class="lp-logo">L</span> <span class="lp-brand-text">LuxuryCloud <small>· Mi portal</small></span></div>
+
+            <nav class="lp-nav">
+                <a class="@Cls("panel")" href="/MiPortal"><i class="bi bi-grid-1x2"></i> Mi Portal</a>
+                @if (showCalendario)
+                {
+                    <a class="@Cls("calendario")" href="/MiPortal/Calendario"><i class="bi bi-calendar3"></i> Mi Calendario</a>
+                }
+                @if (showCobros)
+                {
+                    <a class="@Cls("cobros")" href="/MiPortal/Cobros"><i class="bi bi-cash-coin"></i> Mis Cobros</a>
+                }
+                @if (showGanancias)
+                {
+                    <a class="@Cls("ganancias")" href="/MiPortal/Ganancias"><i class="bi bi-graph-up-arrow"></i> Mis Ganancias</a>
+                }
+                @if (showPagos)
+                {
+                    <a class="@Cls("pagos")" href="/MiPortal/Pagos"><i class="bi bi-wallet2"></i> Mis Pagos</a>
+                }
+            </nav>
+
+            <div class="lp-actions">
+                <div class="dropdown">
+                    <button class="lp-topbtn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-sliders"></i> <span class="d-none d-sm-inline">Opciones</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li>
+                            <button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#themeStyleModal">
+                                <i class="bi bi-palette2"></i> Apariencia
+                            </button>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="/Seguridad/Enrolar">
+                                <i class="bi bi-shield-lock"></i> Doble autenticación
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                <form method="post" action="/Accounts/SalirAplicacion" style="margin:0;">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="lp-topbtn lp-topbtn--solid"><i class="bi bi-box-arrow-right"></i> <span class="d-none d-sm-inline">Salir</span></button>
+                </form>
+            </div>
+        </header>
+
+        <main class="lp-main">
+            @if (TempData["PortalMensaje"] != null)
+            {
+                <div class="lp-alert lp-alert--ok"><i class="bi bi-check-circle-fill"></i> @TempData["PortalMensaje"]</div>
+            }
+            @if (TempData["PortalError"] != null)
+            {
+                <div class="lp-alert lp-alert--err"><i class="bi bi-exclamation-triangle-fill"></i> @TempData["PortalError"]</div>
+            }
+            @RenderBody()
+        </main>
+
+        <footer class="lp-footer">
+            <div class="lp-footer-inner">
+                <div class="lp-footer-brand">
+                    <span class="lp-footer-logo">LC</span>
+                    <div>
+                        <div class="lp-footer-name">LuxuryCloud</div>
+                        <div class="lp-footer-tag">SaaS para barberías, salones y negocios de servicios</div>
+                    </div>
+                </div>
+                <nav class="lp-footer-links">
+                    <a href="/">Inicio</a>
+                    <a href="/#modulos">Módulos</a>
+                    <a href="/#precios">Precios</a>
+                    <a href="/contrato">Contrato</a>
+                    <a href="/privacidad">Privacidad</a>
+                    <a href="/soporte">Soporte</a>
+                </nav>
+            </div>
+            <div class="lp-footer-copy">© 2026 LuxuryCloud. Todos los derechos reservados.</div>
+        </footer>
+    </div>
+
+    <nav class="lp-tabbar">
+        <a class="@TabCls("panel")" href="/MiPortal"><i class="bi bi-grid-1x2"></i>Portal</a>
+        @if (showCalendario)
+        {
+            <a class="@TabCls("calendario")" href="/MiPortal/Calendario"><i class="bi bi-calendar3"></i>Agenda</a>
+        }
+        @if (showCobros)
+        {
+            <a class="@TabCls("cobros")" href="/MiPortal/Cobros"><i class="bi bi-cash-coin"></i>Cobros</a>
+        }
+        @if (showGanancias)
+        {
+            <a class="@TabCls("ganancias")" href="/MiPortal/Ganancias"><i class="bi bi-graph-up-arrow"></i>Ganancias</a>
+        }
+        @if (showPagos)
+        {
+            <a class="@TabCls("pagos")" href="/MiPortal/Pagos"><i class="bi bi-wallet2"></i>Pagos</a>
+        }
+    </nav>
+
+    @* Modal de personalización visual (mismo del módulo principal). *@
+    <partial name="_AppearanceModal" />
+
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    @* Reutiliza el motor de apariencia del módulo principal (4 temas, persistencia en localStorage). *@
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

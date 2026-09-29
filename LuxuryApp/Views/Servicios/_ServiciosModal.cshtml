@@ -1,0 +1,193 @@
+@using LuxuryApp.Models.Finanzas
+@model IReadOnlyList<ServicioListItemViewModel>
+
+<div class="d-none" id="serviciosTokenContainer">
+    @Html.AntiForgeryToken()
+</div>
+
+<!-- ── BARRA DE ACCIONES ── -->
+<div class="svc-action-bar">
+    <button type="button"
+            class="finance-btn-primary"
+            style="font-size:0.875rem;padding:0.55rem 1.2rem;"
+            onclick="mostrarFormularioServicio()">
+        <i class="bi bi-plus-lg"></i>
+        Nuevo Servicio
+    </button>
+    @if (Model.Any())
+    {
+        <span class="svc-count">
+            @Model.Count servicio@(Model.Count != 1 ? "s" : "") registrado@(Model.Count != 1 ? "s" : "")
+        </span>
+    }
+</div>
+
+<!-- ── FORMULARIO (visible al crear/editar) ── -->
+<div id="formServicioContainer" class="svc-form-container" style="display:none;"></div>
+
+@if (Model.Any())
+{
+    <!-- Desktop: tabla premium -->
+    <div class="d-none d-md-block">
+        <div class="svc-table-wrap">
+            <table class="svc-table">
+                <thead>
+                    <tr>
+                        <th>Servicio</th>
+                        <th>Precio</th>
+                        <th>Duración</th>
+                        <th style="text-align:center;width:7rem;">Estado</th>
+                        <th style="text-align:right;width:20rem;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>
+                                <span class="svc-name">@item.Nombre</span>
+                            </td>
+                            <td>
+                                <span style="font-weight:700;color:var(--private-chart-success);">
+                                    ₡ @item.Precio.ToString("N2")
+                                </span>
+                            </td>
+                            <td>
+                                @(item.DuracionMinutos.HasValue ? item.DuracionMinutos + " min" : "—")
+                            </td>
+                            <td style="text-align:center;">
+                                @if (item.Activo)
+                                {
+                                    <span class="svc-status svc-status--active">
+                                        <span class="svc-dot svc-dot--green"></span>
+                                        Activo
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="svc-status svc-status--inactive">
+                                        <span class="svc-dot svc-dot--gray"></span>
+                                        Inactivo
+                                    </span>
+                                }
+                            </td>
+                            <td>
+                                <div class="svc-actions">
+                                    <button type="button"
+                                            class="svc-act-btn svc-act-btn--edit"
+                                            onclick="mostrarFormularioServicio(@item.Id)"
+                                            aria-label="Editar @item.Nombre">
+                                        <i class="bi bi-pencil"></i>
+                                        Editar
+                                    </button>
+                                    @if (item.Activo)
+                                    {
+                                        <button type="button"
+                                                class="svc-act-btn svc-act-btn--toggle"
+                                                onclick="toggleServicio(@item.Id)"
+                                                aria-label="Desactivar @item.Nombre">
+                                            <i class="bi bi-toggle-on"></i>
+                                            Desactivar
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <button type="button"
+                                                class="svc-act-btn svc-act-btn--activate"
+                                                onclick="toggleServicio(@item.Id)"
+                                                aria-label="Activar @item.Nombre">
+                                            <i class="bi bi-toggle-off"></i>
+                                            Activar
+                                        </button>
+                                    }
+                                    <button type="button"
+                                            class="svc-act-btn svc-act-btn--delete"
+                                            onclick="confirmarEliminarServicio(@item.Id, '@Html.Raw(item.Nombre.Replace("'", "\\'"))')"
+                                            aria-label="Eliminar @item.Nombre">
+                                        <i class="bi bi-trash3"></i>
+                                        Eliminar
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Mobile: cards -->
+    <div class="d-md-none svc-card-list">
+        @foreach (var item in Model)
+        {
+            <div class="svc-card">
+                <div class="svc-card-top">
+                    <div style="flex:1;min-width:0;">
+                        <span class="svc-card-name">@item.Nombre</span>
+                        <span class="svc-card-sub">
+                            ₡ @item.Precio.ToString("N2")
+                            @if (item.DuracionMinutos.HasValue)
+                            {
+                                <span> · @item.DuracionMinutos min</span>
+                            }
+                        </span>
+                    </div>
+                    <div>
+                        @if (item.Activo)
+                        {
+                            <span class="svc-status svc-status--active">
+                                <span class="svc-dot svc-dot--green"></span>
+                                Activo
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="svc-status svc-status--inactive">
+                                <span class="svc-dot svc-dot--gray"></span>
+                                Inactivo
+                            </span>
+                        }
+                    </div>
+                </div>
+                <div class="svc-card-actions">
+                    <button type="button"
+                            class="svc-act-btn svc-act-btn--edit"
+                            onclick="mostrarFormularioServicio(@item.Id)">
+                        <i class="bi bi-pencil"></i> Editar
+                    </button>
+                    @if (item.Activo)
+                    {
+                        <button type="button"
+                                class="svc-act-btn svc-act-btn--toggle"
+                                onclick="toggleServicio(@item.Id)">
+                            <i class="bi bi-toggle-on"></i> Desactivar
+                        </button>
+                    }
+                    else
+                    {
+                        <button type="button"
+                                class="svc-act-btn svc-act-btn--activate"
+                                onclick="toggleServicio(@item.Id)">
+                            <i class="bi bi-toggle-off"></i> Activar
+                        </button>
+                    }
+                    <button type="button"
+                            class="svc-act-btn svc-act-btn--delete"
+                            onclick="confirmarEliminarServicio(@item.Id, '@Html.Raw(item.Nombre.Replace("'", "\\'"))')">
+                        <i class="bi bi-trash3"></i> Eliminar
+                    </button>
+                </div>
+            </div>
+        }
+    </div>
+}
+else
+{
+    <div class="svc-empty">
+        <i class="bi bi-scissors svc-empty-icon"></i>
+        <span class="svc-empty-text">No hay servicios registrados</span>
+        <span style="font-size:0.82rem;color:var(--private-muted-text,#64748b);line-height:1.5;max-width:22rem;margin-top:0.1rem;">
+            Agrega servicios para asociarlos a los cobros de tus clientes.
+        </span>
+    </div>
+}

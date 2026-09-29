@@ -1,0 +1,31 @@
+@model ContractPageViewModel
+
+@if (!Model.HasActiveDocument)
+{
+    <section class="contract-empty-state">
+        <span class="section-kicker">Contrato no disponible</span>
+        <h2>No hay una version vigente publicada en este momento.</h2>
+        <p>Configura una version activa del contrato en la base de datos antes de habilitar el flujo legal en produccion.</p>
+    </section>
+}
+else
+{
+    <article class="contract-document-card">
+        <header class="contract-document-header">
+            <span class="section-kicker">Documento vigente</span>
+            <h1>@Model.Title</h1>
+            <div class="contract-document-meta">
+                <span>Version @Model.VersionNumber</span>
+                @if (Model.EffectiveFromUtc.HasValue)
+                {
+                    <span>Vigente desde @Model.EffectiveFromUtc.Value.ToString("yyyy-MM-dd") UTC</span>
+                }
+            </div>
+        </header>
+
+        @* ContentHtml comes from controlled contract records stored by the platform, not from end users. *@
+        <div class="contract-html">
+            @Html.Raw(Model.ContentHtml)
+        </div>
+    </article>
+}

@@ -1,0 +1,57 @@
+@model MarketingModuleViewModel
+
+@{
+    var textOrderClass = Model.ReverseLayout ? "order-lg-2" : string.Empty;
+    var mockupOrderClass = Model.ReverseLayout ? "order-lg-1" : string.Empty;
+    var textAnimation = Model.ReverseLayout ? "fade-left" : "fade-right";
+    var mockupAnimation = Model.ReverseLayout ? "fade-right" : "fade-left";
+}
+
+<article id="@Model.Id" class="marketing-module">
+    <div class="row align-items-center g-5">
+        <div class="col-lg-6 @textOrderClass" data-aos="@textAnimation">
+            <div class="marketing-copy">
+                <span class="marketing-eyebrow">
+                    <i class="bi @Model.Icon"></i>
+                    @Model.Eyebrow
+                </span>
+                <h3>@Model.Title</h3>
+                <p class="marketing-summary">@Model.Summary</p>
+                <p class="marketing-solution">@Model.Solution</p>
+
+                <div class="marketing-tags">
+                    @foreach (var tag in Model.Tags)
+                    {
+                        <span>@tag</span>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6 @mockupOrderClass" data-aos="@mockupAnimation">
+            <div class="marketing-mockup">
+                <div class="marketing-mockup-header">
+                    <span class="marketing-mockup-dot"></span>
+                    <span class="marketing-mockup-dot"></span>
+                    <span class="marketing-mockup-dot"></span>
+                    <strong>@Model.MockupTitle</strong>
+                </div>
+
+                <div class="marketing-mockup-grid">
+                    <div class="marketing-metric-card">
+                        <strong>@Model.PrimaryMetric</strong>
+                        <span>@Model.PrimaryLabel</span>
+                    </div>
+                    <div class="marketing-metric-card">
+                        <strong>@Model.SecondaryMetric</strong>
+                        <span>@Model.SecondaryLabel</span>
+                    </div>
+                    <div class="marketing-metric-card marketing-metric-card-wide">
+                        <strong>@Model.TertiaryMetric</strong>
+                        <span>@Model.TertiaryLabel</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</article>

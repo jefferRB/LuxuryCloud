@@ -1,0 +1,162 @@
+@using LuxuryApp.Models.Finanzas
+@model List<Categoria>
+
+@* Antiforgery token for non-form AJAX (toggleCategoria, eliminarCategoria) *@
+<div id="categoriasTokenContainer" class="d-none">
+    @Html.AntiForgeryToken()
+</div>
+
+@* AJAX feedback messages *@
+<div id="categoriasMessageContainer" class="mb-2"></div>
+
+@* Action bar *@
+<div class="svc-action-bar">
+    <button class="finance-btn-primary" onclick="mostrarFormularioCategoria()">
+        <i class="bi bi-plus-lg"></i> Nueva Categoría
+    </button>
+    <span class="svc-count">@Model.Count categoría@(Model.Count == 1 ? "" : "s") registrada@(Model.Count == 1 ? "" : "s")</span>
+</div>
+
+@* Inline form container *@
+<div class="mt-2" id="formCategoriaContainer"></div>
+
+@if (!Model.Any())
+{
+    <div class="svc-empty">
+        <div class="svc-empty-icon"><i class="bi bi-folder-x"></i></div>
+        <p class="svc-empty-text">No hay categorías registradas</p>
+        <p style="font-size:0.82rem;color:var(--private-muted-text);margin:0;">
+            Crea una categoría para comenzar a registrar egresos.
+        </p>
+    </div>
+}
+else
+{
+    @* ── DESKTOP TABLE ── *@
+    <div class="finance-cat-tbl svc-table-wrap">
+        <table class="svc-table">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Detalle</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td>
+                            <span class="svc-name">
+                                <i class="bi bi-folder2 me-2" style="color:var(--private-chart-accent);opacity:0.7;"></i>
+                                @item.Nombre
+                            </span>
+                        </td>
+                        <td style="color:var(--private-muted-text);font-size:0.84rem;max-width:220px;">
+                            @item.Detalle
+                        </td>
+                        <td>
+                            @if (item.Activo)
+                            {
+                                <span class="svc-status svc-status--active">
+                                    <span class="svc-dot svc-dot--green"></span> Activo
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="svc-status svc-status--inactive">
+                                    <span class="svc-dot svc-dot--gray"></span> Inactivo
+                                </span>
+                            }
+                        </td>
+                        <td>
+                            <div class="svc-actions">
+                                <button class="svc-act-btn svc-act-btn--edit"
+                                        onclick="mostrarFormularioCategoria(@item.Id)">
+                                    <i class="bi bi-pencil"></i> Editar
+                                </button>
+
+                                @if (item.Activo)
+                                {
+                                    <button class="svc-act-btn svc-act-btn--toggle"
+                                            onclick="toggleCategoria(@item.Id)">
+                                        <i class="bi bi-pause-circle"></i> Desactivar
+                                    </button>
+                                }
+                                else
+                                {
+                                    <button class="svc-act-btn svc-act-btn--activate"
+                                            onclick="toggleCategoria(@item.Id)">
+                                        <i class="bi bi-play-circle"></i> Activar
+                                    </button>
+                                }
+
+                                <button class="svc-act-btn svc-act-btn--delete"
+                                        onclick="eliminarCategoria(@item.Id)">
+                                    <i class="bi bi-trash3"></i> Eliminar
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @* ── MOBILE CARDS ── *@
+    <div class="finance-cat-cards svc-card-list" style="display:none;">
+        @foreach (var item in Model)
+        {
+            <div class="svc-card">
+                <div class="svc-card-top">
+                    <div>
+                        <p class="svc-card-name">
+                            <i class="bi bi-folder2 me-1" style="color:var(--private-chart-accent);opacity:0.7;"></i>
+                            @item.Nombre
+                        </p>
+                        <p class="svc-card-sub">@item.Detalle</p>
+                    </div>
+                    @if (item.Activo)
+                    {
+                        <span class="svc-status svc-status--active">
+                            <span class="svc-dot svc-dot--green"></span> Activo
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="svc-status svc-status--inactive">
+                            <span class="svc-dot svc-dot--gray"></span> Inactivo
+                        </span>
+                    }
+                </div>
+                <div class="svc-card-actions">
+                    <button class="svc-act-btn svc-act-btn--edit"
+                            onclick="mostrarFormularioCategoria(@item.Id)">
+                        <i class="bi bi-pencil"></i> Editar
+                    </button>
+
+                    @if (item.Activo)
+                    {
+                        <button class="svc-act-btn svc-act-btn--toggle"
+                                onclick="toggleCategoria(@item.Id)">
+                            <i class="bi bi-pause-circle"></i> Desactivar
+                        </button>
+                    }
+                    else
+                    {
+                        <button class="svc-act-btn svc-act-btn--activate"
+                                onclick="toggleCategoria(@item.Id)">
+                            <i class="bi bi-play-circle"></i> Activar
+                        </button>
+                    }
+
+                    <button class="svc-act-btn svc-act-btn--delete"
+                            onclick="eliminarCategoria(@item.Id)">
+                        <i class="bi bi-trash3"></i> Eliminar
+                    </button>
+                </div>
+            </div>
+        }
+    </div>
+}

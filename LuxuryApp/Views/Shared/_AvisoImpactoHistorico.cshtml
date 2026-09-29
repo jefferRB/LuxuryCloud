@@ -1,0 +1,26 @@
+@*
+    Aviso de impacto sobre transacciones históricas.
+
+    Se renderiza SOLO cuando el servidor determinó que el cambio puede reinterpretar cobros ya
+    registrados (ver ILegacyFinancialImpactService). No se esconde ni se muestra con JavaScript: si
+    aparece, es porque el POST fue rechazado y hay que confirmar explícitamente.
+
+    Model: el texto del aviso.
+*@
+@model string
+
+<div class="finance-legacy-warning" role="alert">
+    <div class="finance-legacy-warning__head">
+        <i class="bi bi-clock-history"></i>
+        <span>Este cambio puede afectar periodos anteriores</span>
+    </div>
+
+    <p class="finance-legacy-warning__text">@Model</p>
+
+    <label class="finance-legacy-warning__confirm">
+        <input type="checkbox"
+               name="@LuxuryApp.Models.Fiscal.AvisoImpactoHistorico.CampoConfirmacion"
+               value="true" />
+        <span>Entiendo el impacto y quiero guardar el cambio</span>
+    </label>
+</div>

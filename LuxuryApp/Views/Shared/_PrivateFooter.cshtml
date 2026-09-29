@@ -1,0 +1,60 @@
+@model LuxuryApp.Models.Layout.PrivateNavigationViewModel
+
+@{
+    var panelItems = Model?.PrimaryItems ?? Array.Empty<LuxuryApp.Models.Layout.NavigationMenuItemViewModel>();
+    const string SupportEmail = "info@luxurycloud.app";
+}
+
+<footer class="private-footer private-footer-rich">
+    <div class="container private-footer-inner">
+        <div class="private-footer-grid">
+
+            <!-- Columna marca -->
+            <div class="private-footer-col private-footer-col-brand">
+                <div class="private-footer-brand">
+                    <span class="private-brand-mark private-footer-brand-mark">L</span>
+                    <span class="private-footer-brand-name">LuxuryCloud</span>
+                </div>
+                <p class="private-footer-desc">
+                    Panel operativo para gestionar agenda, clientes, finanzas, inventario y equipo en un solo lugar.
+                </p>
+                <a class="private-footer-support" href="mailto:@SupportEmail">
+                    <i class="bi bi-envelope"></i>
+                    <span>@SupportEmail</span>
+                </a>
+            </div>
+
+
+
+            <!-- Columna soporte -->
+            <div class="private-footer-col">
+                <p class="private-footer-title">Soporte</p>
+                <ul class="private-footer-links">
+                    <li><a href="mailto:@SupportEmail?subject=Soporte%20LuxuryCloud">Soporte</a></li>
+                    <li><a href="mailto:@SupportEmail?subject=Contacto%20LuxuryCloud">Contacto</a></li>
+                    <li><a href="mailto:@SupportEmail?subject=Reportar%20un%20problema">Reportar un problema</a></li>
+                </ul>
+            </div>
+
+            <!-- Columna legal -->
+            <div class="private-footer-col">
+                <p class="private-footer-title">Legal</p>
+                <ul class="private-footer-links">
+                    <li><a href="/privacidad">Privacidad</a></li>
+                    <li><a asp-controller="Contract" asp-action="Index">Contrato</a></li>
+                    <li><a asp-controller="Home" asp-action="DataDeletion">Eliminación de datos</a></li>
+                </ul>
+            </div>
+
+        </div>
+
+        <div class="private-footer-bottom">
+            <span class="private-footer-copyright">
+                &copy; @DateTime.Now.Year LuxuryCloud. Todos los derechos reservados.
+            </span>
+            <span class="private-footer-tagline">
+                Hecho para negocios de belleza que quieren operar con orden.
+            </span>
+        </div>
+    </div>
+</footer>

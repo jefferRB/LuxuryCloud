@@ -1,0 +1,674 @@
+@model LuxuryApp.Models.Marketing.PublicHomeViewModel
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
+@{
+    Layout = "_PublicLayout";
+    ViewData["Title"] = "LuxuryCloud | Software para barberías, salones y negocios de servicios en Costa Rica";
+    ViewData["MetaDescription"] = "Programa para barberías, salones y negocios de servicios en Costa Rica: agenda, recordatorios por WhatsApp, reservas en línea, clientes, equipo, ingresos, egresos y estadísticas en una sola plataforma.";
+    ViewData["CanonicalUrl"] = "https://luxurycloud.app/";
+    ViewData["PublicBodyClass"] = "public-home-page";
+
+    // Fuente de verdad de precios: el catálogo comercial (mismo calculador que /Billing/Planes,
+    // planes LC_M_/LC_A_). NADA se hardcodea; sin catálogo, la sección muestra un mensaje neutro.
+    var pricing = Model.Pricing;
+
+    // Formato con separador de miles "." independiente de la cultura del hilo (es-CR).
+    var crFormat = new System.Globalization.NumberFormatInfo
+    {
+        NumberGroupSeparator = ".",
+        NumberDecimalDigits = 0
+    };
+    string FormatColones(decimal amount) => amount.ToString("N0", crFormat);
+    string WorkersIncludedLabel(int workers) =>
+        workers == 1 ? "1 integrante incluido" : $"{workers} integrantes incluidos";
+
+    // "Desde ₡X" = plan mensual de UN integrante (LC_M_01), no un Min() sobre todos los planes.
+    var startingPriceDisplay = pricing.IsAvailable ? FormatColones(pricing.StartingMonthlyCharge) : null;
+    var whatsAppFromDisplay = pricing.WhatsAppFromCharge is > 0m
+        ? FormatColones(pricing.WhatsAppFromCharge.Value)
+        : null;
+
+    var initialWorkers = pricing.MinWorkers > 0 ? pricing.MinWorkers : 1;
+    var initialMonthlyTier = pricing.Tiers
+        .FirstOrDefault(tier => tier.Cycle == "Monthly" && tier.Workers == initialWorkers);
+
+    // Datos por (ciclo, integrantes) YA formateados en servidor, para que el JS solo cambie
+    // texto y no duplique fórmulas ni formateo comercial.
+    var tierData = pricing.Tiers
+        .Select(tier => new
+        {
+            workers = tier.Workers,
+            cycle = tier.Cycle,
+            charge = FormatColones(tier.ChargeAmount),
+            monthlyEq = FormatColones(tier.MonthlyEquivalentAmount),
+            workersLabel = WorkersIncludedLabel(tier.Workers)
+        })
+        .ToArray();
+    var tierDataJson = System.Text.Json.JsonSerializer.Serialize(tierData);
+
+    // JSON-LD SoftwareApplication con offers.price SOLO desde el plan base comercial (LC_M_01).
+    // Si no hay catálogo, se omite el bloque de precio (no se inventa).
+    // Se usa un marcador "__AT__" para las claves JSON-LD (@context/@type) y se reemplaza al
+    // final, evitando cualquier ambigüedad con la sintaxis de Razor dentro del bloque de código.
+    var softwareApplicationLd = new Dictionary<string, object?>
+    {
+        ["__AT__context"] = "https://schema.org",
+        ["__AT__type"] = "SoftwareApplication",
+        ["name"] = "LuxuryCloud",
+        ["applicationCategory"] = "BusinessApplication",
+        ["operatingSystem"] = "Web",
+        ["url"] = "https://luxurycloud.app/",
+        ["description"] = "Software para barberías, salones y negocios de servicios: agenda, recordatorios por WhatsApp, reservas en línea, clientes, equipo, ingresos, egresos y estadísticas."
+    };
+    if (pricing.IsAvailable && pricing.StartingMonthlyCharge > 0m)
+    {
+        softwareApplicationLd["offers"] = new Dictionary<string, object?>
+        {
+            ["__AT__type"] = "Offer",
+            ["price"] = pricing.StartingMonthlyCharge.ToString("0", System.Globalization.CultureInfo.InvariantCulture),
+            ["priceCurrency"] = string.IsNullOrWhiteSpace(pricing.Currency) ? "CRC" : pricing.Currency,
+            ["category"] = "Suscripción mensual"
+        };
+    }
+    var softwareApplicationLdJson = System.Text.Json.JsonSerializer
+        .Serialize(softwareApplicationLd)
+        .Replace("__AT__", "@");
+
+    // Video del fundador: opcional y configurable. Si no hay URL, se muestra el panel del
+    // producto (representación fiel), nunca un reproductor vacío.
+    var founderVideoUrl = Configuration["PublicSite:FounderVideoUrl"];
+    var founderVideoPoster = Configuration["PublicSite:FounderVideoPosterUrl"];
+    var hasFounderVideo = !string.IsNullOrWhiteSpace(founderVideoUrl);
+}
+
+@section Styles {
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="LuxuryCloud" />
+    <meta property="og:locale" content="es_CR" />
+    <meta property="og:title" content="LuxuryCloud | Software para barberías, salones y negocios de servicios" />
+    <meta property="og:description" content="Agenda, recordatorios por WhatsApp, reservas en línea, clientes, equipo e indicadores del negocio en una sola plataforma creada en Costa Rica." />
+    <meta property="og:url" content="https://luxurycloud.app/" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="LuxuryCloud | Software para barberías, salones y negocios de servicios" />
+    <meta name="twitter:description" content="Ordene su agenda, sus clientes y su dinero en una sola plataforma creada en Costa Rica." />
+    <script type="application/ld+json">
+    {
+      "@@context": "https://schema.org",
+      "@@type": "Organization",
+      "name": "LuxuryCloud",
+      "url": "https://luxurycloud.app/",
+      "areaServed": "CR",
+      "description": "Plataforma de gestión para barberías, salones y negocios de servicios en Costa Rica."
+    }
+    </script>
+    <script type="application/ld+json">@Html.Raw(softwareApplicationLdJson)</script>
+}
+
+<!-- ═══════════════════════════ 1 · HERO ═══════════════════════════════ -->
+<section class="hero-section">
+    <div class="container">
+        <div class="hero-layout">
+
+            <div class="hero-text-col" data-aos="fade-right">
+                <span class="hero-kicker">Creado en Costa Rica para barberías, salones y negocios de servicios</span>
+                <h1 class="hero-title">Tenga su agenda, sus clientes y su dinero bajo control.</h1>
+                <p class="hero-copy">
+                    LuxuryCloud reúne citas, recordatorios por WhatsApp, reservas en línea, equipo,
+                    ingresos, egresos y estadísticas en un solo lugar, para que usted deje de adivinar
+                    y empiece a dirigir su negocio con claridad.
+                </p>
+                <div class="hero-actions">
+                    <a class="btn public-btn public-btn-primary" href="#como-funciona" data-analytics-event="hero_ver_como_funciona">
+                        Ver cómo funciona
+                    </a>
+                    <a class="btn public-btn public-btn-secondary" asp-controller="Accounts" asp-action="Registro" data-analytics-event="hero_crear_cuenta">
+                        Crear cuenta
+                    </a>
+                    <a class="btn public-btn public-btn-ghost" asp-controller="Accounts" asp-action="Acceso" data-analytics-event="hero_iniciar_sesion">
+                        Iniciar sesión
+                    </a>
+                </div>
+                <ul class="hero-trust hero-trust-list">
+                    <li><i class="bi bi-check-circle-fill" aria-hidden="true"></i> Cree su cuenta sin tarjeta</li>
+                    <li><i class="bi bi-hand-thumbs-up-fill" aria-hidden="true"></i> Acompañamiento inicial</li>
+                    <li><i class="bi bi-arrow-repeat" aria-hidden="true"></i> Cancele la renovación cuando quiera</li>
+                </ul>
+            </div>
+
+            <div class="hero-exec-col" data-aos="fade-left">
+                @if (hasFounderVideo)
+                {
+                    <div class="hero-video-card">
+                        @if (string.IsNullOrWhiteSpace(founderVideoPoster))
+                        {
+                            <video class="hero-video" controls preload="none">
+                                <source src="@founderVideoUrl" />
+                                Su navegador no puede reproducir este video. Puede
+                                <a asp-controller="Accounts" asp-action="Registro">crear su cuenta</a> para ver la plataforma.
+                            </video>
+                        }
+                        else
+                        {
+                            <video class="hero-video" controls preload="none" poster="@founderVideoPoster">
+                                <source src="@founderVideoUrl" />
+                                Su navegador no puede reproducir este video. Puede
+                                <a asp-controller="Accounts" asp-action="Registro">crear su cuenta</a> para ver la plataforma.
+                            </video>
+                        }
+                        <p class="hero-video-caption">Conozca la plataforma en un recorrido corto.</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="hero-exec-card" role="img" aria-label="Resumen ejecutivo del negocio: 34 citas programadas hoy, ₡486 mil de ingresos del día, 146 clientes frecuentes y 9 integrantes del equipo activos.">
+                        <div class="hero-exec-header">
+                            <div class="hero-exec-icon" aria-hidden="true"><i class="bi bi-graph-up-arrow"></i></div>
+                            <span class="hero-exec-label">Resumen ejecutivo</span>
+                            <div class="hero-exec-today">Hoy <i class="bi bi-chevron-down" aria-hidden="true"></i></div>
+                        </div>
+                        <div class="hero-exec-grid">
+
+                            <div class="hero-exec-stat">
+                                <div class="hero-exec-stat-header">
+                                    <i class="bi bi-calendar3" aria-hidden="true"></i>
+                                    <span>Agenda del día</span>
+                                </div>
+                                <strong class="hero-exec-stat-value">34</strong>
+                                <span class="hero-exec-stat-sub">citas programadas</span>
+                                <div class="hero-exec-progress" role="presentation">
+                                    <div class="hero-exec-progress-bar" style="width:78%"></div>
+                                </div>
+                                <span class="hero-exec-stat-note">4 espacios libres</span>
+                            </div>
+
+                            <div class="hero-exec-stat">
+                                <div class="hero-exec-stat-header">
+                                    <i class="bi bi-currency-dollar" aria-hidden="true"></i>
+                                    <span>Ingresos del día</span>
+                                </div>
+                                <strong class="hero-exec-stat-value hero-exec-stat-value-accent">₡486k</strong>
+                                <span class="hero-exec-stat-badge-pos">+18% vs. promedio semanal</span>
+                                <svg class="hero-exec-sparkline" viewBox="0 0 80 30" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                    <polyline points="0,25 15,20 30,22 45,12 60,15 75,5 80,8" stroke="#8be9ff" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+                            </div>
+
+                            <div class="hero-exec-stat">
+                                <div class="hero-exec-stat-header">
+                                    <i class="bi bi-people" aria-hidden="true"></i>
+                                    <span>Clientes frecuentes</span>
+                                </div>
+                                <strong class="hero-exec-stat-value">146</strong>
+                                <span class="hero-exec-stat-sub">perfiles activos</span>
+                                <div class="hero-exec-avatars" aria-hidden="true">
+                                    <span class="hero-exec-avatar">MJ</span>
+                                    <span class="hero-exec-avatar">CA</span>
+                                    <span class="hero-exec-avatar">LR</span>
+                                    <span class="hero-exec-avatar hero-exec-avatar-more">+43</span>
+                                </div>
+                            </div>
+
+                            <div class="hero-exec-stat">
+                                <div class="hero-exec-stat-header">
+                                    <i class="bi bi-person-badge" aria-hidden="true"></i>
+                                    <span>Equipo activo</span>
+                                </div>
+                                <strong class="hero-exec-stat-value hero-exec-stat-value-green">9</strong>
+                                <span class="hero-exec-stat-sub">integrantes activos</span>
+                                <div class="hero-exec-progress" role="presentation">
+                                    <div class="hero-exec-progress-bar hero-exec-progress-bar-green" style="width:87%"></div>
+                                </div>
+                                <span class="hero-exec-stat-note">87% de ocupación promedio</span>
+                            </div>
+
+                        </div>
+                    </div>
+                }
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════════ 2 · PROBLEMA ═══════════════════════════ -->
+<section class="lp-problem-section">
+    <div class="container">
+        <div class="lp-problem-layout">
+            <div class="lp-problem-intro" data-aos="fade-up">
+                <span class="section-kicker">El día a día del dueño</span>
+                <h2>¿Su negocio está creciendo, pero cada vez cuesta más controlarlo?</h2>
+                <p>
+                    Cuando las citas, los clientes, los cobros y el equipo se administran por separado,
+                    el dueño termina resolviendo problemas todo el día sin tener una visión completa del negocio.
+                </p>
+            </div>
+            <ul class="lp-problem-list" data-aos="fade-up" data-aos-delay="80">
+                <li>
+                    <i class="bi bi-chat-left-dots" aria-hidden="true"></i>
+                    <span>Citas repartidas entre mensajes, llamadas y memoria.</span>
+                </li>
+                <li>
+                    <i class="bi bi-person-dash" aria-hidden="true"></i>
+                    <span>Clientes que dejan de volver sin recibir seguimiento.</span>
+                </li>
+                <li>
+                    <i class="bi bi-cash-stack" aria-hidden="true"></i>
+                    <span>Ingresos, gastos y pagos del equipo difíciles de cuadrar.</span>
+                </li>
+                <li>
+                    <i class="bi bi-question-circle" aria-hidden="true"></i>
+                    <span>Decisiones importantes tomadas sin números claros.</span>
+                </li>
+            </ul>
+        </div>
+        <p class="lp-problem-close" data-aos="fade-up">
+            LuxuryCloud convierte ese desorden en una operación clara, conectada y medible.
+        </p>
+    </div>
+</section>
+
+<!-- ═══════════════════ 3 · RESULTADOS Y FUNCIONES ═════════════════════ -->
+<section class="lp-results-section" id="funciones">
+    <div class="container">
+        <div class="section-heading text-center" data-aos="fade-up">
+            <span class="section-kicker">Resultados para su negocio</span>
+            <h2>Todo lo importante de su negocio, conectado.</h2>
+            <p>Cada capacidad de LuxuryCloud está pensada para darle un resultado concreto, no solo más pantallas.</p>
+        </div>
+
+        <div class="lp-results-grid">
+            <article class="lp-result-card" data-aos="fade-up">
+                <div class="lp-result-icon" aria-hidden="true"><i class="bi bi-calendar2-check"></i></div>
+                <h3>Organice el día</h3>
+                <p>Vea sus citas, sus espacios libres y lo que viene, sin depender de mensajes sueltos ni de la memoria.</p>
+                <span class="lp-result-modules">Agenda · Reservas en línea · Recordatorios</span>
+            </article>
+            <article class="lp-result-card" data-aos="fade-up" data-aos-delay="70">
+                <div class="lp-result-icon" aria-hidden="true"><i class="bi bi-person-hearts"></i></div>
+                <h3>Conozca y recupere clientes</h3>
+                <p>Guarde el historial de cada persona y déle seguimiento para que vuelva más seguido.</p>
+                <span class="lp-result-modules">Clientes · Historial · Recordatorios por WhatsApp</span>
+            </article>
+            <article class="lp-result-card" data-aos="fade-up" data-aos-delay="140">
+                <div class="lp-result-icon" aria-hidden="true"><i class="bi bi-cash-coin"></i></div>
+                <h3>Entienda su dinero</h3>
+                <p>Sepa cuánto entra, cuánto sale y cuánto le queda, con ingresos, egresos y liquidaciones al día.</p>
+                <span class="lp-result-modules">Ingresos · Egresos · Liquidaciones · Estadísticas</span>
+            </article>
+            <article class="lp-result-card" data-aos="fade-up" data-aos-delay="210">
+                <div class="lp-result-icon" aria-hidden="true"><i class="bi bi-stars"></i></div>
+                <h3>Proyecte una imagen profesional</h3>
+                <p>Ofrezca reservas en línea y una página pública propia para que su negocio se vea a la altura de su trabajo.</p>
+                <span class="lp-result-modules">Reservas · Página pública · Productos</span>
+            </article>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════ 4 · ASÍ SE VE UN DÍA ═══════════════════════════ -->
+<section class="lp-day-section" id="como-funciona">
+    <div class="container">
+        <div class="section-heading text-center" data-aos="fade-up">
+            <span class="section-kicker">Cómo funciona</span>
+            <h2>Así se ve un día con LuxuryCloud</h2>
+            <p>Una operación ordenada, de la mañana al cierre, sin duplicar información.</p>
+        </div>
+
+        <ol class="lp-day-timeline">
+            <li class="lp-day-step" data-aos="fade-up">
+                <span class="lp-day-time"><i class="bi bi-sunrise" aria-hidden="true"></i> Al comenzar</span>
+                <p>Revise las citas del día, los espacios disponibles y la actividad que espera.</p>
+            </li>
+            <li class="lp-day-step" data-aos="fade-up" data-aos-delay="70">
+                <span class="lp-day-time"><i class="bi bi-lightning-charge" aria-hidden="true"></i> Mientras trabaja</span>
+                <p>Registre servicios, cobros, productos y movimientos sin volver a escribir la misma información.</p>
+            </li>
+            <li class="lp-day-step" data-aos="fade-up" data-aos-delay="140">
+                <span class="lp-day-time"><i class="bi bi-phone" aria-hidden="true"></i> Para el cliente</span>
+                <p>El cliente recibe recordatorios, consulta sus servicios y reserva desde el teléfono.</p>
+            </li>
+            <li class="lp-day-step" data-aos="fade-up" data-aos-delay="210">
+                <span class="lp-day-time"><i class="bi bi-moon-stars" aria-hidden="true"></i> Al cerrar</span>
+                <p>Sepa cuánto ingresó, cuánto gastó y cómo trabajó cada integrante del equipo.</p>
+            </li>
+        </ol>
+    </div>
+</section>
+
+<!-- ═══════════════════ 5 · HISTORIA DEL FUNDADOR ══════════════════════ -->
+<section class="lp-founder-section">
+    <div class="container">
+        <div class="lp-founder-card" data-aos="fade-up">
+            <div class="lp-founder-mark" aria-hidden="true">JR</div>
+            <div class="lp-founder-body">
+                <span class="section-kicker">Nuestra historia</span>
+                <h2>Creado a partir de problemas reales de negocios de servicios</h2>
+                <p>
+                    Soy Jefferson Rojas, fundador de LuxuryCloud. La idea nació conversando con dueños de
+                    barberías que tenían talento, clientes y mucho movimiento, pero no una forma sencilla
+                    de controlar todo lo que ocurría en el negocio.
+                </p>
+                <p>
+                    Por eso construimos una plataforma especializada, fácil de usar y acompañada localmente.
+                </p>
+                <p class="lp-founder-highlight">
+                    No se trata de agregar otra aplicación. Se trata de recuperar el control del negocio.
+                </p>
+                <span class="lp-founder-sign">Jefferson Rojas · Fundador de LuxuryCloud</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════ 6 · DEMOSTRACIÓN DEL PRODUCTO ══════════════════ -->
+<section class="lp-demo-section">
+    <div class="container">
+        <div class="section-heading text-center" data-aos="fade-up">
+            <span class="section-kicker">Así se ve por dentro</span>
+            <h2>Vea la plataforma que va a usar todos los días</h2>
+            <p>Pantallas reales del sistema, pensadas para leerse de un vistazo.</p>
+        </div>
+
+        <div class="lp-demo-list">
+
+            <!-- Agenda -->
+            <article class="lp-demo-block" data-aos="fade-up">
+                <div class="lp-demo-copy">
+                    <span class="lp-demo-eyebrow"><i class="bi bi-calendar2-week" aria-hidden="true"></i> Agenda</span>
+                    <h3>Su día ordenado, sin huecos ni cruces</h3>
+                    <p>Vea las citas, los espacios libres y lo que sigue. Reagende con menos fricción y evite olvidos.</p>
+                </div>
+                <div class="lp-demo-mockup" role="img" aria-label="Agenda del día con citas de las 9:00, 10:00 y 12:00, y un espacio libre a las 11:00.">
+                    <div class="lm-agenda">
+                        <div class="lm-agenda-row"><span class="lm-time">09:00</span><div class="lm-apt lm-apt-blue"><span>Corte clásico</span><span class="lm-client">Marcos J.</span></div></div>
+                        <div class="lm-agenda-row"><span class="lm-time">10:00</span><div class="lm-apt lm-apt-violet"><span>Color + Tratamiento</span><span class="lm-client">Carla A.</span></div></div>
+                        <div class="lm-agenda-row"><span class="lm-time">11:00</span><div class="lm-apt lm-apt-empty"></div></div>
+                        <div class="lm-agenda-row"><span class="lm-time">12:00</span><div class="lm-apt lm-apt-blue"><span>Barba premium</span><span class="lm-client">Luis R.</span></div></div>
+                    </div>
+                </div>
+            </article>
+
+            <!-- Finanzas -->
+            <article class="lp-demo-block lp-demo-block-reverse" data-aos="fade-up">
+                <div class="lp-demo-copy">
+                    <span class="lp-demo-eyebrow"><i class="bi bi-cash-stack" aria-hidden="true"></i> Finanzas</span>
+                    <h3>Ingresos, egresos y el resultado del día</h3>
+                    <p>Lea su flujo de caja sin hojas sueltas. Cada movimiento queda clasificado para entender su rentabilidad real.</p>
+                </div>
+                <div class="lp-demo-mockup" role="img" aria-label="Flujo financiero con ₡1,2 millones de ingresos, ₡714 mil de egresos y ₡486 mil de resultado.">
+                    <div class="lm-finance">
+                        <div class="lm-finance-label">Flujo del negocio</div>
+                        <div class="lm-finance-row lm-finance-income"><span>Ingresos</span><strong>₡1.2M</strong></div>
+                        <div class="lm-finance-row lm-finance-expense"><span>Egresos</span><strong>₡714k</strong></div>
+                        <div class="lm-finance-divider"></div>
+                        <div class="lm-finance-row lm-finance-result"><span>Resultado</span><strong>₡486k</strong></div>
+                    </div>
+                </div>
+            </article>
+
+            <!-- Clientes -->
+            <article class="lp-demo-block" data-aos="fade-up">
+                <div class="lp-demo-copy">
+                    <span class="lp-demo-eyebrow"><i class="bi bi-person-hearts" aria-hidden="true"></i> Clientes</span>
+                    <h3>El contexto de cada cliente, a la mano</h3>
+                    <p>Historial, frecuencia y fechas especiales para dar seguimiento y lograr que vuelvan más seguido.</p>
+                </div>
+                <div class="lp-demo-mockup" role="img" aria-label="Ficha de cliente frecuente con última visita hace 5 días, cumpleaños el 12 de junio y 8 visitas en el año.">
+                    <div class="lm-profile">
+                        <div class="lm-profile-label">Cliente</div>
+                        <div class="lm-profile-info">
+                            <div class="lm-profile-avatar">MJ</div>
+                            <div><strong>Marcos Jiménez</strong><span>Cliente frecuente</span></div>
+                        </div>
+                        <div class="lm-profile-stats">
+                            <div><span>Última visita</span><strong>hace 5 días</strong></div>
+                            <div><span>Cumpleaños</span><strong>12 de junio</strong></div>
+                            <div><span>Visitas este año</span><strong>8</strong></div>
+                        </div>
+                    </div>
+                </div>
+            </article>
+
+            <!-- Reservas y página pública -->
+            <article class="lp-demo-block lp-demo-block-reverse" data-aos="fade-up">
+                <div class="lp-demo-copy">
+                    <span class="lp-demo-eyebrow"><i class="bi bi-globe" aria-hidden="true"></i> Reservas y página pública</span>
+                    <h3>Su negocio, disponible para reservar en línea</h3>
+                    <p>Comparta una página pública propia donde sus clientes ven servicios y reservan desde el teléfono.</p>
+                </div>
+                <div class="lp-demo-mockup" role="img" aria-label="Página pública del negocio con un servicio de corte de cabello por ₡6.000 y un botón para reservar.">
+                    <div class="lp-booking">
+                        <div class="lp-booking-head">
+                            <span class="lp-booking-dot" aria-hidden="true"></span>
+                            <span class="lp-booking-url">luxurycloud.app/reservar/su-negocio</span>
+                        </div>
+                        <div class="lp-booking-body">
+                            <strong class="lp-booking-name">Barbería Estudio Central</strong>
+                            <div class="lp-booking-service">
+                                <span>Corte de cabello</span>
+                                <strong>₡6.000</strong>
+                            </div>
+                            <div class="lp-booking-service">
+                                <span>Barba premium</span>
+                                <strong>₡5.000</strong>
+                            </div>
+                            <span class="lp-booking-cta" aria-hidden="true">Reservar cita</span>
+                        </div>
+                    </div>
+                </div>
+            </article>
+
+            <!-- Equipo -->
+            <article class="lp-demo-block" data-aos="fade-up">
+                <div class="lp-demo-copy">
+                    <span class="lp-demo-eyebrow"><i class="bi bi-people-fill" aria-hidden="true"></i> Equipo</span>
+                    <h3>Su equipo, alineado y medido</h3>
+                    <p>Vea la ocupación y el rendimiento de cada integrante para ordenar turnos y pagos con claridad.</p>
+                </div>
+                <div class="lp-demo-mockup" role="img" aria-label="Rendimiento del equipo con tres integrantes y ocupación de 87%, 92% y 78%.">
+                    <div class="lm-team">
+                        <div class="lm-team-label">Equipo</div>
+                        <div class="lm-team-row"><div class="lm-team-avatar">AG</div><div class="lm-team-info"><strong>Ana Gómez</strong><span>Estilista</span></div><span class="lm-team-pct">87%</span></div>
+                        <div class="lm-team-row"><div class="lm-team-avatar">JR</div><div class="lm-team-info"><strong>José Ruiz</strong><span>Barbero</span></div><span class="lm-team-pct">92%</span></div>
+                        <div class="lm-team-row"><div class="lm-team-avatar">LS</div><div class="lm-team-info"><strong>Laura Soto</strong><span>Colorista</span></div><span class="lm-team-pct">78%</span></div>
+                    </div>
+                </div>
+            </article>
+
+            <!-- Estadísticas -->
+            <article class="lp-demo-block lp-demo-block-reverse" data-aos="fade-up">
+                <div class="lp-demo-copy">
+                    <span class="lp-demo-eyebrow"><i class="bi bi-speedometer2" aria-hidden="true"></i> Estadísticas</span>
+                    <h3>Indicadores claros para decidir mejor</h3>
+                    <p>Margen, servicios y clientes nuevos en una lectura rápida, sin armar reportes a mano.</p>
+                </div>
+                <div class="lp-demo-mockup" role="img" aria-label="Indicadores del negocio con 18% de margen semanal, 12 servicios del día y 7 clientes nuevos.">
+                    <div class="lm-indicators">
+                        <div class="lm-indicators-label">Indicadores</div>
+                        <div class="lm-ind-row"><span>Margen semanal</span><strong class="lm-ind-green">18%</strong></div>
+                        <div class="lm-ind-chart">
+                            <svg viewBox="0 0 80 30" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                <polyline points="0,25 15,18 30,20 45,10 60,14 75,6 80,8" stroke="#4ade80" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                        </div>
+                        <div class="lm-ind-row"><span>Servicios del día</span><strong>12</strong></div>
+                        <div class="lm-ind-row"><span>Clientes nuevos</span><strong>7</strong></div>
+                    </div>
+                </div>
+            </article>
+
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════ 7 · OFERTA / REDUCCIÓN DE RIESGO ═══════════════ -->
+<section class="lp-offer-section">
+    <div class="container">
+        <div class="lp-offer-card" data-aos="fade-up">
+            <div class="lp-offer-head">
+                <span class="section-kicker">Empiece con apoyo</span>
+                <h2>Empiece acompañado, no desde cero</h2>
+                <p>No lo dejamos solo con una pantalla vacía. Le ayudamos a poner su negocio en orden desde el inicio.</p>
+            </div>
+            <ul class="lp-offer-list">
+                <li><i class="bi bi-headset" aria-hidden="true"></i> Configuración inicial acompañada.</li>
+                <li><i class="bi bi-laptop" aria-hidden="true"></i> Acceso desde computadora y teléfono.</li>
+                <li><i class="bi bi-arrow-left-right" aria-hidden="true"></i> Ayuda para organizar o migrar su información cuando corresponda.</li>
+                <li><i class="bi bi-arrow-repeat" aria-hidden="true"></i> Cancele la renovación cuando quiera.</li>
+            </ul>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════════ 8 · PRECIOS ════════════════════════════ -->
+<section class="lp-pricing-section" id="precios">
+    <div class="container">
+        <div class="section-heading text-center" data-aos="fade-up">
+            <span class="section-kicker">Precios claros</span>
+            <h2>Un precio claro según el tamaño de su equipo</h2>
+            <p>Empiece con el equipo que tiene hoy y cambie de plan cuando su negocio crezca.</p>
+            @if (startingPriceDisplay is not null)
+            {
+                <p class="lp-pricing-from">Desde <strong>₡@startingPriceDisplay</strong> al mes</p>
+            }
+        </div>
+
+        @if (pricing.IsAvailable)
+        {
+            <div class="lp-calc" data-lp-calc data-tiers='@Html.Raw(tierDataJson)' data-aos="fade-up">
+                <div class="lp-calc-side">
+                    @if (pricing.HasAnnual)
+                    {
+                        <div class="lp-calc-cycle" role="group" aria-label="Modalidad de pago">
+                            <button type="button" class="lp-calc-cycle-btn is-active" data-lp-cycle="Monthly" aria-pressed="true">Mensual</button>
+                            <button type="button" class="lp-calc-cycle-btn" data-lp-cycle="Annual" aria-pressed="false">Anual</button>
+                        </div>
+                    }
+
+                    <label class="lp-calc-label" for="lpCalcWorkers">¿Cuántas personas trabajan en su negocio?</label>
+                    <select class="lp-calc-select" id="lpCalcWorkers" data-lp-workers>
+                        @for (var n = pricing.MinWorkers; n <= pricing.MaxWorkers; n++)
+                        {
+                            <option value="@n" selected="@(n == initialWorkers)">@(n == 1 ? "1 persona" : $"{n} personas")</option>
+                        }
+                    </select>
+                    <p class="lp-calc-hint">Puede cambiar de plan cuando su negocio crezca.</p>
+                </div>
+
+                <div class="lp-calc-summary" aria-live="polite">
+                    <span class="lp-calc-period" data-lp-period>Pago mensual</span>
+                    <div class="lp-calc-amount">
+                        <strong data-lp-charge>₡@startingPriceDisplay</strong>
+                        <span class="lp-calc-amount-unit" data-lp-unit>por mes</span>
+                    </div>
+                    <span class="lp-calc-equivalent" data-lp-equivalent hidden></span>
+                    <span class="lp-calc-included" data-lp-included>@WorkersIncludedLabel(initialWorkers)</span>
+
+                    <ul class="lp-calc-benefits">
+                        <li><i class="bi bi-check2" aria-hidden="true"></i> Agenda y operación del equipo.</li>
+                        <li><i class="bi bi-check2" aria-hidden="true"></i> Control de ingresos y egresos.</li>
+                        <li><i class="bi bi-check2" aria-hidden="true"></i> Clientes e historial.</li>
+                        <li><i class="bi bi-check2" aria-hidden="true"></i> Dashboard e indicadores.</li>
+                        <li><i class="bi bi-check2" aria-hidden="true"></i> Reservas y página pública.</li>
+                    </ul>
+
+                    <a class="btn public-btn public-btn-primary w-100" asp-controller="Billing" asp-action="Planes" data-analytics-event="pricing_calcular">
+                        Calcular mi plan completo
+                    </a>
+                </div>
+            </div>
+
+            <div class="lp-addon" data-aos="fade-up">
+                <div class="lp-addon-body">
+                    <span class="lp-addon-eyebrow"><i class="bi bi-whatsapp" aria-hidden="true"></i> Complemento opcional</span>
+                    <h3>Agregue recordatorios y confirmaciones por WhatsApp</h3>
+                    <p>Los recordatorios por WhatsApp se contratan por separado según la cantidad de mensajes que necesita su negocio.</p>
+                    @if (whatsAppFromDisplay is not null)
+                    {
+                        <p class="lp-addon-from">Desde <strong>₡@whatsAppFromDisplay</strong> al mes</p>
+                    }
+                </div>
+                <a class="btn public-btn public-btn-secondary" href="@(Url.Action("Planes", "Billing"))#whatsapp" data-analytics-event="pricing_ver_whatsapp">
+                    Ver opciones de WhatsApp
+                </a>
+            </div>
+        }
+        else
+        {
+            <div class="status-card" data-aos="fade-up">
+                <span class="status-kicker">Precios</span>
+                <h3>Los precios no están disponibles temporalmente.</h3>
+                <p>Puede consultar los planes en un momento o crear su cuenta para empezar.</p>
+                <div class="lp-pricing-foot">
+                    <a class="btn public-btn public-btn-primary" asp-controller="Billing" asp-action="Planes" data-analytics-event="pricing_ver_planes">
+                        Ver planes
+                    </a>
+                    <a class="btn public-btn public-btn-secondary" asp-controller="Accounts" asp-action="Registro" data-analytics-event="pricing_crear_cuenta">
+                        Crear cuenta
+                    </a>
+                </div>
+            </div>
+        }
+    </div>
+</section>
+
+<!-- ═══════════════════════════ 9 · FAQ ════════════════════════════════ -->
+<section class="lp-faq-section">
+    <div class="container">
+        <div class="section-heading text-center" data-aos="fade-up">
+            <span class="section-kicker">Preguntas frecuentes</span>
+            <h2>Lo que suelen preguntar antes de empezar</h2>
+        </div>
+
+        <div class="lp-faq-list" data-aos="fade-up">
+            <details class="lp-faq-item">
+                <summary>¿Tengo que instalar algún programa?</summary>
+                <p>No. LuxuryCloud funciona desde el navegador; solo necesita internet para ingresar.</p>
+            </details>
+            <details class="lp-faq-item">
+                <summary>¿Puedo utilizarlo desde el teléfono?</summary>
+                <p>Sí. Puede trabajar desde la computadora y desde el teléfono con la misma cuenta.</p>
+            </details>
+            <details class="lp-faq-item">
+                <summary>¿Cómo funcionan los recordatorios por WhatsApp?</summary>
+                <p>Los recordatorios y confirmaciones por WhatsApp se activan como un complemento del plan. Cuando está activo, sus clientes reciben mensajes antes de la cita.</p>
+            </details>
+            <details class="lp-faq-item">
+                <summary>¿Puedo conservar mis clientes y servicios actuales?</summary>
+                <p>Sí. Puede cargar sus clientes y servicios, y le ayudamos a organizar o migrar la información cuando corresponda.</p>
+            </details>
+            <details class="lp-faq-item">
+                <summary>¿Cómo se calcula el precio?</summary>
+                <p>El precio depende del tamaño de su equipo. Elige la cantidad de integrantes y el plan se ajusta; puede cambiarlo cuando su negocio crezca.</p>
+            </details>
+            <details class="lp-faq-item">
+                <summary>¿Puedo cancelar la renovación?</summary>
+                <p>Sí. Puede cancelar la renovación de su suscripción cuando quiera desde su cuenta.</p>
+            </details>
+            <details class="lp-faq-item">
+                <summary>¿Me ayudan a configurar el sistema?</summary>
+                <p>Sí. Ofrecemos acompañamiento inicial para dejar su negocio configurado y listo para operar.</p>
+            </details>
+            <details class="lp-faq-item">
+                <summary>¿Qué necesito para empezar a usar la plataforma?</summary>
+                <p>Cree su cuenta y active una suscripción mensual según el tamaño de su equipo. Su cuenta y su información se conservan mientras su suscripción esté vigente.</p>
+            </details>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════════ 10 · CTA FINAL ═════════════════════════ -->
+<section class="cta-banner-section">
+    <div class="container">
+        <div class="cta-banner-new" data-aos="zoom-in">
+            <div class="cta-banner-icon" aria-hidden="true"><i class="bi bi-rocket-takeoff-fill"></i></div>
+            <div class="cta-banner-content">
+                <h2>Su negocio ya tiene suficiente movimiento. Ahora necesita más control.</h2>
+                <p>Centralice la agenda, los clientes, el equipo y los números del negocio en una plataforma creada para trabajar como usted trabaja.</p>
+            </div>
+            <div class="cta-banner-actions cta-banner-actions-inline">
+                <a class="btn public-btn public-btn-primary" asp-controller="Accounts" asp-action="Registro" data-analytics-event="final_crear_cuenta">Crear cuenta</a>
+                <a class="btn public-btn public-btn-secondary" asp-controller="Billing" asp-action="Planes" data-analytics-event="final_ver_precios">Ver precios</a>
+            </div>
+        </div>
+    </div>
+</section>

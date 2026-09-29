@@ -1,0 +1,965 @@
+@using LuxuryApp.Models.Platform
+@using LuxuryApp.Models.SaaS
+@model LuxuryApp.Models.Platform.PlatformTenantFichaViewModel
+
+@{
+    ViewData["Title"] = $"Ficha — {Model.TenantName}";
+
+    string DescribeMode(TenantCommercialAccessMode mode) => mode switch
+    {
+        TenantCommercialAccessMode.Exempt   => "Exento",
+        TenantCommercialAccessMode.Internal => "Interno",
+        TenantCommercialAccessMode.PendingVerification => "Pendiente verificacion",
+        _                                   => "Requiere suscripcion"
+    };
+
+    string ModeBadgeClass(TenantCommercialAccessMode mode) => mode switch
+    {
+        TenantCommercialAccessMode.Exempt   => "platform-badge-success",
+        TenantCommercialAccessMode.Internal => "platform-badge-blue",
+        TenantCommercialAccessMode.PendingVerification => "platform-badge-warning",
+        _                                   => "platform-badge-warning"
+    };
+
+    string DescribeAction(string action) => action switch
+    {
+        PlatformAuditActions.UserDeactivated              => "Usuario desactivado",
+        PlatformAuditActions.UserReactivated              => "Usuario reactivado",
+        PlatformAuditActions.DangerousActionPasswordFailed => "Contraseña incorrecta",
+        PlatformAuditActions.DangerousActionBlocked       => "Acción bloqueada",
+        PlatformAuditActions.TenantCommercialAccessUpdated => "Acceso comercial",
+        PlatformAuditActions.WhatsAppSettingsUpdated      => "WhatsApp actualizado",
+        PlatformAuditActions.MetaDiagnosticExecuted       => "Diagnóstico Meta",
+        _                                                 => action
+    };
+
+    string EstadoBadge(EstadoSuscripcion? estado) => estado switch
+    {
+        EstadoSuscripcion.Activa  => "platform-badge-success",
+        EstadoSuscripcion.Trial   => "platform-badge-blue",
+        EstadoSuscripcion.Morosa  => "platform-badge-warning",
+        EstadoSuscripcion.Vencida => "platform-badge-danger",
+        _                         => "platform-badge-dark"
+    };
+
+    string EstadoLabel(EstadoSuscripcion? estado) => estado switch
+    {
+        EstadoSuscripcion.Activa  => "Activa",
+        EstadoSuscripcion.Trial   => "Trial",
+        EstadoSuscripcion.Morosa  => "Morosa",
+        EstadoSuscripcion.Vencida => "Vencida",
+        EstadoSuscripcion.Cancelada => "Cancelada",
+        EstadoSuscripcion.Suspendida => "Suspendida",
+        null                      => "Sin suscripcion",
+        _                         => estado.ToString()!
+    };
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/platform.css" asp-append-version="true" />
+}
+
+<div class="platform-shell">
+
+    @* Header *@
+    <div class="platform-hero">
+        <div>
+            <span class="platform-eyebrow">
+                <i class="bi bi-person-lines-fill"></i>
+                Ficha técnica
+            </span>
+            <h1 class="platform-title">@Model.TenantName</h1>
+            <div class="platform-badge-row mt-2">
+                <span class="platform-badge @Model.Health.BadgeClass">
+                    <i class="bi @Model.Health.Icon"></i>
+                    @Model.Health.Label
+                </span>
+                <span class="platform-badge @(Model.CanAccessApp ? "platform-badge-success" : "platform-badge-danger")">
+                    <i class="bi @(Model.CanAccessApp ? "bi-unlock" : "bi-lock")"></i>
+                    @(Model.CanAccessApp ? "Con acceso" : "Sin acceso")
+                </span>
+                @if (!string.IsNullOrWhiteSpace(Model.EffectivePlanName))
+                {
+                    <span class="platform-badge platform-badge-blue">
+                        <i class="bi bi-diagram-3"></i>
+                        @Model.EffectivePlanName
+                        @if (Model.EffectiveEmployeeLimit.HasValue)
+                        {
+                            <text> · @Model.EffectiveEmployeeLimit func.</text>
+                        }
+                    </span>
+                }
+                @if (Model.IsForcedByPlatform)
+                {
+                    <span class="platform-badge platform-badge-neutral">
+                        <i class="bi bi-hand-index"></i>
+                        Plan forzado por plataforma
+                    </span>
+                }
+                @if (Model.Billing.IsTrial)
+                {
+                    <span class="platform-badge platform-badge-blue">
+                        <i class="bi bi-hourglass-split"></i>
+                        Trial
+                    </span>
+                }
+                <span class="platform-badge @ModeBadgeClass(Model.CommercialAccessMode)">
+                    @DescribeMode(Model.CommercialAccessMode)
+                </span>
+                @if (!Model.Activo)
+                {
+                    <span class="platform-badge platform-badge-danger">
+                        <i class="bi bi-pause-circle"></i>
+                        Tenant suspendido
+                    </span>
+                }
+            </div>
+        </div>
+        <div class="platform-toolbar">
+            <a class="btn btn-outline-dark platform-btn" asp-controller="Platform" asp-action="Tenants">
+                <i class="bi bi-arrow-left"></i>
+                Volver a Tenants
+            </a>
+            <a class="btn btn-outline-dark platform-btn"
+               asp-controller="PlatformUsers" asp-action="Usuarios"
+               asp-route-q="@Model.TenantName">
+                <i class="bi bi-people"></i>
+                Usuarios
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["PlatformError"] is string platformError)
+    {
+        <div class="platform-alert-stack">
+            <div class="alert alert-danger platform-alert mb-0">@platformError</div>
+        </div>
+    }
+    @if (TempData["PlatformSuccess"] is string platformSuccess)
+    {
+        <div class="platform-alert-stack">
+            <div class="alert alert-success platform-alert mb-0">@platformSuccess</div>
+        </div>
+    }
+
+    @* Alertas OPERATIVAS (no billing): inconsistencias detectadas al resolver el estado
+       comercial y el contacto principal. Se muestran; nunca se corrigen en silencio. *@
+    @if (Model.CommercialWarnings.Count > 0 || Model.OwnerWarnings.Count > 0 || Model.ExceedsEmployeeLimit)
+    {
+        <div class="platform-alert-stack">
+            <div class="alert alert-warning platform-alert mb-0">
+                <strong><i class="bi bi-exclamation-triangle"></i> Revisar configuración</strong>
+                <ul class="mb-0 mt-2">
+                    @if (Model.ExceedsEmployeeLimit)
+                    {
+                        <li>
+                            El tenant tiene <strong>@Model.ActiveFuncionarios funcionarios activos</strong> y su plan
+                            efectivo permite <strong>@Model.EffectiveEmployeeLimit</strong>. No se pueden agregar más
+                            hasta ajustar el plan o desactivar funcionarios.
+                        </li>
+                    }
+                    @foreach (var warning in Model.CommercialWarnings)
+                    {
+                        <li>@warning</li>
+                    }
+                    @foreach (var warning in Model.OwnerWarnings)
+                    {
+                        <li>@warning</li>
+                    }
+                </ul>
+            </div>
+        </div>
+    }
+
+    @* KPI cards *@
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <article class="platform-stat-card">
+                <div class="platform-stat-top">
+                    <div>
+                        <p class="platform-stat-label">Citas (30d)</p>
+                        <p class="platform-stat-value">@Model.Usage.Citas30d</p>
+                    </div>
+                    <span class="platform-stat-icon is-blue">
+                        <i class="bi bi-calendar-check"></i>
+                    </span>
+                </div>
+                <p class="platform-stat-note">Últimos 7d: @Model.Usage.Citas7d</p>
+            </article>
+        </div>
+        <div class="col-6 col-md-3">
+            <article class="platform-stat-card">
+                <div class="platform-stat-top">
+                    <div>
+                        <p class="platform-stat-label">Cobros (30d)</p>
+                        <p class="platform-stat-value">@Model.Usage.Cobros30d</p>
+                    </div>
+                    <span class="platform-stat-icon is-green">
+                        <i class="bi bi-cash-stack"></i>
+                    </span>
+                </div>
+                <p class="platform-stat-note">Monto: @Model.Usage.MontoCobros30d.ToString("N0")</p>
+            </article>
+        </div>
+        <div class="col-6 col-md-3">
+            <article class="platform-stat-card">
+                <div class="platform-stat-top">
+                    <div>
+                        <p class="platform-stat-label">Reservas (30d)</p>
+                        <p class="platform-stat-value">@Model.Usage.BookingRequests30d</p>
+                    </div>
+                    <span class="platform-stat-icon is-slate">
+                        <i class="bi bi-globe"></i>
+                    </span>
+                </div>
+                <p class="platform-stat-note">Pendientes: @Model.Usage.BookingRequestsPending</p>
+            </article>
+        </div>
+        <div class="col-6 col-md-3">
+            <article class="platform-stat-card">
+                <div class="platform-stat-top">
+                    <div>
+                        <p class="platform-stat-label">WhatsApp (30d)</p>
+                        <p class="platform-stat-value">@Model.Usage.WhatsAppEnviados30d</p>
+                    </div>
+                    <span class="platform-stat-icon is-gold">
+                        <i class="bi bi-whatsapp"></i>
+                    </span>
+                </div>
+                <p class="platform-stat-note">
+                    @if (Model.WhatsApp.IsEnabled)
+                    {
+                        <span class="text-success">Activo</span>
+                    }
+                    else
+                    {
+                        <span class="text-muted">Desactivado</span>
+                    }
+                </p>
+            </article>
+        </div>
+    </div>
+
+    @* Tabs *@
+    <ul class="nav nav-tabs platform-ficha-tabs mb-0" id="fichaTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="tab-resumen" data-bs-toggle="tab" data-bs-target="#pane-resumen" type="button" role="tab">
+                <i class="bi bi-info-circle"></i> Resumen
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="tab-facturacion" data-bs-toggle="tab" data-bs-target="#pane-facturacion" type="button" role="tab">
+                <i class="bi bi-credit-card"></i> Facturación
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="tab-whatsapp" data-bs-toggle="tab" data-bs-target="#pane-whatsapp" type="button" role="tab">
+                <i class="bi bi-whatsapp"></i> WhatsApp
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="tab-reservas" data-bs-toggle="tab" data-bs-target="#pane-reservas" type="button" role="tab">
+                <i class="bi bi-globe"></i> Reservas
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="tab-usuarios" data-bs-toggle="tab" data-bs-target="#pane-usuarios" type="button" role="tab">
+                <i class="bi bi-people"></i> Usuarios
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="tab-auditoria" data-bs-toggle="tab" data-bs-target="#pane-auditoria" type="button" role="tab">
+                <i class="bi bi-clipboard-check"></i> Auditoría
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content platform-ficha-tab-content">
+
+        @* ── RESUMEN ─────────────────────────────────────────────────────── *@
+        <div class="tab-pane fade show active" id="pane-resumen" role="tabpanel">
+            <div class="row g-4">
+                <div class="col-lg-6">
+                    <section class="platform-section-card h-100">
+                        <div class="platform-section-header">
+                            <div>
+                                <p class="platform-section-kicker">Identidad</p>
+                                <h2 class="platform-section-title">Datos del negocio</h2>
+                            </div>
+                        </div>
+                        <dl class="platform-ficha-dl">
+                            <dt>Nombre</dt>
+                            <dd>@Model.TenantName</dd>
+                            <dt>Owner / contacto</dt>
+                            <dd>
+                                @if (!string.IsNullOrWhiteSpace(Model.OwnerName))
+                                {
+                                    <span>@Model.OwnerName · </span>
+                                }
+                                @(Model.OwnerEmail ?? "No disponible")
+                                @* De donde salio el contacto: no se presenta un funcionario como si fuera el dueño. *@
+                                <div>
+                                    <span class="platform-badge @(Model.Owner?.OwnerIsFallback == true ? "platform-badge-warning" : "platform-badge-neutral")">
+                                        @TenantOwnerResolution.DescribeSource(Model.OwnerSource)
+                                    </span>
+                                </div>
+                            </dd>
+                            @if (Model.Owner is { } ownerInfo)
+                            {
+                                @if (ownerInfo.AdditionalAdmins.Count > 0)
+                                {
+                                    <dt>Otros administradores</dt>
+                                    <dd>
+                                        @foreach (var admin in ownerInfo.AdditionalAdmins)
+                                        {
+                                            <div>@(admin.Email ?? admin.UserId) @(admin.State ? null : "(inactivo)")</div>
+                                        }
+                                    </dd>
+                                }
+                                @if (ownerInfo.Funcionarios.Count > 0)
+                                {
+                                    <dt>Cuentas de funcionario</dt>
+                                    <dd>
+                                        @foreach (var funcionario in ownerInfo.Funcionarios)
+                                        {
+                                            <div>
+                                                @(funcionario.Email ?? funcionario.UserId)
+                                                <span class="platform-badge platform-badge-neutral ms-1">Funcionario</span>
+                                            </div>
+                                        }
+                                    </dd>
+                                }
+                            }
+                            <dt>Fecha de registro</dt>
+                            <dd>@Model.FechaCreacion.ToString("yyyy-MM-dd")</dd>
+                            <dt>Estado del tenant</dt>
+                            <dd>
+                                <span class="platform-badge @(Model.Activo ? "platform-badge-success" : "platform-badge-danger")">
+                                    @(Model.Activo ? "Activo" : "Suspendido")
+                                </span>
+                            </dd>
+                            <dt>Acceso comercial</dt>
+                            <dd>
+                                <span class="platform-badge @ModeBadgeClass(Model.CommercialAccessMode)">
+                                    @DescribeMode(Model.CommercialAccessMode)
+                                </span>
+                            </dd>
+                            @* Plan EFECTIVO: la fuente unica con la que la app opera. Puede diferir del
+                               plan de la pestaña Facturación (fila de Suscripciones) y ahí se avisa. *@
+                            <dt>Plan efectivo</dt>
+                            <dd>
+                                @(Model.EffectivePlanName ?? "Sin plan efectivo")
+                                @if (!string.IsNullOrWhiteSpace(Model.EffectivePlanCode))
+                                {
+                                    <span class="platform-badge platform-badge-neutral ms-1">@Model.EffectivePlanCode</span>
+                                }
+                                <div class="platform-table-meta">@Model.CommercialReason</div>
+                            </dd>
+                            <dt>Funcionarios</dt>
+                            <dd class="@(Model.ExceedsEmployeeLimit ? "text-danger-emphasis" : null)">
+                                @Model.ActiveFuncionarios /
+                                @(Model.EffectiveEmployeeLimit?.ToString() ?? (Model.CanAccessApp ? "ilimitado" : "—"))
+                                <span class="platform-table-meta">
+                                    (límite del plan efectivo@(Model.IsForcedByPlatform ? ", forzado por plataforma" : ""))
+                                </span>
+                            </dd>
+                            <dt>Fuente de cobro</dt>
+                            <dd>
+                                @(Model.AccessBillingSource switch
+                                {
+                                    TenantAccessBillingSource.ProviderRecurring => "TiloPay (recurrente)",
+                                    TenantAccessBillingSource.Manual => "Manual / exento (no se cobra)",
+                                    TenantAccessBillingSource.PromotionalGrant => "Trial / código promocional",
+                                    TenantAccessBillingSource.Legacy => "Suscripción legacy",
+                                    _ => "Sin fuente de cobro"
+                                })
+                                @if (!string.IsNullOrWhiteSpace(Model.ProviderSubscriptionId))
+                                {
+                                    <div class="platform-table-meta">Suscriptor: @Model.ProviderSubscriptionId</div>
+                                }
+                            </dd>
+                            @if (!string.IsNullOrWhiteSpace(Model.CommercialNotes))
+                            {
+                                <dt>Notas internas</dt>
+                                <dd>@Model.CommercialNotes</dd>
+                            }
+                            <dt>Última actividad</dt>
+                            <dd>
+                                @(Model.Usage.LastActivityUtc.HasValue
+                                    ? Model.Usage.LastActivityUtc.Value.ToString("yyyy-MM-dd HH:mm")
+                                    : "Sin registros")
+                            </dd>
+                        </dl>
+                    </section>
+                </div>
+                <div class="col-lg-6">
+                    <section class="platform-section-card h-100">
+                        <div class="platform-section-header">
+                            <div>
+                                <p class="platform-section-kicker">Diagnóstico</p>
+                                <h2 class="platform-section-title">Score de salud</h2>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <span class="platform-badge @Model.Health.BadgeClass platform-health-badge-lg">
+                                <i class="bi @Model.Health.Icon"></i>
+                                @Model.Health.Label
+                            </span>
+                        </div>
+                        @if (Model.Health.Reasons.Count > 0)
+                        {
+                            <ul class="platform-health-reasons">
+                                @foreach (var reason in Model.Health.Reasons)
+                                {
+                                    <li>
+                                        <i class="bi bi-dot text-muted"></i>
+                                        @reason
+                                    </li>
+                                }
+                            </ul>
+                        }
+                    </section>
+                </div>
+            </div>
+        </div>
+
+        @* ── FACTURACIÓN ──────────────────────────────────────────────────── *@
+        <div class="tab-pane fade" id="pane-facturacion" role="tabpanel">
+            <div class="row g-4">
+                <div class="col-lg-5">
+                    <section class="platform-section-card h-100">
+                        <div class="platform-section-header">
+                            <div>
+                                <p class="platform-section-kicker">Suscripción</p>
+                                <h2 class="platform-section-title">Plan activo</h2>
+                            </div>
+                            <div class="platform-toolbar">
+                                <a class="btn btn-outline-dark btn-sm platform-btn"
+                                   asp-controller="PlatformProviderSubscription" asp-action="Manage"
+                                   asp-route-tenantId="@Model.TenantId">
+                                    <i class="bi bi-gear"></i>
+                                    Gestionar suscripción
+                                </a>
+                            </div>
+                        </div>
+                        @* El plan EFECTIVO manda sobre la fila de Suscripciones. Cuando el acceso lo
+                           otorga plataforma se dice explicitamente, para no leer esta tarjeta como
+                           si fuera lo que define el limite y el acceso del tenant. *@
+                        @if (Model.IsForcedByPlatform)
+                        {
+                            <div class="alert alert-info platform-alert">
+                                <strong><i class="bi bi-info-circle"></i> Acceso otorgado por plataforma.</strong>
+                                El plan con el que la app opera es
+                                <strong>@Model.EffectivePlanName</strong>
+                                (@(Model.EffectiveEmployeeLimit?.ToString() ?? "sin límite de") funcionarios),
+                                no se cobra por TiloPay. Lo de abajo es el historial de suscripción del tenant.
+                            </div>
+                        }
+                        <dl class="platform-ficha-dl">
+                            <dt>Plan efectivo</dt>
+                            <dd>
+                                <strong>@(Model.EffectivePlanName ?? "Sin plan efectivo")</strong>
+                                @if (!string.IsNullOrWhiteSpace(Model.EffectivePlanCode))
+                                {
+                                    <span class="platform-badge platform-badge-neutral ms-1">@Model.EffectivePlanCode</span>
+                                }
+                                <div class="platform-table-meta">
+                                    Límite de funcionarios: @Model.ActiveFuncionarios /
+                                    @(Model.EffectiveEmployeeLimit?.ToString() ?? (Model.CanAccessApp ? "ilimitado" : "—"))
+                                </div>
+                            </dd>
+                            <dt>Plan de la suscripción</dt>
+                            <dd>@(Model.Billing.ActivePlanName ?? "Sin plan activo")</dd>
+                            @if (!string.IsNullOrWhiteSpace(Model.Billing.ActivePlanCode))
+                            {
+                                <dt>Código de plan</dt>
+                                <dd><code>@Model.Billing.ActivePlanCode</code></dd>
+                            }
+                            <dt>Estado</dt>
+                            <dd>
+                                <span class="platform-badge @EstadoBadge(Model.Billing.SuscripcionEstado)">
+                                    @EstadoLabel(Model.Billing.SuscripcionEstado)
+                                </span>
+                                @if (Model.Billing.IsTrial)
+                                {
+                                    <span class="platform-badge platform-badge-blue ms-1">Trial</span>
+                                }
+                            </dd>
+                            @if (Model.Billing.SuscripcionFechaFin.HasValue)
+                            {
+                                <dt>Vence</dt>
+                                <dd>
+                                    @Model.Billing.SuscripcionFechaFin.Value.ToString("yyyy-MM-dd")
+                                    @if (Model.Billing.IsExpiringSoon)
+                                    {
+                                        <span class="platform-badge platform-badge-warning ms-1">
+                                            <i class="bi bi-exclamation-triangle"></i> Próximo a vencer
+                                        </span>
+                                    }
+                                </dd>
+                            }
+                            @if (Model.Billing.SuscripcionProximoCobro.HasValue)
+                            {
+                                <dt>Próximo cobro</dt>
+                                <dd>@Model.Billing.SuscripcionProximoCobro.Value.ToString("yyyy-MM-dd")</dd>
+                            }
+                            @if (Model.Billing.TrialFin.HasValue)
+                            {
+                                <dt>Fin del trial</dt>
+                                <dd>@Model.Billing.TrialFin.Value.ToString("yyyy-MM-dd")</dd>
+                            }
+                        </dl>
+
+                        @if (Model.Billing.ActiveAddonNames.Count > 0)
+                        {
+                            <div class="mt-3">
+                                <p class="platform-section-kicker mb-1">Add-ons activos</p>
+                                <div class="platform-badge-row">
+                                    @foreach (var addon in Model.Billing.ActiveAddonNames)
+                                    {
+                                        <span class="platform-badge platform-badge-blue">
+                                            <i class="bi bi-puzzle"></i>
+                                            @addon
+                                        </span>
+                                    }
+                                </div>
+                            </div>
+                        }
+
+                        @if (Model.Billing.HasPendingCheckout)
+                        {
+                            <div class="mt-3">
+                                <span class="platform-badge platform-badge-warning">
+                                    <i class="bi bi-hourglass-split"></i>
+                                    @Model.Billing.PendingCheckoutsCount checkout(s) pendiente(s)
+                                </span>
+                            </div>
+                        }
+                    </section>
+                </div>
+                <div class="col-lg-7">
+                    <section class="platform-section-card h-100">
+                        <div class="platform-section-header">
+                            <div>
+                                <p class="platform-section-kicker">Historial</p>
+                                <h2 class="platform-section-title">Pagos recientes</h2>
+                            </div>
+                        </div>
+                        @if (Model.Billing.RecentPayments.Count == 0)
+                        {
+                            <div class="platform-empty-state">
+                                <i class="bi bi-inbox"></i>
+                                <p class="mb-0">Sin pagos registrados.</p>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="table-responsive">
+                                <table class="table platform-table align-middle">
+                                    <thead>
+                                        <tr>
+                                            <th>Fecha</th>
+                                            <th>Plan</th>
+                                            <th>Monto</th>
+                                            <th>Estado</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var payment in Model.Billing.RecentPayments)
+                                        {
+                                            <tr>
+                                                <td><div class="platform-table-meta">@payment.FechaUtc.ToString("yyyy-MM-dd")</div></td>
+                                                <td><div class="platform-table-meta">@(payment.PlanName ?? "—")</div></td>
+                                                <td><div class="platform-table-title">@payment.Monto.ToString("N0") @payment.Moneda</div></td>
+                                                <td><div class="platform-table-meta">@payment.Estado</div></td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                    </section>
+                </div>
+            </div>
+        </div>
+
+        @* ── WHATSAPP ──────────────────────────────────────────────────────── *@
+        <div class="tab-pane fade" id="pane-whatsapp" role="tabpanel">
+            <section class="platform-section-card">
+                <div class="platform-section-header">
+                    <div>
+                        <p class="platform-section-kicker">Mensajería</p>
+                        <h2 class="platform-section-title">WhatsApp</h2>
+                    </div>
+                    <div class="platform-toolbar">
+                        <form asp-controller="Platform" asp-action="UpdateTenantWhatsAppSettings" method="post" target="_blank" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="tenantId" value="@Model.TenantId" />
+                        </form>
+                        <a class="btn btn-outline-dark btn-sm platform-btn"
+                           asp-controller="Platform" asp-action="Tenants">
+                            <i class="bi bi-sliders"></i>
+                            Configurar en Plataforma
+                        </a>
+                    </div>
+                </div>
+
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <dl class="platform-ficha-dl">
+                            <dt>Estado</dt>
+                            <dd>
+                                @{
+                                    var waBadge = Model.WhatsApp.AddonActive
+                                        ? (Model.WhatsApp.IsEnabled ? "platform-badge-success" : "platform-badge-warning")
+                                        : "platform-badge-dark";
+                                    var waIcon = Model.WhatsApp.AddonActive
+                                        ? (Model.WhatsApp.IsEnabled ? "bi-whatsapp" : "bi-pause-circle")
+                                        : "bi-slash-circle";
+                                    var waLabel = Model.WhatsApp.AddonActive
+                                        ? (Model.WhatsApp.IsEnabled ? "Activo" : "Disponible")
+                                        : "Sin add-on";
+                                }
+                                <span class="platform-badge @waBadge">
+                                    <i class="bi @waIcon"></i>
+                                    @waLabel
+                                </span>
+                            </dd>
+                            <dt>Add-on</dt>
+                            <dd>
+                                @if (Model.WhatsApp.AddonActive)
+                                {
+                                    <span class="platform-badge platform-badge-success">
+                                        <i class="bi bi-puzzle"></i>
+                                        @(Model.WhatsApp.AddonCode ?? "Addon activo")
+                                    </span>
+                                    @if (Model.WhatsApp.AddonFechaFin.HasValue)
+                                    {
+                                        <span class="platform-table-meta ms-1">vence @Model.WhatsApp.AddonFechaFin.Value.ToString("yyyy-MM-dd")</span>
+                                    }
+                                }
+                                else
+                                {
+                                    <span class="platform-table-meta">Sin add-on activo</span>
+                                }
+                            </dd>
+                            <dt>Cuota diaria</dt>
+                            <dd>@Model.WhatsApp.TodayUsage / @Model.WhatsApp.DailyMessageLimit mensajes hoy</dd>
+                            <dt>Enviados (30d)</dt>
+                            <dd>@Model.WhatsApp.MonthlyUsage30d</dd>
+                            @if (Model.WhatsApp.MonthlyMessageLimit.HasValue)
+                            {
+                                <dt>Límite mensual</dt>
+                                <dd>@Model.WhatsApp.MonthlyMessageLimit.Value.ToString("N0")</dd>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(Model.WhatsApp.TimeZoneId))
+                            {
+                                <dt>Zona horaria</dt>
+                                <dd>@Model.WhatsApp.TimeZoneId</dd>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(Model.WhatsApp.Notes))
+                            {
+                                <dt>Notas</dt>
+                                <dd>@Model.WhatsApp.Notes</dd>
+                            }
+                        </dl>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="platform-section-kicker mb-2">Actividad reciente</p>
+                        <dl class="platform-ficha-dl">
+                            <dt>Último mensaje enviado</dt>
+                            <dd>
+                                @(Model.WhatsApp.LastMessageSentUtc.HasValue
+                                    ? Model.WhatsApp.LastMessageSentUtc.Value.ToString("yyyy-MM-dd HH:mm") + " UTC"
+                                    : "Sin registros")
+                            </dd>
+                            <dt>Estado de errores</dt>
+                            <dd>
+                                @if (Model.WhatsApp.HasRecentError)
+                                {
+                                    <span class="platform-badge platform-badge-danger">
+                                        <i class="bi bi-exclamation-circle"></i>
+                                        Error reciente
+                                    </span>
+                                    @if (!string.IsNullOrWhiteSpace(Model.WhatsApp.LastErrorCode))
+                                    {
+                                        <div class="platform-table-meta mt-1">Código: @Model.WhatsApp.LastErrorCode</div>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(Model.WhatsApp.LastErrorMessage))
+                                    {
+                                        <div class="platform-table-meta">@Model.WhatsApp.LastErrorMessage</div>
+                                    }
+                                    @if (Model.WhatsApp.LastErrorAtUtc.HasValue)
+                                    {
+                                        <div class="platform-table-meta">@Model.WhatsApp.LastErrorAtUtc.Value.ToString("yyyy-MM-dd HH:mm") UTC</div>
+                                    }
+                                }
+                                else
+                                {
+                                    <span class="platform-badge platform-badge-success">Sin errores recientes</span>
+                                }
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        @* ── RESERVAS ─────────────────────────────────────────────────────── *@
+        <div class="tab-pane fade" id="pane-reservas" role="tabpanel">
+            <section class="platform-section-card">
+                <div class="platform-section-header">
+                    <div>
+                        <p class="platform-section-kicker">Reservas online</p>
+                        <h2 class="platform-section-title">Link público y solicitudes</h2>
+                    </div>
+                </div>
+                <div class="row g-4">
+                    <div class="col-md-5">
+                        <dl class="platform-ficha-dl">
+                            <dt>Portal de reservas</dt>
+                            <dd>
+                                <span class="platform-badge @(Model.Reservations.PublicBookingEnabled ? "platform-badge-success" : "platform-badge-dark")">
+                                    @(Model.Reservations.PublicBookingEnabled ? "Activo" : "Inactivo")
+                                </span>
+                            </dd>
+                            @if (!string.IsNullOrWhiteSpace(Model.Reservations.PublicBookingSlug))
+                            {
+                                <dt>Slug público</dt>
+                                <dd><code>/reservar/@Model.Reservations.PublicBookingSlug</code></dd>
+                            }
+                            <dt>Última solicitud</dt>
+                            <dd>
+                                @(Model.Reservations.LastRequestUtc.HasValue
+                                    ? Model.Reservations.LastRequestUtc.Value.ToString("yyyy-MM-dd HH:mm") + " UTC"
+                                    : "Sin solicitudes")
+                            </dd>
+                        </dl>
+                    </div>
+                    <div class="col-md-7">
+                        <p class="platform-section-kicker mb-2">Estadísticas últimos 30 días</p>
+                        <div class="row g-3 text-center">
+                            <div class="col-4">
+                                <div class="platform-ficha-metric">
+                                    <span class="platform-ficha-metric-value">@Model.Reservations.Total30d</span>
+                                    <span class="platform-ficha-metric-label">Recibidas</span>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="platform-ficha-metric">
+                                    <span class="platform-ficha-metric-value text-warning">@Model.Reservations.Pending</span>
+                                    <span class="platform-ficha-metric-label">Pendientes</span>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="platform-ficha-metric">
+                                    <span class="platform-ficha-metric-value text-success">@Model.Reservations.Confirmed30d</span>
+                                    <span class="platform-ficha-metric-label">Confirmadas</span>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="platform-ficha-metric">
+                                    <span class="platform-ficha-metric-value text-danger">@Model.Reservations.Rejected30d</span>
+                                    <span class="platform-ficha-metric-label">Rechazadas</span>
+                                </div>
+                            </div>
+                            <div class="col-8">
+                                <div class="platform-ficha-metric">
+                                    <span class="platform-ficha-metric-value">@Model.Reservations.ConfirmationRate.ToString("0.#")%</span>
+                                    <span class="platform-ficha-metric-label">Tasa de confirmación</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        @* ── USUARIOS ─────────────────────────────────────────────────────── *@
+        <div class="tab-pane fade" id="pane-usuarios" role="tabpanel">
+            <section class="platform-section-card">
+                <div class="platform-section-header">
+                    <div>
+                        <p class="platform-section-kicker">Cuentas</p>
+                        <h2 class="platform-section-title">Usuarios del negocio</h2>
+                        <p class="platform-section-copy">
+                            Total: @Model.TotalUsersCount usuario(s).
+                            @if (Model.TotalUsersCount > Model.Users.Count)
+                            {
+                                <text> Mostrando @Model.Users.Count.</text>
+                            }
+                            <text> Orden: owner, administradores, otras cuentas, funcionarios.</text>
+                        </p>
+                    </div>
+                    <div class="platform-toolbar">
+                        <a class="btn btn-outline-dark btn-sm platform-btn"
+                           asp-controller="PlatformUsers" asp-action="Usuarios"
+                           asp-route-q="@Model.TenantName">
+                            <i class="bi bi-people"></i>
+                            Ver todos
+                        </a>
+                    </div>
+                </div>
+
+                @if (Model.Users.Count == 0)
+                {
+                    <div class="platform-empty-state">
+                        <i class="bi bi-inbox"></i>
+                        <p class="mb-0">Sin usuarios registrados en este tenant.</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table platform-table align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Usuario</th>
+                                    <th>Rol</th>
+                                    <th>Estado</th>
+                                    <th class="text-end">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var user in Model.Users)
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="platform-table-title">
+                                                @(string.IsNullOrWhiteSpace(user.Name) ? user.Email : user.Name)
+                                                @if (user.IsOwner)
+                                                {
+                                                    <span class="platform-badge platform-badge-success ms-1">
+                                                        <i class="bi bi-star-fill"></i> Contacto principal
+                                                    </span>
+                                                }
+                                            </div>
+                                            <div class="platform-table-meta">@user.Email</div>
+                                        </td>
+                                        <td>
+                                            <div class="platform-badge-row">
+                                                @if (user.IsPlatformSuperAdmin)
+                                                {
+                                                    <span class="platform-badge platform-badge-dark">
+                                                        <i class="bi bi-shield-lock"></i> SuperAdmin
+                                                    </span>
+                                                }
+                                                @* Clasificacion resuelta contra AspNetUserRoles, no texto libre. *@
+                                                @switch (user.Kind)
+                                                {
+                                                    case TenantUserKind.Administrador:
+                                                        <span class="platform-badge platform-badge-blue">
+                                                            <i class="bi bi-person-gear"></i> Administrador
+                                                        </span>
+                                                        break;
+                                                    case TenantUserKind.Funcionario:
+                                                        <span class="platform-badge platform-badge-neutral">
+                                                            <i class="bi bi-person-workspace"></i> Funcionario
+                                                        </span>
+                                                        break;
+                                                    default:
+                                                        <span class="platform-badge platform-badge-warning">
+                                                            <i class="bi bi-question-circle"></i> Sin rol claro
+                                                        </span>
+                                                        break;
+                                                }
+                                                @if (!string.IsNullOrWhiteSpace(user.Roles))
+                                                {
+                                                    <span class="platform-table-meta">@user.Roles</span>
+                                                }
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="platform-badge @(user.State ? "platform-badge-success" : "platform-badge-danger")">
+                                                <i class="bi @(user.State ? "bi-check-circle" : "bi-slash-circle")"></i>
+                                                @(user.State ? "Activo" : "Inactivo")
+                                            </span>
+                                        </td>
+                                        <td class="text-end">
+                                            @if (user.State)
+                                            {
+                                                <a class="btn btn-outline-danger btn-sm platform-btn"
+                                                   asp-controller="PlatformUsers" asp-action="ConfirmarDesactivacion"
+                                                   asp-route-userId="@user.UserId">
+                                                    <i class="bi bi-person-x"></i>
+                                                    Desactivar
+                                                </a>
+                                            }
+                                            else
+                                            {
+                                                <a class="btn btn-outline-success btn-sm platform-btn"
+                                                   asp-controller="PlatformUsers" asp-action="ConfirmarReactivacion"
+                                                   asp-route-userId="@user.UserId">
+                                                    <i class="bi bi-person-check"></i>
+                                                    Reactivar
+                                                </a>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </section>
+        </div>
+
+        @* ── AUDITORÍA ────────────────────────────────────────────────────── *@
+        <div class="tab-pane fade" id="pane-auditoria" role="tabpanel">
+            <section class="platform-section-card">
+                <div class="platform-section-header">
+                    <div>
+                        <p class="platform-section-kicker">Trazabilidad</p>
+                        <h2 class="platform-section-title">Últimas acciones SuperAdmin</h2>
+                        <p class="platform-section-copy">Últimas 10 acciones relacionadas con este negocio.</p>
+                    </div>
+                    <div class="platform-toolbar">
+                        <a class="btn btn-outline-dark btn-sm platform-btn"
+                           asp-controller="PlatformUsers" asp-action="Auditoria"
+                           asp-route-filtroTenant="@Model.TenantName">
+                            <i class="bi bi-clipboard-check"></i>
+                            Ver auditoría completa
+                        </a>
+                    </div>
+                </div>
+
+                @if (Model.AuditPreview.Count == 0)
+                {
+                    <div class="platform-empty-state">
+                        <i class="bi bi-inbox"></i>
+                        <p class="mb-0">Sin acciones registradas para este negocio.</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table platform-table align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Fecha (UTC)</th>
+                                    <th>Acción</th>
+                                    <th>Actor</th>
+                                    <th>Objetivo</th>
+                                    <th>Motivo</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var entry in Model.AuditPreview)
+                                {
+                                    <tr>
+                                        <td><div class="platform-table-meta">@entry.CreatedAtUtc.ToString("yyyy-MM-dd HH:mm")</div></td>
+                                        <td><div class="platform-table-meta">@DescribeAction(entry.Action)</div></td>
+                                        <td><div class="platform-table-meta">@entry.ActorEmail</div></td>
+                                        <td><div class="platform-table-meta">@(entry.TargetUserEmail ?? "—")</div></td>
+                                        <td><div class="platform-table-meta">@(entry.Reason ?? "—")</div></td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </section>
+        </div>
+
+    </div>@* /tab-content *@
+</div>@* /platform-shell *@

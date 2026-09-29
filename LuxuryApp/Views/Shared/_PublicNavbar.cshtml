@@ -1,0 +1,66 @@
+@using LuxuryApp.Models.Identity
+@using Microsoft.AspNetCore.Identity
+@inject SignInManager<AppUsuario> SignInManager
+@inject LuxuryApp.Services.Layout.IPrivateNavigationService NavigationService
+
+@{
+    var isSignedIn = SignInManager.IsSignedIn(User);
+    var currentController = (ViewContext.RouteData.Values["controller"]?.ToString() ?? string.Empty).ToLowerInvariant();
+    var currentPath = (ViewContext.HttpContext.Request.Path.Value ?? string.Empty).ToLowerInvariant();
+    var privateNavigation = isSignedIn
+        ? await NavigationService.BuildAsync(User)
+        : new PrivateNavigationViewModel();
+    var signedInPrimaryActionText = privateNavigation.HomeController == "Platform"
+        ? "Plataforma"
+        : privateNavigation.CanAccessCommercialModules
+            ? "Ir al panel"
+            : "Mi suscripcion";
+}
+
+<nav class="navbar navbar-expand-lg navbar-light public-navbar" data-public-navbar>
+    <div class="container">
+        <a class="navbar-brand public-navbar-brand" asp-controller="Home" asp-action="Index">
+            <span class="public-brand-mark">L</span>
+            <span>
+                <strong>LuxuryCloud</strong>
+                <small>SaaS para barberías, salones y servicios</small>
+            </span>
+        </a>
+
+        <button class="navbar-toggler public-navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#publicNavbar" aria-controls="publicNavbar" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="publicNavbar">
+            <ul class="navbar-nav mx-auto mb-3 mb-lg-0 public-navbar-links">
+                <li class="nav-item">
+                    <a class="nav-link" asp-controller="Home" asp-action="Index" asp-fragment="como-funciona">Cómo funciona</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" asp-controller="Home" asp-action="Index" asp-fragment="funciones">Funciones</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link @(currentController == "billing" ? "active" : string.Empty)" asp-controller="Billing" asp-action="Planes">Precios</a>
+                </li>
+            </ul>
+
+            <div class="public-navbar-actions">
+                @if (isSignedIn)
+                {
+                    <a class="btn public-btn public-btn-secondary" asp-controller="@privateNavigation.HomeController" asp-action="@privateNavigation.HomeAction">
+                        @signedInPrimaryActionText
+                    </a>
+                    <form method="post" asp-controller="Accounts" asp-action="SalirAplicacion" class="d-inline-flex">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn public-btn public-btn-ghost">Salir</button>
+                    </form>
+                }
+                else
+                {
+                    <a class="btn public-btn public-btn-secondary" asp-controller="Accounts" asp-action="Acceso">Iniciar sesión</a>
+                    <a class="btn public-btn public-btn-primary" asp-controller="Accounts" asp-action="Registro">Crear cuenta</a>
+                }
+            </div>
+        </div>
+    </div>
+</nav>

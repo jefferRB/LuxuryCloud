@@ -1,0 +1,39 @@
+@model LuxuryApp.Models.Funcionarios.MiCalendarioViewModel
+@{
+    var fechaDefault = Model.Fecha.ToString("yyyy-MM-dd") + "T09:00";
+}
+<label class="lp-kpi-label" style="display:block;margin-bottom:.25rem;">Fecha y hora</label>
+<input type="datetime-local" name="fechaHora" required class="form-control"
+       style="border-radius:.6rem;margin-bottom:.9rem;" value="@fechaDefault" />
+
+<input type="hidden" name="clienteId" class="js-cliente-id" />
+<label class="lp-kpi-label" style="display:block;margin-bottom:.25rem;">Cliente</label>
+<div style="position:relative;margin-bottom:.9rem;">
+    <input type="text" name="nombreCliente" maxlength="100" autocomplete="off"
+           class="form-control js-cliente-nombre" placeholder="Escribe para buscar (mín. 3 letras)"
+           style="border-radius:.6rem;" />
+    <div class="js-cliente-results" style="display:none;position:absolute;z-index:5;left:0;right:0;top:calc(100% + 2px);
+        background:var(--lp-surface,#fff);border:1px solid var(--lp-border,#e2e8f0);border-radius:.6rem;
+        box-shadow:0 8px 20px rgba(15,23,42,.12);max-height:210px;overflow:auto;"></div>
+</div>
+
+<label class="lp-kpi-label" style="display:block;margin-bottom:.25rem;">Teléfono (opcional)</label>
+<input type="tel" name="telefonoCliente" maxlength="20" class="form-control"
+       placeholder="8888-8888" style="border-radius:.6rem;margin-bottom:.9rem;" />
+
+<label class="lp-kpi-label" style="display:block;margin-bottom:.25rem;">Servicio</label>
+<select name="servicioId" class="form-select js-servicio-select" style="border-radius:.6rem;margin-bottom:.9rem;">
+    <option value="">— Servicio personalizado —</option>
+    @foreach (var s in Model.Servicios)
+    {
+        <option value="@s.Id" data-duracion="@s.DuracionMinutos">@s.Nombre (@s.DuracionMinutos min)</option>
+    }
+</select>
+
+<div class="js-personalizado-wrap">
+    <label class="lp-kpi-label" style="display:block;margin-bottom:.25rem;">Nombre del servicio personalizado</label>
+    <input type="text" name="servicioPersonalizado" maxlength="100" class="form-control"
+           placeholder="Ej: Corte especial" style="border-radius:.6rem;margin-bottom:.9rem;" />
+    <label class="lp-kpi-label" style="display:block;margin-bottom:.25rem;">Duración (min)</label>
+    <input type="number" name="duracionMinutos" min="5" max="480" value="30" class="form-control" style="border-radius:.6rem;" />
+</div>

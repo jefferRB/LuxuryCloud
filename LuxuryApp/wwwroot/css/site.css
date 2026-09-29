@@ -1,0 +1,242 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Rampa de acento de marca (design tokens)
+
+   Estos son los colores de IDENTIDAD: acciones primarias, seleccion, navegacion
+   activa, focus, bordes/acentos y degradados. NO son colores semanticos: exito,
+   advertencia, error e informacion viven en --private-chart-* y en las clases de
+   estado, y conservan su significado en todos los temas.
+
+   Los valores base son los historicos del sistema (azul/violeta), asi que los
+   temas Clasico marmol, Futurista premium, Negro absoluto y Blanco limpio se ven
+   exactamente igual que antes. Un tema solo necesita redefinir estos tokens para
+   cambiar toda la identidad visual; ver "surface-rose" en private-layout.css.
+
+   Cada color existe en dos formas:
+     --private-accent      -> color listo para usar
+     --private-accent-rgb  -> canales para rgba(var(--x-rgb), <alpha>)
+   ───────────────────────────────────────────────────────────────────────────── */
+:root {
+  --private-accent-rgb: 37, 99, 235;
+  --private-accent-strong-rgb: 29, 78, 216;
+  --private-accent-soft-rgb: 96, 165, 250;
+  --private-accent-subtle-rgb: 147, 197, 253;
+  --private-accent-alt-rgb: 124, 58, 237;
+  --private-accent-alt-soft-rgb: 167, 139, 250;
+  --private-accent-alt-mid-rgb: 139, 92, 246;
+  --private-accent-indigo-rgb: 99, 102, 241;
+  --private-accent-indigo-strong-rgb: 79, 70, 229;
+  --private-accent-bs-rgb: 13, 110, 253;
+
+  /* Alias base para paginas sin .private-shell (p. ej. el retorno de checkout).
+     El espacio privado los REDECLARA sobre body.private-shell para que cada tema
+     pueda cambiarlos; ver private-layout.css. */
+  --private-accent: rgb(var(--private-accent-rgb));
+  --private-accent-strong: rgb(var(--private-accent-strong-rgb));
+  --private-accent-soft: rgb(var(--private-accent-soft-rgb));
+  --private-accent-subtle: rgb(var(--private-accent-subtle-rgb));
+  --private-accent-alt: rgb(var(--private-accent-alt-rgb));
+  --private-accent-alt-soft: rgb(var(--private-accent-alt-soft-rgb));
+  --private-accent-alt-mid: rgb(var(--private-accent-alt-mid-rgb));
+  --private-accent-indigo: rgb(var(--private-accent-indigo-rgb));
+  --private-accent-indigo-strong: rgb(var(--private-accent-indigo-strong-rgb));
+  --private-accent-bs: rgb(var(--private-accent-bs-rgb));
+
+  /* Contraste sobre el acento (texto/iconos encima de un boton primario). */
+  --private-accent-contrast: #ffffff;
+  /* Anillo de foco visible: siempre derivado del acento del tema. */
+  --private-accent-ring: rgba(var(--private-accent-rgb), 0.28);
+
+  /* Botones nativos de Bootstrap. Los valores base son los de Bootstrap 5.3,
+     por eso los temas actuales no cambian; un tema los reencamina redefiniendo
+     --private-accent-bs-*. */
+  --private-accent-bs-hover-rgb: 11, 94, 215;
+  --private-accent-bs-active-rgb: 10, 88, 202;
+  --private-accent-bs-focus-rgb: 49, 132, 253;
+  --private-accent-bs-hover: rgb(var(--private-accent-bs-hover-rgb));
+  --private-accent-bs-active: rgb(var(--private-accent-bs-active-rgb));
+  --private-accent-bs-focus: rgb(var(--private-accent-bs-focus-rgb));
+
+  /* Anillo de foco global (regla .btn:focus / .form-control:focus de mas abajo). */
+  --private-focus-outline: #258cfb;
+}
+
+html {
+  font-size: 14px;
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
+  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem var(--private-focus-outline);
+}
+
+html {
+  position: relative;
+  min-height: 100%;
+}
+
+body {
+  margin-bottom: 60px;
+
+}
+
+.card {
+    background-color: rgba(255, 255, 255, 0.9); /* Fondo blanco con transparencia */
+    border-radius: 15px;
+}
+
+.layout-background {
+    background-image: url('../images/marmolblanco.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    min-height: 100vh;
+    font-family: 'Poppins', sans-serif;
+}
+
+.card-luxury {
+    background: rgba(25, 25, 25, 0.6); /* Oscuro semi-transparente */
+    backdrop-filter: blur(10px); /* Difuminado tipo vidrio */
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    color: white;
+    transition: transform 0.2s ease-in-out;
+}
+
+    .card-luxury:hover {
+        transform: translateY(-3px);
+    }
+
+.bg-gradient {
+    background: linear-gradient(90deg, var(--private-accent-bs), #6610f2);
+}
+
+.table thead th {
+    border: none;
+}
+
+.table tbody tr:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.btn {
+    border-radius: 8px;
+}
+
+.form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
+  color: var(--bs-secondary-color);
+  text-align: end;
+}
+
+.form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
+  text-align: start;
+}
+/* ===== FULL SCREEN MENSAJES ===== */
+
+.fullscreen-mensajes {
+    overflow: hidden;
+    height: 100vh;
+}
+
+    .fullscreen-mensajes body {
+        overflow: hidden;
+    }
+
+body.fullscreen-mensajes {
+    overflow: hidden;
+    height: 100vh;
+    margin-bottom: 0 !important;
+}
+
+.fullscreen-mensajes .container {
+    max-width: 100% !important;
+    height: calc(100vh - 57px);
+    padding: 0;
+}
+
+.fullscreen-mensajes footer {
+    display: none;
+}
+
+.fullscreen-mensajes main {
+    height: 100%;
+    padding: 0 !important;
+    padding-top: 0 !important;
+}
+.fullscreen-mensajes .navbar {
+    margin-bottom: 0 !important;
+}
+/* ══════════════════════════════════════════════════════════════
+   CAPA RESPONSIVE COMPARTIDA (movil / tablet)
+   Vive aqui porque aqui se define la escala tipografica global
+   (html { font-size: 14px }), que es justamente el origen del auto-zoom.
+   No se toca el viewport: el pinch-to-zoom manual se conserva.
+   ══════════════════════════════════════════════════════════════ */
+
+/* 1. Anti auto-zoom de Safari iOS.
+      Safari amplia la pagina al enfocar un control editable con menos de 16px.
+      Debajo de 768px, 1rem = 14px, asi que .form-control (1rem) medía 14px y
+      los controles propios de cada modulo (.clt-input, .cc-select,
+      .account-input, .binfo-select...) entre 11 y 13px.
+      El prefijo :root solo sube la especificidad lo justo para ganarle a esas
+      clases sin usar !important ni excepciones por vista: cualquier formulario
+      nuevo que use estos elementos/clases queda protegido automaticamente.
+      Solo se tocan controles editables; labels, badges y captions no cambian. */
+@media (max-width: 1199.98px) {
+    :root input:not([type]),
+    :root input[type="text"],
+    :root input[type="search"],
+    :root input[type="tel"],
+    :root input[type="url"],
+    :root input[type="email"],
+    :root input[type="password"],
+    :root input[type="number"],
+    :root input[type="date"],
+    :root input[type="datetime-local"],
+    :root input[type="month"],
+    :root input[type="week"],
+    :root input[type="time"],
+    :root textarea,
+    :root select,
+    :root .form-control,
+    :root .form-select,
+    :root .form-control-sm,
+    :root .form-select-sm,
+    :root [contenteditable="true"] {
+        font-size: max(16px, 1rem);
+    }
+
+    /* Campos de monto: ya superan el minimo, conservan su tipografia ampliada. */
+    :root input.cc-money-field {
+        font-size: max(16px, 1.3rem);
+    }
+
+    :root input.pcm-money-input,
+    :root input.pcmn-money-input {
+        font-size: max(16px, 1.35rem);
+    }
+}
+
+/* 2. Modales con teclado virtual.
+      El alto se limita al viewport dinamico y el scroll ocurre en .modal-body,
+      no en el contenedor externo: cabecera y pie (boton guardar) quedan fijos y
+      accesibles con el teclado abierto. Bootstrap ya resuelve
+      .modal-dialog-scrollable con mayor especificidad, asi que no se pisa. */
+@media (max-width: 991.98px) {
+    .modal .modal-content {
+        max-height: calc(100vh - 1rem);
+        max-height: calc(100dvh - 1rem - env(safe-area-inset-bottom));
+    }
+
+    .modal .modal-body {
+        min-height: 0;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+    }
+}

@@ -1,0 +1,178 @@
+@using LuxuryApp.Models.Horarios
+@model RecurringSchedulePageViewModel
+
+@{
+    ViewData["Title"] = "Bloqueos recurrentes";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/finance-modules.css" asp-append-version="true" />
+}
+
+<div class="finance-page-shell">
+
+    <div class="finance-hero">
+        <div class="finance-hero-left module-heading">
+            <span class="module-eyebrow">Agenda</span>
+            <h1 class="module-title"><i class="bi bi-clock-history module-title-icon" aria-hidden="true"></i>Bloqueos recurrentes</h1>
+            <p class="module-subtitle">
+                Horarios en los que el equipo no atiende: almuerzo, limpieza, capacitación.
+                Se repiten solos y bloquean las reservas.
+            </p>
+        </div>
+
+        <div class="finance-kpi-grid">
+            <div class="finance-kpi-card">
+                <div class="finance-kpi-icon finance-kpi-icon-blue">
+                    <i class="bi bi-calendar2-check"></i>
+                </div>
+                <div>
+                    <span class="finance-kpi-label">Bloqueos activos</span>
+                    <span class="finance-kpi-value finance-kpi-value-blue">@Model.ReglasActivas</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (TempData["Mensaje"] is string mensaje)
+    {
+        <div class="svc-alert svc-alert--success" role="status">@mensaje</div>
+    }
+
+    @if (TempData["Error"] is string error)
+    {
+        <div class="svc-alert svc-alert--danger" role="alert">@error</div>
+    }
+
+    <div class="finance-actions">
+        <a asp-action="Crear" class="finance-btn-primary">
+            <i class="bi bi-plus-circle"></i> Nuevo bloqueo
+        </a>
+        <a asp-controller="Calendar" asp-action="Index" class="finance-btn-secondary">
+            <i class="bi bi-calendar3"></i> Ir al calendario
+        </a>
+    </div>
+
+    <div class="finance-form-info-box">
+        <i class="bi bi-info-circle-fill"></i>
+        Un bloqueo <strong>no</strong> es una cita: es una regla que se repite. Impide nuevas reservas
+        en esos espacios, pero nunca mueve ni cancela las citas que ya existían.
+    </div>
+
+    <div class="finance-table-desktop">
+        <table class="finance-table">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Horario</th>
+                    <th>Días</th>
+                    <th>Aplica a</th>
+                    <th>Vigencia</th>
+                    <th>Excepciones</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.TieneReglas)
+                {
+                    foreach (var regla in Model.Reglas)
+                    {
+                        <tr>
+                            <td>
+                                @regla.Nombre
+                                @if (regla.EsVersion)
+                                {
+                                    <span class="svc-sub">(versión)</span>
+                                }
+                            </td>
+                            <td><span class="finance-method-badge">@regla.Horario</span></td>
+                            <td>@regla.Dias</td>
+                            <td>@regla.AlcanceTexto</td>
+                            <td>
+                                @regla.VigenteDesde.ToString("dd/MM/yyyy")
+                                @(regla.VigenteHasta.HasValue ? $"— {regla.VigenteHasta.Value:dd/MM/yyyy}" : "— sin fin")
+                            </td>
+                            <td>@regla.ExcepcionesProximas</td>
+                            <td>
+                                <span class="svc-status @(regla.Activa ? "svc-status--active" : "svc-status--inactive")">
+                                    <span class="svc-dot @(regla.Activa ? "svc-dot--green" : "svc-dot--gray")"></span>
+                                    @regla.EstadoTexto
+                                </span>
+                            </td>
+                            <td>
+                                <div class="finance-actions-cell">
+                                    <a asp-action="Detalle" asp-route-id="@regla.Id" class="finance-btn-row-edit">
+                                        <i class="bi bi-eye"></i> Detalle
+                                    </a>
+                                    <a asp-action="Editar" asp-route-id="@regla.Id" class="finance-btn-row-edit">
+                                        <i class="bi bi-pencil"></i> Editar
+                                    </a>
+                                    <form asp-action="CambiarEstado" asp-route-id="@regla.Id" method="post" class="finance-btn-danger-form">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="activa" value="@((!regla.Activa).ToString().ToLowerInvariant())" />
+                                        <button type="submit" class="svc-act-btn svc-act-btn--toggle">
+                                            <i class="bi bi-pause-circle"></i> @(regla.Activa ? "Pausar" : "Reactivar")
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="8">
+                            <div class="finance-empty-state">
+                                <div class="finance-empty-icon"><i class="bi bi-clock"></i></div>
+                                <p class="finance-empty-title">Sin bloqueos recurrentes</p>
+                                <p class="finance-empty-subtitle">
+                                    Creá uno para que el almuerzo del equipo se repita solo y nadie pueda reservar en ese horario.
+                                </p>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="finance-mobile-list">
+        @foreach (var regla in Model.Reglas)
+        {
+            <div class="finance-mobile-card">
+                <div class="finance-mobile-card-header">
+                    <span class="finance-mobile-card-date">
+                        <i class="bi bi-clock"></i> @regla.Nombre
+                    </span>
+                    <span class="finance-mobile-card-monto">@regla.Horario</span>
+                </div>
+
+                <div class="finance-mobile-card-body">
+                    <div class="finance-mobile-card-row">
+                        <span class="finance-mobile-card-row-label">Días</span>
+                        <span class="finance-mobile-card-row-value">@regla.Dias</span>
+                    </div>
+                    <div class="finance-mobile-card-row">
+                        <span class="finance-mobile-card-row-label">Aplica a</span>
+                        <span class="finance-mobile-card-row-value">@regla.AlcanceTexto</span>
+                    </div>
+                    <div class="finance-mobile-card-row">
+                        <span class="finance-mobile-card-row-label">Estado</span>
+                        <span class="finance-mobile-card-row-value">@regla.EstadoTexto</span>
+                    </div>
+                </div>
+
+                <div class="finance-mobile-card-footer">
+                    <a asp-action="Detalle" asp-route-id="@regla.Id" class="finance-btn-row-edit">
+                        <i class="bi bi-eye"></i> Detalle
+                    </a>
+                    <a asp-action="Editar" asp-route-id="@regla.Id" class="finance-btn-row-edit">
+                        <i class="bi bi-pencil"></i> Editar
+                    </a>
+                </div>
+            </div>
+        }
+    </div>
+</div>

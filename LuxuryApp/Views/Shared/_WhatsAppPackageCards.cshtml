@@ -1,0 +1,74 @@
+@model LuxuryApp.Models.SaaS.WhatsAppPackageCardsViewModel
+
+@* Cards de paquetes WhatsApp (add-on comercial). Compartido por la Suscripcion privada y el modulo WhatsApp.
+   Estilos privados en subscription.css (clases pkg-*). La compra/cambio usa Billing/ContinuarCheckout. *@
+
+@if (Model.Cards.Any())
+{
+    <div class="pkg-grid">
+        @foreach (var plan in Model.Cards)
+        {
+            var isCurrent = !string.IsNullOrWhiteSpace(Model.CurrentAddonCode)
+                && string.Equals(Model.CurrentAddonCode, plan.Code, StringComparison.OrdinalIgnoreCase);
+
+            <article class="pkg-card @(isCurrent ? "pkg-card--current" : string.Empty)">
+                <div class="pkg-card-head">
+                    <span class="pkg-badge">@(isCurrent ? "Paquete actual" : (!string.IsNullOrWhiteSpace(plan.BadgeText) ? plan.BadgeText : "Add-on"))</span>
+                    <h3 class="pkg-name">@plan.Name</h3>
+                    <p class="pkg-summary">@plan.Summary</p>
+                </div>
+
+                <div class="pkg-amount">
+                    <strong>@plan.CurrencyCode @plan.MonthlyPrice.ToString("N0")</strong>
+                    <span>@plan.BillingLabel</span>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(plan.StaffLabel))
+                {
+                    <div class="pkg-meta">@plan.StaffLabel</div>
+                }
+
+                @if (plan.Highlights.Any())
+                {
+                    <ul class="pkg-list">
+                        @foreach (var highlight in plan.Highlights)
+                        {
+                            <li>@highlight</li>
+                        }
+                    </ul>
+                }
+
+                @if (!plan.CanStartCheckout && !string.IsNullOrWhiteSpace(plan.CheckoutAvailabilityMessage))
+                {
+                    <p class="pkg-note pkg-note--danger">@plan.CheckoutAvailabilityMessage</p>
+                }
+
+                @if (isCurrent)
+                {
+                    <button type="button" class="pkg-btn pkg-btn--ghost" disabled>Paquete actual</button>
+                }
+                else if (!Model.HasBaseAccess)
+                {
+                    <button type="button" class="pkg-btn pkg-btn--ghost" disabled>Activá un plan base primero</button>
+                }
+                else if (!plan.CanStartCheckout)
+                {
+                    <button type="button" class="pkg-btn pkg-btn--ghost" disabled>Configuración pendiente</button>
+                }
+                else
+                {
+                    <a class="pkg-btn pkg-btn--primary"
+                       asp-controller="Billing"
+                       asp-action="ContinuarCheckout"
+                       asp-route-planId="@plan.Id">
+                        @(Model.HasActiveAddon ? "Cambiar paquete" : "Activar paquete")
+                    </a>
+                }
+            </article>
+        }
+    </div>
+}
+else
+{
+    <p class="sub-empty-hint">No hay paquetes de WhatsApp disponibles en este momento.</p>
+}

@@ -1,0 +1,111 @@
+/* ===========================================================================
+   Cobro rápido en el evento del Calendario.
+   Botón "Cobrar" (pendiente) y badge "Cobrado" dentro de .cita-bloque, sin
+   ensuciar el bloque. Degrada con elegancia en citas de poca altura.
+   Depende del modal compartido (control-cobros.css aporta los estilos .cc-* del modal).
+   =========================================================================== */
+
+/* ── Rango horario del evento (inicio - fin), arriba del cliente ─────────── */
+.cita-bloque-time {
+    font-size: 10.5px;
+    font-weight: 500;
+    line-height: 1.25;
+    letter-spacing: 0.2px;
+    opacity: 0.85;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 1px;
+}
+
+/* Compacto: el rango se mantiene pero más discreto; en muy pequeñas se oculta
+   para no romper el layout (prioriza cliente + acción de cobro). */
+.cita-bloque.cobro-sm .cita-bloque-time { font-size: 10px; }
+.cita-bloque.cobro-xs .cita-bloque-time { display: none; }
+
+/* Reserva una banda inferior para que la acción/estado no pise el contenido. */
+.cita-bloque.has-cobro-foot { padding-bottom: 26px; }
+
+.cita-cobro-foot {
+    position: absolute;
+    left: 6px;
+    right: 6px;
+    bottom: 10px;            /* por encima del resize handle (8px) */
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    pointer-events: none;   /* el bloque sigue clickeable; solo el control captura */
+    z-index: 3;
+}
+
+/* El botón/badge sí reciben eventos. */
+.cita-cobro-foot > * { pointer-events: auto; }
+
+/* ── Botón "Cobrar" (pendiente) ─────────────────────────────────────────── */
+.cita-cobrar-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-right: auto;          /* ancla a la izquierda */
+    max-width: 100%;
+    padding: 2px 9px;
+    border: 0;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.94);
+    color: var(--private-accent-strong);
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 1.55;
+    white-space: nowrap;
+    cursor: pointer;
+    box-shadow: 0 2px 7px rgba(0, 0, 0, 0.28);
+    transition: background 0.12s ease, transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.cita-cobrar-btn:hover {
+    background: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.32);
+}
+
+.cita-cobrar-btn:active { transform: translateY(0); }
+.cita-cobrar-btn i { font-size: 11px; line-height: 1; }
+
+/* ── Badge "Cobrado" (verde suave) ──────────────────────────────────────── */
+.cita-cobrado-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;           /* ancla a la derecha */
+    max-width: 100%;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: rgba(22, 163, 74, 0.92);
+    color: #fff;
+    font-size: 10.5px;
+    font-weight: 800;
+    line-height: 1.55;
+    white-space: nowrap;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.22);
+}
+
+.cita-cobrado-badge i { font-size: 11px; line-height: 1; }
+
+/* ── Compacto: citas de poca altura ─────────────────────────────────────── */
+/* Tamaño medio: oculta la línea de servicio para dar aire a nombre + acción. */
+.cita-bloque.cobro-sm { padding-bottom: 24px; }
+.cita-bloque.cobro-sm .cita-bloque-detail { display: none; }
+
+/* Muy pequeño: solo icono (sin etiqueta) y banda mínima. */
+.cita-bloque.cobro-xs {
+    padding: 4px 6px 19px;
+    font-size: 12px;
+}
+.cita-bloque.cobro-xs .cita-bloque-detail { display: none; }
+.cita-bloque.cobro-xs .cita-cobro-foot { bottom: 7px; }
+.cita-bloque.cobro-xs .cita-cobro-label { display: none; }
+.cita-bloque.cobro-xs .cita-cobrar-btn,
+.cita-bloque.cobro-xs .cita-cobrado-badge { padding: 1px 6px; }
+
+/* En hover el bloque escala (transform): el footer absoluto lo acompaña sin saltos. */
+.cita-bloque:hover .cita-cobrar-btn { box-shadow: 0 4px 10px rgba(0, 0, 0, 0.32); }

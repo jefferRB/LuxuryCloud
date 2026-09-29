@@ -1,0 +1,81 @@
+@model LuxuryApp.Models.SaaS.BillingPlanesViewModel
+
+@* Cards de planes base para la Suscripcion privada. Estilos privados en subscription.css (clases plan-*).
+   El usuario siempre esta autenticado en este contexto. *@
+
+@{
+    var hasBaseAccess = Model.CurrentSubscription?.CanAccessApp == true || Model.CurrentAccess?.CanAccessApp == true;
+}
+
+@if (Model.BasePlanCards.Any())
+{
+    <div class="plan-grid">
+        @foreach (var plan in Model.BasePlanCards)
+        {
+            var isCurrentPlan = Model.CurrentAccess?.EffectivePlanId == plan.Id;
+
+            <article class="plan-card @(plan.IsFeatured ? "plan-card--featured" : string.Empty) @(isCurrentPlan ? "plan-card--current" : string.Empty)">
+                <div class="plan-card-head">
+                    @if (!string.IsNullOrWhiteSpace(plan.BadgeText))
+                    {
+                        <span class="plan-badge">@plan.BadgeText</span>
+                    }
+                    else if (isCurrentPlan)
+                    {
+                        <span class="plan-badge plan-badge--muted">Plan actual</span>
+                    }
+                    <h3 class="plan-name">@plan.Name</h3>
+                    <p class="plan-summary">@plan.Summary</p>
+                </div>
+
+                <div class="plan-amount">
+                    <strong>@plan.CurrencyCode @plan.MonthlyPrice.ToString("N0")</strong>
+                    <span>@plan.BillingLabel</span>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(plan.StaffLabel))
+                {
+                    <div class="plan-meta">@plan.StaffLabel</div>
+                }
+
+                @if (plan.Highlights.Any())
+                {
+                    <ul class="plan-list">
+                        @foreach (var highlight in plan.Highlights)
+                        {
+                            <li>@highlight</li>
+                        }
+                    </ul>
+                }
+
+                @if (!plan.CanStartCheckout && !string.IsNullOrWhiteSpace(plan.CheckoutAvailabilityMessage))
+                {
+                    <p class="pkg-note pkg-note--danger">@plan.CheckoutAvailabilityMessage</p>
+                }
+
+                @if (isCurrentPlan)
+                {
+                    <button type="button" class="pkg-btn pkg-btn--ghost" disabled>Plan actual</button>
+                }
+                else if (!plan.CanStartCheckout)
+                {
+                    <button type="button" class="pkg-btn pkg-btn--ghost" disabled>Configuración pendiente</button>
+                }
+                else
+                {
+                    <form asp-controller="Billing" asp-action="Checkout" method="post" class="plan-action-form">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="planId" value="@plan.Id" />
+                        <button type="submit" class="pkg-btn @(plan.IsFeatured ? "pkg-btn--primary" : "pkg-btn--ghost")">
+                            @(hasBaseAccess ? "Cambiar a este plan" : "Activar este plan")
+                        </button>
+                    </form>
+                }
+            </article>
+        }
+    </div>
+}
+else
+{
+    <p class="sub-empty-hint">No hay planes base activos configurados en este entorno.</p>
+}

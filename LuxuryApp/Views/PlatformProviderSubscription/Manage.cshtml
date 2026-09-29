@@ -1,0 +1,314 @@
+@model LuxuryApp.Models.Platform.ProviderSubscriptionLifecycleViewModel
+@{
+    ViewData["Title"] = "Gestión de suscripción";
+
+    string FormatUtc(DateTime? value) =>
+        value.HasValue ? value.Value.ToString("yyyy-MM-dd HH:mm") + " UTC" : "—";
+
+    var hasTenant = Model.TenantId != Guid.Empty;
+    var canAct = Model.AdminEnabled && Model.HasManageableSubscription;
+}
+
+<div class="container py-4">
+    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
+        <div>
+            <h1 class="h3 mb-1">Gestión de suscripción</h1>
+            <p class="text-muted mb-0">
+                Cancelar renovación, cancelar inmediata, pausar y reactivar. Toda acción se verifica
+                contra TiloPay y queda auditada. <a asp-controller="PlatformBillingHealth" asp-action="Index">Billing Health</a>
+            </p>
+        </div>
+        <span class="badge text-bg-dark">Solo plataforma</span>
+    </div>
+
+    @if (TempData["PlatformSuccess"] is string ok)
+    {
+        <div class="alert alert-success"><i class="bi bi-check2-circle"></i> @ok</div>
+    }
+    @if (TempData["PlatformError"] is string err)
+    {
+        <div class="alert alert-danger"><i class="bi bi-exclamation-triangle"></i> @err</div>
+    }
+
+    <form asp-action="Manage" method="get" class="row g-2 align-items-end mb-4" style="max-width: 640px;">
+        <div class="col">
+            <label class="form-label small text-muted mb-1">Tenant Id</label>
+            <input type="text" name="tenantId" value="@(hasTenant ? Model.TenantId.ToString() : "")" class="form-control" placeholder="GUID del tenant" />
+        </div>
+        <div class="col-auto">
+            <button type="submit" class="btn btn-outline-secondary">Ver</button>
+        </div>
+    </form>
+
+    @if (!Model.AdminEnabled)
+    {
+        <div class="alert alert-warning">La integración admin de TiloPay está deshabilitada: las acciones no están disponibles.</div>
+    }
+
+    @if (!hasTenant)
+    {
+        <p class="text-muted">Ingresá el Tenant Id para ver y gestionar su suscripción.</p>
+        return;
+    }
+
+    @if (!Model.HasManageableSubscription)
+    {
+        <div class="alert alert-secondary">
+            El tenant <strong>@(Model.TenantName ?? Model.TenantId.ToString())</strong> no tiene una suscripción recurrente de TiloPay con id_suscriptor sobre la que operar.
+        </div>
+        return;
+    }
+
+    @if (!string.IsNullOrWhiteSpace(Model.RecentMismatchReason))
+    {
+        <div class="alert alert-danger">
+            <i class="bi bi-exclamation-octagon"></i> <strong>Desajuste detectado</strong> (@FormatUtc(Model.RecentMismatchAtUtc)): @Model.RecentMismatchReason
+        </div>
+    }
+
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <h2 class="h6 text-uppercase text-muted mb-3">Estado local</h2>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between px-0">Tenant <span class="fw-semibold">@(Model.TenantName ?? Model.TenantId.ToString())</span></li>
+                        <li class="list-group-item d-flex justify-content-between px-0">Plan <span class="fw-semibold">@(Model.PlanName ?? Model.PlanCode ?? "—")</span></li>
+                        <li class="list-group-item d-flex justify-content-between px-0">Estado <span class="badge text-bg-secondary">@Model.LocalStatusLabel</span></li>
+                        <li class="list-group-item d-flex justify-content-between px-0">Acceso a la app <span class="badge @(Model.CanAccessApp ? "text-bg-success" : "text-bg-danger")">@(Model.CanAccessApp ? "Sí" : "No")</span></li>
+                        <li class="list-group-item d-flex justify-content-between px-0">Renovación cancelada <span class="badge @(Model.CancelAtPeriodEnd ? "text-bg-warning" : "text-bg-success")">@(Model.CancelAtPeriodEnd ? "Sí" : "No")</span></li>
+                        <li class="list-group-item d-flex justify-content-between px-0">Vigente hasta <span class="fw-semibold">@(Model.EffectiveEndDisplay ?? "—")</span></li>
+                        <li class="list-group-item d-flex justify-content-between px-0">Fecha efectiva de cancelación <span>@FormatUtc(Model.CancellationEffectiveAtUtc)</span></li>
+                        <li class="list-group-item d-flex justify-content-between px-0">Motivo cancelación <span class="small text-muted">@(Model.CancellationReason ?? "—")</span></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
+                        <h2 class="h6 text-uppercase text-muted mb-0">Estado del proveedor (último snapshot)</h2>
+                        @if (canAct)
+                        {
+                            <form asp-action="SyncProviderStatus" asp-route-tenantId="@Model.TenantId" method="post" class="d-inline" data-disable-on-submit>
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-arrow-repeat"></i> Actualizar estado proveedor
+                                </button>
+                            </form>
+                        }
+                    </div>
+                    <p class="small text-muted mb-3">
+                        El snapshot no se consulta en vivo en cada carga. Usá <strong>Actualizar estado proveedor</strong>
+                        para consultar TiloPay (getSuscriptorRepeat) y refrescar este estado.
+                    </p>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between px-0">id_suscriptor <span class="font-monospace">@(Model.ProviderSubscriptionIdSuffix ?? "—")</span></li>
+                        <li class="list-group-item d-flex justify-content-between px-0">
+                            Estado provider
+                            <span class="badge @(Model.ProviderIsActive ? "text-bg-success" : Model.ProviderIsPaused ? "text-bg-warning" : Model.ProviderIsDeleted ? "text-bg-secondary" : "text-bg-dark")">@Model.ProviderStateLabel</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between px-0">Status crudo <span class="font-monospace small">@(Model.ProviderStatusRaw ?? "—")</span></li>
+                        <li class="list-group-item d-flex justify-content-between px-0">Pausado en <span>@FormatUtc(Model.ProviderPausedAtUtc)</span></li>
+                        <li class="list-group-item d-flex justify-content-between px-0">Baja verificada en <span>@FormatUtc(Model.ProviderCancelledAtUtc)</span></li>
+                        <li class="list-group-item d-flex justify-content-between px-0">Cancelación solicitada <span>@FormatUtc(Model.CancellationRequestedAtUtc)</span></li>
+                        <li class="list-group-item d-flex justify-content-between px-0">Última sincronización <span>@FormatUtc(Model.ProviderStatusLastSyncedUtc)</span></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0 mt-4">
+        <div class="card-body">
+            <h2 class="h6 text-uppercase text-muted mb-3">Acciones</h2>
+            @if (!canAct)
+            {
+                <p class="text-muted mb-0">Acciones no disponibles (integración deshabilitada o sin suscriptor).</p>
+            }
+            else
+            {
+                <div class="d-flex flex-wrap gap-2">
+                    @if (!Model.CancelAtPeriodEnd)
+                    {
+                        <button type="button" class="btn btn-outline-warning" data-bs-toggle="modal" data-bs-target="#cancelRenovacionModal">
+                            <i class="bi bi-x-circle"></i> Cancelar renovación
+                        </button>
+                    }
+                    @if (Model.CanReactivateRenewal)
+                    {
+                        <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#reactivateRenovacionModal">
+                            <i class="bi bi-arrow-clockwise"></i> Reactivar renovación
+                        </button>
+                    }
+                    @if (Model.ProviderIsPaused)
+                    {
+                        <button type="button" class="btn btn-outline-secondary" disabled title="El suscriptor ya está pausado en TiloPay">
+                            <i class="bi bi-pause-circle"></i> Ya pausada
+                        </button>
+                    }
+                    else
+                    {
+                        <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#pauseModal">
+                            <i class="bi bi-pause-circle"></i> Pausar
+                        </button>
+                    }
+                    @if (Model.ProviderIsDeleted)
+                    {
+                        <button type="button" class="btn btn-outline-success" disabled title="Suscriptor eliminado en el proveedor">
+                            <i class="bi bi-play-circle"></i> Reactivar
+                        </button>
+                    }
+                    else
+                    {
+                        <button type="button" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#reactivateModal">
+                            <i class="bi bi-play-circle"></i> Reactivar
+                        </button>
+                    }
+                    <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#cancelImmediateModal">
+                        <i class="bi bi-exclamation-octagon"></i> Cancelar inmediata
+                    </button>
+                </div>
+                @if (Model.ProviderIsDeleted)
+                {
+                    <p class="small text-muted mt-2 mb-0">
+                        <i class="bi bi-info-circle"></i> Esta suscripción fue eliminada en el proveedor. Usá checkout nuevo o contactá soporte. No se intenta reactivar un eliminado a ciegas.
+                    </p>
+                }
+            }
+        </div>
+    </div>
+</div>
+
+@if (canAct)
+{
+    @* ── Cancelar renovación ── *@
+    @if (!Model.CancelAtPeriodEnd)
+    {
+        <div class="modal fade" id="cancelRenovacionModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header"><h5 class="modal-title">Cancelar renovación</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                    <div class="modal-body">
+                        <p class="mb-0">Se cancelará la renovación en TiloPay. El acceso se mantiene hasta <strong>@(Model.EffectiveEndDisplay ?? "el fin del período")</strong>. No se harán nuevos cobros.</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Volver</button>
+                        <form asp-action="CancelRenovacion" asp-route-tenantId="@Model.TenantId" method="post" class="d-inline" data-disable-on-submit>
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-warning">Sí, cancelar renovación</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    @* ── Reactivar renovación (Caso D: cancelada aún vigente) ── *@
+    @if (Model.CanReactivateRenewal)
+    {
+        <div class="modal fade" id="reactivateRenovacionModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header"><h5 class="modal-title">Reactivar renovación</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                    <div class="modal-body"><p class="mb-0">Se reactivará el MISMO suscriptor cancelado (verificado, status 1) y se limpiará la cancelación programada. La vigencia pagada se mantiene.</p></div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Volver</button>
+                        <form asp-action="ReactivateRenovacion" asp-route-tenantId="@Model.TenantId" method="post" class="d-inline" data-disable-on-submit>
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-primary">Reactivar renovación</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    @* ── Pausar ── *@
+    <div class="modal fade" id="pauseModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <form asp-action="Pause" asp-route-tenantId="@Model.TenantId" method="post" data-disable-on-submit>
+                    @Html.AntiForgeryToken()
+                    <div class="modal-header"><h5 class="modal-title">Pausar suscripción</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                    <div class="modal-body">
+                        <p>Se pausará el suscriptor en TiloPay (verificado, status 3).</p>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="immediate" value="true" id="pauseImmediate" />
+                            <label class="form-check-label" for="pauseImmediate">Suspensión inmediata (corta el acceso ahora). Si se deja sin marcar, el acceso se mantiene hasta la fecha pagada.</label>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Volver</button>
+                        <button type="submit" class="btn btn-primary">Pausar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    @* ── Reactivar ── *@
+    @if (!Model.ProviderIsDeleted)
+    {
+        <div class="modal fade" id="reactivateModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header"><h5 class="modal-title">Reactivar suscripción</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                    <div class="modal-body"><p class="mb-0">Se reactivará el suscriptor en TiloPay (verificado, status 1) y volverá a Activa localmente.</p></div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Volver</button>
+                        <form asp-action="Reactivate" asp-route-tenantId="@Model.TenantId" method="post" class="d-inline" data-disable-on-submit>
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-success">Reactivar</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    @* ── Cancelar inmediata (peligrosa) ── *@
+    <div class="modal fade" id="cancelImmediateModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-danger">
+                <form asp-action="Cancel" asp-route-tenantId="@Model.TenantId" method="post" data-disable-on-submit data-require-confirm>
+                    @Html.AntiForgeryToken()
+                    <div class="modal-header"><h5 class="modal-title text-danger">Cancelar inmediata</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                    <div class="modal-body">
+                        <p>Esto cancelará el proveedor y puede cortar acceso inmediatamente. Acción irreversible.</p>
+                        <label class="form-label small">Escribí <strong>CANCELAR</strong> para confirmar:</label>
+                        <input type="text" name="confirm" class="form-control" autocomplete="off" placeholder="CANCELAR" data-confirm-input />
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Volver</button>
+                        <button type="submit" class="btn btn-danger" data-confirm-submit disabled>Cancelar de inmediato</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        // Anti doble-click: al enviar se deshabilita el botón (el backend además es idempotente).
+        document.querySelectorAll('form[data-disable-on-submit]').forEach(function (form) {
+            form.addEventListener('submit', function () {
+                var btn = form.querySelector('button[type="submit"]');
+                if (btn) { btn.disabled = true; }
+            });
+        });
+        // Confirmación fuerte "CANCELAR" para la cancelación inmediata.
+        document.querySelectorAll('form[data-require-confirm]').forEach(function (form) {
+            var input = form.querySelector('[data-confirm-input]');
+            var submit = form.querySelector('[data-confirm-submit]');
+            if (input && submit) {
+                input.addEventListener('input', function () {
+                    submit.disabled = input.value.trim() !== 'CANCELAR';
+                });
+            }
+        });
+    </script>
+}

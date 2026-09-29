@@ -1,0 +1,189 @@
+@model LuxuryApp.Models.Reservas.BookingRequestsPageViewModel
+@using LuxuryApp.Models.Reservas
+@using LuxuryApp.Models.WhatsApp
+@{
+    // Pestañas de estado. El contador de cada una sale del ViewModel (todo el rango),
+    // nunca de las tarjetas visibles.
+    var pestanas = new (BookingRequestStatusFilter Filtro, string Texto)[]
+    {
+        (BookingRequestStatusFilter.Pending, "Pendientes"),
+        (BookingRequestStatusFilter.Confirmed, "Confirmadas"),
+        (BookingRequestStatusFilter.Rejected, "Rechazadas"),
+        (BookingRequestStatusFilter.All, "Todas")
+    };
+}
+
+<div class="reservas-toolbar"
+     data-estado-actual="@Model.EstadoFiltroValor"
+     data-rango-actual="@Model.RangoFiltroValor">
+
+    <div class="reservas-filtro-bloque">
+        <span class="finance-filter-label"><i class="bi bi-funnel"></i> Estado</span>
+        <div class="reservas-tabs" role="group" aria-label="Filtrar solicitudes por estado">
+            @foreach (var pestana in pestanas)
+            {
+                var activa = Model.EsEstadoActivo(pestana.Filtro);
+                <button type="button"
+                        class="rsv-tab @(activa ? "active" : null)"
+                        data-estado="@pestana.Filtro.ToToken()"
+                        aria-pressed="@(activa ? "true" : "false")">
+                    <span class="rsv-tab-text">@pestana.Texto</span>
+                    <span class="rsv-count">@Model.ConteoDe(pestana.Filtro)</span>
+                </button>
+            }
+        </div>
+    </div>
+
+    <div class="reservas-filtro-bloque reservas-filtro-rango">
+        <label class="finance-filter-label" for="rangoSelect"><i class="bi bi-calendar3"></i> Período</label>
+        <select id="rangoSelect" class="finance-filter-select reservas-rango"
+                disabled="@(!Model.RangoAplicaAlListado)">
+            <option value="hoy" selected="@Model.EsRangoActivo(BookingRequestDateRange.Today)">Hoy</option>
+            <option value="semana" selected="@Model.EsRangoActivo(BookingRequestDateRange.ThisWeek)">Esta semana</option>
+            <option value="mes" selected="@Model.EsRangoActivo(BookingRequestDateRange.ThisMonth)">Este mes</option>
+        </select>
+    </div>
+
+    @if (!Model.RangoAplicaAlListado)
+    {
+        <p class="reservas-toolbar-hint">
+            <i class="bi bi-info-circle"></i>
+            Las solicitudes pendientes se muestran siempre, sin importar el período.
+        </p>
+    }
+    else if (Model.EstadoFiltro == BookingRequestStatusFilter.All)
+    {
+        <p class="reservas-toolbar-hint">
+            <i class="bi bi-info-circle"></i>
+            Incluye todas las pendientes más las confirmadas y rechazadas del período.
+        </p>
+    }
+</div>
+
+<div class="reservas-lista">
+    @if (Model.Solicitudes.Count == 0)
+    {
+        <div class="reservas-empty">
+            <div class="reservas-empty-icon"><i class="bi bi-calendar2-week"></i></div>
+            <p class="reservas-empty-title">No hay solicitudes en este filtro.</p>
+            <p class="reservas-empty-sub">Cuando tus clientes soliciten una cita desde tu link, aparecerán aquí.</p>
+        </div>
+    }
+    else
+    {
+        <div class="reservas-cards">
+            @foreach (var s in Model.Solicitudes)
+            {
+                var (badgeClass, badgeText) = s.Estado switch
+                {
+                    BookingRequestStates.Pending => ("rsv-badge rsv-pending", "Pendiente"),
+                    BookingRequestStates.Confirmed => ("rsv-badge rsv-confirmed", "Confirmada"),
+                    BookingRequestStates.Rejected => ("rsv-badge rsv-rejected", "Rechazada"),
+                    BookingRequestStates.Expired => ("rsv-badge rsv-muted", "Expirada"),
+                    _ => ("rsv-badge rsv-muted", s.Estado)
+                };
+
+                <article class="reservas-card" data-id="@s.Id">
+                    <header class="reservas-card-top">
+                        <div class="reservas-card-ident">
+                            <span class="reservas-nombre">@s.NombreCliente</span>
+                            <a class="reservas-tel" href="tel:@s.TelefonoCliente"><i class="bi bi-telephone"></i> @s.TelefonoCliente</a>
+                        </div>
+                        <span class="@badgeClass">@badgeText</span>
+                    </header>
+
+                    <div class="reservas-sep"></div>
+
+                    <dl class="reservas-detalle">
+                        <div class="reservas-row">
+                            <dt><i class="bi bi-scissors"></i></dt>
+                            <dd>@s.ServicioNombre <span class="rsv-dim">· @s.DuracionMinutos min</span></dd>
+                        </div>
+                        <div class="reservas-row">
+                            <dt><i class="bi bi-person-badge"></i></dt>
+                            <dd>
+                                <span class="rsv-dim">Solicitado:</span> @s.FuncionarioNombre
+                            </dd>
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(s.FuncionarioAsignadoNombre))
+                        {
+                            <div class="reservas-row">
+                                <dt><i class="bi bi-calendar-check"></i></dt>
+                                <dd>
+                                    <span class="rsv-dim">Asignado:</span> @s.FuncionarioAsignadoNombre
+                                </dd>
+                            </div>
+                        }
+                        <div class="reservas-row">
+                            <dt><i class="bi bi-calendar-event"></i></dt>
+                            <dd class="rsv-cap">@s.FechaHoraInicioSolicitada.ToString("dddd dd MMM") · @s.FechaHoraInicioSolicitada.ToString("HH:mm")</dd>
+                        </div>
+                        @* Sin complemento el formulario público nunca ofreció la casilla: hablar de
+                           autorización sería inventar un estado que el cliente jamás pudo elegir. *@
+                        @if (Model.WhatsAppActivo)
+                        {
+                            <div class="reservas-row">
+                                <dt><i class="bi bi-whatsapp"></i></dt>
+                                <dd class="rsv-dim">@(s.AceptaWhatsApp ? "Autoriza confirmación por WhatsApp" : "Sin autorización de WhatsApp")</dd>
+                            </div>
+                        }
+                    </dl>
+
+                    @if (s.Estado == BookingRequestStates.Rejected && !string.IsNullOrWhiteSpace(s.RejectedReason))
+                    {
+                        <div class="reservas-nota rsv-motivo"><i class="bi bi-x-circle"></i> @s.RejectedReason</div>
+                    }
+                    @if (s.Estado == BookingRequestStates.Confirmed && s.ConvertedCitaId.HasValue)
+                    {
+                        <div class="reservas-nota rsv-ok"><i class="bi bi-check2-circle"></i> Cita #@s.ConvertedCitaId creada en el calendario.</div>
+
+                        if (Model.WhatsAppActivo)
+                        {
+                            if (s.ConfirmacionWhatsAppEnviada)
+                            {
+                                <div class="reservas-nota rsv-ok"><i class="bi bi-whatsapp"></i> Confirmación de WhatsApp enviada.</div>
+                            }
+                            else if (s.ConfirmacionWhatsAppEstado == WhatsAppConfirmationStates.ErrorEnvio)
+                            {
+                                <div class="reservas-nota rsv-motivo"><i class="bi bi-whatsapp"></i> No se pudo enviar la confirmación de WhatsApp.</div>
+                            }
+                            else if (s.ConfirmacionWhatsAppEstado == WhatsAppConfirmationStates.NoEnviada)
+                            {
+                                <div class="reservas-nota rsv-dim"><i class="bi bi-whatsapp"></i> Confirmación de WhatsApp no enviada.</div>
+                            }
+                        }
+                    }
+
+                    @if (s.Estado == BookingRequestStates.Pending)
+                    {
+                        if (!string.IsNullOrWhiteSpace(s.FuncionarioAsignadoNombre))
+                        {
+                            <p class="rsv-hint rsv-dim">
+                                <i class="bi bi-lock"></i>
+                                Este espacio está reservado en la agenda de @s.FuncionarioAsignadoNombre mientras la solicitud siga pendiente.
+                            </p>
+                        }
+                        else if (s.SolicitoCualquierFuncionario)
+                        {
+                            <p class="rsv-hint rsv-dim">Se asignará un profesional disponible al confirmar.</p>
+                        }
+                    }
+
+                    <footer class="reservas-card-foot">
+                        @* Hora LOCAL del negocio: se persiste en UTC y el servicio la convierte. *@
+                        <span class="reservas-meta rsv-dim">
+                            <i class="bi bi-clock-history"></i> Recibida @s.RecibidaLocal.ToString("dd MMM, HH:mm")
+                        </span>
+                        @if (s.Estado == BookingRequestStates.Pending)
+                        {
+                            <div class="reservas-acciones">
+                                <button type="button" class="btn-rsv btn-rsv-reject" data-reject="@s.Id"><i class="bi bi-x-lg"></i> Rechazar</button>
+                                <button type="button" class="btn-rsv btn-rsv-confirm" data-confirm="@s.Id"><i class="bi bi-check-lg"></i> Confirmar</button>
+                            </div>
+                        }
+                    </footer>
+                </article>
+            }
+        </div>
+    }
+</div>

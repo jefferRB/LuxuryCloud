@@ -1,0 +1,812 @@
+﻿@using LuxuryApp.Models.Asociados
+@using LuxuryApp.Models.Inversionistas
+@model AssociateDetailViewModel
+
+@{
+    ViewData["Title"] = Model.Datos.Nombre;
+    var puede = Model.PuedeAdministrar;
+    var acceso = Model.Acceso;
+    var participacion = Model.Participacion;
+    // Estado del dinero (último corte emitido, ciclo en curso, saldo). Separado a propósito de
+    // `participacion`, que es la CONFIGURACIÓN del acuerdo.
+    var resumen = Model.ResumenFinanciero;
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/finance-modules.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/associates.css" asp-append-version="true" />
+    @* Tarjetas y badges del resumen financiero: mismo lenguaje visual que el estado de cuenta. *@
+    <link rel="stylesheet" href="~/css/investor-settlement.css" asp-append-version="true" />
+}
+
+<div class="finance-page-shell">
+
+    <div class="finance-hero">
+        <div class="finance-hero-left module-heading">
+            <span class="module-eyebrow">Asociados del negocio</span>
+            <h1 class="module-title"><i class="bi bi-people-fill module-title-icon" aria-hidden="true"></i>@Model.Datos.Nombre</h1>
+            <p class="module-subtitle">
+                @(string.IsNullOrWhiteSpace(Model.Datos.Puesto) ? "Sin puesto definido" : Model.Datos.Puesto)
+                ·
+                @(Model.Datos.Tipos.Count == 0
+                    ? "Sin tipo"
+                    : string.Join(" / ", Model.Datos.Tipos.Select(AssociateTypeTexts.Describe)))
+            </p>
+        </div>
+    </div>
+
+    @if (TempData["Mensaje"] is string mensaje)
+    {
+        <div class="svc-alert svc-alert--success" role="status">@mensaje</div>
+    }
+
+    @if (TempData["Error"] is string error)
+    {
+        <div class="svc-alert svc-alert--danger" role="alert">@error</div>
+    }
+
+    @if (!Model.Datos.Activo)
+    {
+        <div class="finance-form-info-box">
+            <i class="bi bi-info-circle-fill"></i>
+            Este asociado está <strong>inactivo</strong>. Sus datos, su participación y sus estados
+            de cuenta se conservan intactos; simplemente no participa de la operación diaria.
+        </div>
+    }
+
+    @* ── BLOQUE 1: INFORMACIÓN GENERAL Y RELACIÓN ── *@
+    <div class="assoc-block">
+        <div class="assoc-block-head">
+            <i class="bi bi-person-vcard"></i>
+            <h3 class="assoc-block-title">Información general</h3>
+        </div>
+        <p class="assoc-block-sub">Datos de contacto y relación de esta persona con el negocio.</p>
+
+        <form asp-action="GuardarDatos" asp-route-id="@Model.Datos.Id" method="post">
+            @Html.AntiForgeryToken()
+
+            <div class="finance-form-grid">
+                <div class="finance-form-field">
+                    <label class="finance-form-label">Nombre <span class="finance-required">*</span></label>
+                    <div class="finance-input-wrap">
+                        <span class="finance-input-icon"><i class="bi bi-person"></i></span>
+                        <input name="Nombre" class="finance-form-control" value="@Model.Datos.Nombre"
+                               readonly="@(!puede)" required autocomplete="off" />
+                    </div>
+                </div>
+
+                <div class="finance-form-field">
+                    <label class="finance-form-label">Puesto</label>
+                    <div class="finance-input-wrap">
+                        <span class="finance-input-icon"><i class="bi bi-briefcase"></i></span>
+                        <input name="Puesto" class="finance-form-control" value="@Model.Datos.Puesto"
+                               readonly="@(!puede)" autocomplete="off" />
+                    </div>
+                </div>
+
+                <div class="finance-form-field">
+                    <label class="finance-form-label">Correo electrónico</label>
+                    <div class="finance-input-wrap">
+                        <span class="finance-input-icon"><i class="bi bi-envelope"></i></span>
+                        <input name="Email" class="finance-form-control" type="email" value="@Model.Datos.Email"
+                               readonly="@(!puede || acceso.TieneAcceso)" autocomplete="off" />
+                    </div>
+                    @if (acceso.TieneAcceso)
+                    {
+                        <span class="assoc-note">
+                            Tiene acceso al sistema: el correo se cambia desde el bloque
+                            <strong>Acceso al sistema</strong> para no desalinear su cuenta.
+                        </span>
+                    }
+                </div>
+
+                <div class="finance-form-field">
+                    <label class="finance-form-label">Teléfono</label>
+                    <div class="finance-input-wrap">
+                        <span class="finance-input-icon"><i class="bi bi-telephone"></i></span>
+                        <input name="Telefono" class="finance-form-control" value="@Model.Datos.Telefono"
+                               readonly="@(!puede)" autocomplete="off" />
+                    </div>
+                </div>
+
+                <div class="finance-form-field finance-form-full">
+                    <label class="finance-form-label">Relación con el negocio</label>
+                    <div class="assoc-types">
+                        @foreach (var tipo in AssociateTypeTexts.Todos)
+                        {
+                            <label class="assoc-type-chip">
+                                <input type="checkbox" name="Tipos" value="@((int)tipo)"
+                                       checked="@Model.Datos.Tipos.Contains(tipo)" disabled="@(!puede)" />
+                                <span>@AssociateTypeTexts.Describe(tipo)</span>
+                            </label>
+                        }
+                    </div>
+                </div>
+
+                <div class="finance-form-field finance-form-full">
+                    <label class="finance-form-label">Notas internas</label>
+                    <textarea name="NotasInternas" class="finance-form-control finance-form-control--no-icon"
+                              rows="2" readonly="@(!puede)">@Model.Datos.NotasInternas</textarea>
+                </div>
+            </div>
+
+            @if (puede)
+            {
+                <div class="assoc-access-actions">
+                    <button type="submit" class="finance-btn-save">
+                        <i class="bi bi-floppy2-fill"></i> Guardar cambios
+                    </button>
+                </div>
+            }
+        </form>
+
+        @if (puede)
+        {
+            <form asp-action="CambiarEstado" asp-route-id="@Model.Datos.Id" method="post"
+                  class="assoc-access-actions"
+                  data-assoc-confirm="@(Model.Datos.Activo ? "¿Desactivar a este asociado? Conservás todos sus datos y su participación." : "")">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="activo" value="@((!Model.Datos.Activo).ToString().ToLowerInvariant())" />
+                <button type="submit" class="finance-btn-secondary">
+                    <i class="bi bi-power"></i>
+                    @(Model.Datos.Activo ? "Desactivar asociado" : "Activar asociado")
+                </button>
+            </form>
+        }
+    </div>
+
+    @* ── BLOQUE 2: ACCESO AL SISTEMA ── *@
+    <div class="assoc-block">
+        <div class="assoc-block-head">
+            <i class="bi bi-shield-lock-fill"></i>
+            <h3 class="assoc-block-title">Acceso al sistema</h3>
+        </div>
+        <p class="assoc-block-sub">
+            Controla si esta persona puede iniciar sesión en LuxuryCloud. Bloquear el acceso no
+            borra nada: conserva sus datos, su participación y su historial.
+        </p>
+
+        <span class="assoc-access-status @(acceso.Estado switch {
+            AssociateAccessState.AccesoActivo => "assoc-access-status--active",
+            AssociateAccessState.AccesoBloqueado => "assoc-access-status--blocked",
+            _ => "assoc-access-status--none" })">
+            <i class="bi @(acceso.Estado switch {
+                AssociateAccessState.AccesoActivo => "bi-check-circle-fill",
+                AssociateAccessState.AccesoBloqueado => "bi-lock-fill",
+                _ => "bi-dash-circle" })"></i>
+            @acceso.EstadoTexto
+        </span>
+
+        @if (!acceso.TieneAcceso)
+        {
+            @if (!puede)
+            {
+                <p class="assoc-note">Este asociado no tiene cuenta para iniciar sesión.</p>
+            }
+            else if (!Model.Datos.Activo)
+            {
+                <div class="finance-form-info-box">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    El asociado está inactivo. Activalo primero para poder habilitar su acceso.
+                </div>
+            }
+            else
+            {
+                <form asp-action="ActivarAcceso" asp-route-id="@Model.Datos.Id" method="post">
+                    @Html.AntiForgeryToken()
+
+                    <div class="finance-form-field" style="max-width:420px;">
+                        <label class="finance-form-label">Correo de acceso <span class="finance-required">*</span></label>
+                        <div class="finance-input-wrap">
+                            <span class="finance-input-icon"><i class="bi bi-envelope"></i></span>
+                            <input type="email" name="email" class="finance-form-control"
+                                   value="@Model.Datos.Email" required autocomplete="off" />
+                        </div>
+                    </div>
+
+                    <label class="finance-form-label">Método de activación</label>
+                    <div class="assoc-access-modes">
+                        <label>
+                            <input type="radio" name="modoCredencial" value="invitacion" checked />
+                            Enviar invitación por correo (recomendado)
+                        </label>
+                        <label>
+                            <input type="radio" name="modoCredencial" value="temporal" />
+                            Definir una contraseña temporal
+                        </label>
+                    </div>
+
+                    <div class="finance-form-field" id="assocTempPwd" style="display:none;max-width:420px;">
+                        <label class="finance-form-label">Contraseña temporal</label>
+                        <div class="finance-input-wrap">
+                            <span class="finance-input-icon"><i class="bi bi-key"></i></span>
+                            <input type="text" name="contrasenaTemporal" class="finance-form-control"
+                                   placeholder="Mínimo 8 caracteres, con una mayúscula" autocomplete="off" />
+                        </div>
+                    </div>
+
+                    <div class="assoc-block-head" style="margin-top:1.35rem;">
+                        <i class="bi bi-sliders"></i>
+                        <h3 class="assoc-block-title">Permisos iniciales</h3>
+                    </div>
+                    <p class="assoc-block-sub">
+                        Lo que marqués acá es lo único que podrá abrir. Se puede cambiar después en
+                        cualquier momento.
+                    </p>
+
+                    <partial name="_PermisosMatriz" model="@(new AssociatePermissionsMatrixViewModel())" />
+
+                    <div class="assoc-access-actions">
+                        <button type="submit" class="finance-btn-primary">
+                            <i class="bi bi-key-fill"></i> Habilitar acceso
+                        </button>
+                    </div>
+                </form>
+
+                <p class="assoc-note">
+                    Con la opción recomendada, la persona recibe un correo para definir su propia
+                    contraseña. LuxuryCloud nunca guarda ni muestra contraseñas en texto plano.
+                </p>
+            }
+        }
+        else
+        {
+            <div class="finance-form-field" style="max-width:520px;">
+                <label class="finance-form-label">Correo de acceso</label>
+                @if (puede)
+                {
+                    <form asp-action="CambiarCorreoAcceso" asp-route-id="@Model.Datos.Id" method="post" class="assoc-access-row">
+                        @Html.AntiForgeryToken()
+                        <div class="finance-form-field">
+                            <div class="finance-input-wrap">
+                                <span class="finance-input-icon"><i class="bi bi-envelope"></i></span>
+                                <input type="email" name="email" class="finance-form-control"
+                                       value="@acceso.Email" required autocomplete="off" />
+                            </div>
+                        </div>
+                        <button type="submit" class="finance-btn-secondary">
+                            <i class="bi bi-arrow-repeat"></i> Actualizar
+                        </button>
+                    </form>
+                }
+                else
+                {
+                    <div class="finance-input-wrap">
+                        <span class="finance-input-icon"><i class="bi bi-envelope"></i></span>
+                        <input type="email" class="finance-form-control" value="@acceso.Email" readonly />
+                    </div>
+                }
+            </div>
+
+            @if (puede)
+            {
+                <div class="assoc-access-actions">
+                    <form asp-action="ReenviarInvitacion" asp-route-id="@Model.Datos.Id" method="post">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="finance-btn-secondary">
+                            <i class="bi bi-envelope-arrow-up"></i> Reenviar invitación
+                        </button>
+                    </form>
+
+                    @if (acceso.Estado == AssociateAccessState.AccesoBloqueado)
+                    {
+                        <form asp-action="ReactivarAcceso" asp-route-id="@Model.Datos.Id" method="post">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="finance-btn-primary">
+                                <i class="bi bi-unlock"></i> Reactivar acceso
+                            </button>
+                        </form>
+                    }
+                    else
+                    {
+                        <form asp-action="BloquearAcceso" asp-route-id="@Model.Datos.Id" method="post"
+                              data-assoc-confirm="¿Bloquear el acceso? La persona dejará de poder iniciar sesión de inmediato.">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="finance-btn-secondary">
+                                <i class="bi bi-lock"></i> Bloquear acceso
+                            </button>
+                        </form>
+                    }
+                </div>
+            }
+        }
+    </div>
+
+    @* ── BLOQUE 3: PERMISOS (solo si tiene acceso) ── *@
+    @if (acceso.TieneAcceso)
+    {
+        <div class="assoc-block">
+            <div class="assoc-block-head">
+                <i class="bi bi-sliders"></i>
+                <h3 class="assoc-block-title">Permisos</h3>
+            </div>
+            <p class="assoc-block-sub">
+                Qué puede ver y hacer dentro de LuxuryCloud. Los cambios aplican de inmediato: no
+                hace falta que cierre sesión.
+            </p>
+
+            @if (puede)
+            {
+                <form asp-action="GuardarPermisos" asp-route-id="@Model.Datos.Id" method="post">
+                    @Html.AntiForgeryToken()
+
+                    <partial name="_PermisosMatriz"
+                             model="@(new AssociatePermissionsMatrixViewModel { Concedidos = Model.Permisos.Concedidos })" />
+
+                    <div class="assoc-access-actions">
+                        <button type="submit" class="finance-btn-save">
+                            <i class="bi bi-floppy2-fill"></i> Guardar permisos
+                        </button>
+                    </div>
+                </form>
+            }
+            else
+            {
+                <partial name="_PermisosMatriz"
+                         model="@(new AssociatePermissionsMatrixViewModel {
+                             Concedidos = Model.Permisos.Concedidos,
+                             SoloLectura = true,
+                             MostrarPresets = false })" />
+            }
+        </div>
+    }
+
+    @* ── BLOQUE 4: RESUMEN FINANCIERO DEL INVERSIONISTA ──────────────────────────
+       Va ANTES de la configuración a propósito: lo primero que el dueño necesita es el
+       estado del dinero (qué cerró, qué se pagó, qué falta, cuánto lleva el ciclo), no el
+       formulario del porcentaje.
+
+       Los tres bloques son conceptos distintos y NO se mezclan:
+         · Último corte  = InvestorStatement emitido (snapshot congelado).
+         · Ciclo actual  = cálculo live del período abierto; puede cambiar; no es deuda.
+         · Saldo         = suma de los cortes emitidos; nunca incluye el estimado del ciclo.
+       ─────────────────────────────────────────────────────────────────────────── *@
+    @if (Model.EsInversionista && resumen is not null)
+    {
+        <div class="assoc-block">
+            <div class="assoc-block-head">
+                <i class="bi bi-graph-up-arrow"></i>
+                <h3 class="assoc-block-title">Participación en el negocio</h3>
+            </div>
+            <p class="assoc-block-sub">
+                @resumen.InvestorNombre
+                @if (resumen.PorcentajeVigente.HasValue)
+                {
+                    <text>· <strong>@resumen.PorcentajeVigente.Value.ToString("0.##") %</strong></text>
+                }
+                · @resumen.CorteTexto
+            </p>
+
+            <div class="inv-summary">
+
+                @* ── CARD 1: ÚLTIMO CORTE ── *@
+                <div class="inv-summary-card">
+                    <div class="inv-summary-head">
+                        <span class="inv-summary-title">Último corte</span>
+                        @if (resumen.UltimoCorte is not null)
+                        {
+                            <span class="inv-badge inv-badge--@InvestorVisuals.CssModifier(resumen.UltimoCorte.Tono)">
+                                @resumen.UltimoCorte.EstadoTexto
+                            </span>
+                        }
+                    </div>
+
+                    @if (resumen.UltimoCorte is null)
+                    {
+                        @* Sin estados emitidos NO se inventa un último corte con la fecha teórica
+                           del resolver: se dice la verdad y se anuncia el primero. *@
+                        <p class="inv-summary-empty">
+                            <strong>Aún no hay cortes emitidos.</strong><br />
+                            @resumen.EmptyStateDetalle
+                        </p>
+                    }
+                    else
+                    {
+                        <span class="inv-summary-amount">
+                            ₡ @resumen.UltimoCorte.ParticipacionCalculada.ToString("N2")
+                        </span>
+                        <span class="inv-summary-caption">
+                            Corte @resumen.UltimoCorte.FechaCorte.ToString("dd/MM/yyyy") ·
+                            @resumen.UltimoCorte.PeriodoInicio.ToString("dd/MM/yyyy") &rarr;
+                            @resumen.UltimoCorte.PeriodoFin.ToString("dd/MM/yyyy")
+                        </span>
+
+                        <div class="inv-summary-rows">
+                            <div class="inv-summary-row">
+                                <span>Ganancia distribuible</span>
+                                <b>₡ @resumen.UltimoCorte.GananciaDistribuible.ToString("N2")</b>
+                            </div>
+                            <div class="inv-summary-row">
+                                <span>Participación @resumen.UltimoCorte.ParticipacionPorcentaje.ToString("0.##") %</span>
+                                <b>₡ @resumen.UltimoCorte.ParticipacionCalculada.ToString("N2")</b>
+                            </div>
+                            <div class="inv-summary-row">
+                                <span>Pagado</span>
+                                <b>₡ @resumen.UltimoCorte.TotalPagado.ToString("N2")</b>
+                            </div>
+                            <div class="inv-summary-row">
+                                <span>Pendiente</span>
+                                <b>₡ @resumen.UltimoCorte.SaldoPendiente.ToString("N2")</b>
+                            </div>
+                        </div>
+
+                        <a class="inv-summary-link" asp-controller="Inversionistas" asp-action="Estado"
+                           asp-route-id="@resumen.UltimoCorte.StatementId">
+                            Ver estado de cuenta <i class="bi bi-arrow-right-short"></i>
+                        </a>
+                    }
+                </div>
+
+                @* ── CARD 2: CICLO ACTUAL ──
+                   Es la ÚNICA tarjeta que depende de la configuración del corte, así que es la
+                   única que se atenúa cuando el usuario cambia el día sin guardar. El último corte
+                   ya emitido no se mueve por un cambio de configuración. *@
+                <div class="inv-summary-card" data-assoc-cutoff-summary>
+                    <div class="inv-summary-head">
+                        <span class="inv-summary-title">Ciclo actual</span>
+                        <span class="inv-badge inv-badge--neutral">En curso</span>
+                    </div>
+
+                    @if (resumen.CicloActual is null || !resumen.CicloActual.TieneAcuerdoVigente)
+                    {
+                        <p class="inv-summary-empty">
+                            No hay un acuerdo de participación vigente hoy, así que no hay ciclo abierto.
+                        </p>
+                    }
+                    else
+                    {
+                        <span class="inv-summary-amount">
+                            ₡ @resumen.CicloActual.ParticipacionEstimada.ToString("N2")
+                        </span>
+                        <span class="inv-summary-caption">
+                            Estimado @resumen.CicloActual.ParticipacionPorcentaje.ToString("0.##") % ·
+                            puede cambiar hasta el cierre
+                        </span>
+
+                        <div class="inv-summary-rows">
+                            <div class="inv-summary-row">
+                                <span>Período contractual</span>
+                                <b>
+                                    @resumen.CicloActual.PeriodoInicio.ToString("dd/MM")
+                                    &rarr; @resumen.CicloActual.PeriodoFin.ToString("dd/MM/yyyy")
+                                </b>
+                            </div>
+                            <div class="inv-summary-row">
+                                <span>Calculado al</span>
+                                <b>@resumen.CicloActual.CalculadoAl.ToString("dd/MM/yyyy")</b>
+                            </div>
+                            <div class="inv-summary-row">
+                                <span>Ganancia acumulada</span>
+                                <b>₡ @resumen.CicloActual.GananciaDistribuible.ToString("N2")</b>
+                            </div>
+                            <div class="inv-summary-row">
+                                <span>Próximo corte</span>
+                                <b>@resumen.CicloActual.ProximoCorte.ToString("dd/MM/yyyy")</b>
+                            </div>
+                        </div>
+
+                        <a class="inv-summary-link" asp-controller="Inversionistas" asp-action="CicloActual"
+                           asp-route-id="@resumen.InvestorId">
+                            Ver detalle del ciclo <i class="bi bi-arrow-right-short"></i>
+                        </a>
+                    }
+                </div>
+
+                @* ── CARD 3: SALDO PENDIENTE (solo de cortes emitidos) ── *@
+                <div class="inv-summary-card">
+                    <div class="inv-summary-head">
+                        <span class="inv-summary-title">Saldo pendiente</span>
+                        @if (resumen.EstadosConSaldo > 0)
+                        {
+                            <span class="inv-badge inv-badge--warning">Por pagar</span>
+                        }
+                        else if (resumen.EstadosEmitidos > 0)
+                        {
+                            <span class="inv-badge inv-badge--success">Al día</span>
+                        }
+                    </div>
+
+                    <span class="inv-summary-amount @(resumen.SaldoPendienteTotal > 0 ? "inv-summary-amount--pending" : "inv-summary-amount--clear")">
+                        ₡ @resumen.SaldoPendienteTotal.ToString("N2")
+                    </span>
+                    <span class="inv-summary-caption">
+                        @if (resumen.EstadosConSaldo > 0)
+                        {
+                            <text>
+                                @resumen.EstadosConSaldo
+                                @(resumen.EstadosConSaldo == 1 ? "estado pendiente" : "estados pendientes")
+                                de @resumen.EstadosEmitidos emitidos.
+                            </text>
+                        }
+                        else if (resumen.EstadosEmitidos > 0)
+                        {
+                            <text>Todos los cortes emitidos están pagados.</text>
+                        }
+                        else
+                        {
+                            <text>Todavía no hay cortes emitidos que pagar.</text>
+                        }
+                    </span>
+                    <span class="inv-summary-caption">
+                        No incluye el estimado del ciclo en curso: ese período todavía no cerró.
+                    </span>
+
+                    @if (resumen.Borradores > 0)
+                    {
+                        <span class="inv-summary-caption">
+                            <i class="bi bi-pencil"></i>
+                            @resumen.Borradores @(resumen.Borradores == 1 ? "borrador sin finalizar" : "borradores sin finalizar").
+                            No suman al saldo hasta finalizarse.
+                        </span>
+                    }
+
+                    <a class="inv-summary-link" asp-controller="Inversionistas" asp-action="Estados"
+                       asp-route-inversionistaId="@resumen.InvestorId">
+                        Cortes y pagos <i class="bi bi-arrow-right-short"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        @* ── BLOQUE 5: CORTES RECIENTES ── *@
+        <div class="assoc-block">
+            <div class="assoc-block-head">
+                <i class="bi bi-clock-history"></i>
+                <h3 class="assoc-block-title">Cortes recientes</h3>
+            </div>
+
+            @if (resumen.CortesRecientes.Count == 0)
+            {
+                <p class="assoc-block-sub">
+                    @resumen.EmptyStateTitulo @resumen.EmptyStateDetalle
+                </p>
+            }
+            else
+            {
+                <table class="assoc-history">
+                    <thead>
+                        <tr>
+                            <th>Corte</th>
+                            <th>Período</th>
+                            <th>Le corresponde</th>
+                            <th>Pagado</th>
+                            <th>Pendiente</th>
+                            <th>Estado</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var corte in resumen.CortesRecientes)
+                        {
+                            <tr>
+                                <td><strong>@corte.FechaCorte.ToString("dd/MM/yyyy")</strong></td>
+                                <td>
+                                    @corte.PeriodoInicio.ToString("dd/MM") &rarr;
+                                    @corte.PeriodoFin.ToString("dd/MM/yyyy")
+                                </td>
+                                <td>₡ @corte.ParticipacionCalculada.ToString("N2")</td>
+                                <td>₡ @corte.TotalPagado.ToString("N2")</td>
+                                <td>₡ @corte.SaldoPendiente.ToString("N2")</td>
+                                <td>
+                                    <span class="inv-badge inv-badge--@InvestorVisuals.CssModifier(corte.Tono)">
+                                        @InvestorVisuals.EstadoCorto(corte.Estado, corte.SaldoPendiente)
+                                    </span>
+                                </td>
+                                <td>
+                                    <a asp-controller="Inversionistas" asp-action="Estado"
+                                       asp-route-id="@corte.Id">Ver</a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+
+            <div class="assoc-access-actions">
+                <a asp-controller="Inversionistas" asp-action="Estados"
+                   asp-route-inversionistaId="@resumen.InvestorId" class="finance-btn-secondary">
+                    <i class="bi bi-list-check"></i> Ver historial completo
+                </a>
+                <a asp-controller="Inversionistas" asp-action="CicloActual"
+                   asp-route-id="@resumen.InvestorId" class="finance-btn-secondary">
+                    <i class="bi bi-hourglass-split"></i> Ver ciclo en curso
+                </a>
+            </div>
+        </div>
+    }
+
+    @* ── BLOQUE 6: CONFIGURACIÓN DEL ACUERDO ── *@
+    @if (Model.EsInversionista && participacion is not null)
+    {
+        <div class="assoc-block">
+            <div class="assoc-block-head">
+                <i class="bi bi-sliders"></i>
+                <h3 class="assoc-block-title">Configuración del acuerdo</h3>
+            </div>
+            <p class="assoc-block-sub">
+                Un cambio de porcentaje o de día de corte <strong>no reescribe el pasado</strong>:
+                cierra la versión vigente y crea una nueva. Los estados de cuenta ya emitidos
+                conservan el porcentaje y el corte con los que se calcularon.
+                Otros asociados tienen asignado
+                <strong>@participacion.ParticipacionOtros.ToString("0.##") %</strong>.
+            </p>
+
+            @if (participacion.TieneParticipacion)
+            {
+                @* El acuerdo VIGENTE se muestra aparte del campo "aplicar desde", que habla del
+                   próximo cambio. Mezclarlos hacía parecer que la vigencia real era otra. *@
+                <p class="assoc-note">
+                    <i class="bi bi-check-circle"></i>
+                    Acuerdo vigente desde
+                    <strong>@(participacion.VigenteDesde?.ToString("dd/MM/yyyy") ?? "—")</strong>
+                    con <strong>@participacion.PorcentajeVigente!.Value.ToString("0.##") %</strong>
+                    · @participacion.CorteTexto · período en curso
+                    @(participacion.PeriodoActualInicio?.ToString("dd/MM/yyyy") ?? "—")
+                    &rarr;
+                    @(participacion.PeriodoActualFin?.ToString("dd/MM/yyyy") ?? "—").
+                </p>
+
+                <p class="assoc-cutoff-hint" data-assoc-cutoff-pending style="display:none;">
+                    <i class="bi bi-exclamation-circle"></i>
+                    <span>Cambiaste la configuración del corte. Guardá para ver las fechas reales del nuevo período.</span>
+                </p>
+            }
+
+            @if (puede)
+            {
+                <form asp-action="GuardarParticipacion" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="AssociateId" value="@Model.Datos.Id" />
+
+                    <div class="finance-form-grid">
+                        <div class="finance-form-field">
+                            <label class="finance-form-label">Porcentaje de participación</label>
+                            <div class="finance-input-wrap">
+                                <span class="finance-input-icon"><i class="bi bi-percent"></i></span>
+                                <input name="ParticipacionPorcentaje" class="finance-form-control" type="number"
+                                       step="0.01" min="0.01" max="100"
+                                       value="@(participacion.PorcentajeVigente?.ToString("0.##") ?? "10")" />
+                            </div>
+                        </div>
+
+                        <div class="finance-form-field">
+                            <label class="finance-form-label">Frecuencia de liquidación</label>
+                            <select name="Frecuencia" class="finance-form-control finance-form-control--no-icon"
+                                    data-assoc-frecuencia>
+                                @foreach (var frecuencia in Enum.GetValues<InvestorPayoutFrequency>())
+                                {
+                                    <option value="@((int)frecuencia)" selected="@(participacion.Frecuencia == frecuencia)">
+                                        @InvestorPeriodCalculator.FrecuenciaTexto(frecuencia)
+                                    </option>
+                                }
+                            </select>
+                        </div>
+
+                        @* El día de corte solo tiene sentido en acuerdos mensuales. *@
+                        <div class="finance-form-field" data-assoc-corte-field>
+                            <label class="finance-form-label">Día de corte</label>
+                            <div class="finance-input-wrap">
+                                <span class="finance-input-icon"><i class="bi bi-calendar-event"></i></span>
+                                <input name="DiaCorte" class="finance-form-control" type="number"
+                                       min="1" max="31" placeholder="Fin de mes"
+                                       value="@(participacion.DiaCorte?.ToString() ?? string.Empty)"
+                                       data-assoc-corte-input />
+                            </div>
+                            <span class="assoc-cutoff-hint">
+                                <i class="bi bi-info-circle"></i>
+                                <span>@participacion.CorteDescripcion Dejalo vacío para usar el mes calendario.</span>
+                            </span>
+                        </div>
+
+                        @* NO dice "Vigente desde": esta fecha es la del PRÓXIMO cambio, no la del
+                           acuerdo actual. Verlas con el mismo nombre parecía un error de datos. *@
+                        <div class="finance-form-field">
+                            <label class="finance-form-label">Aplicar estos cambios desde</label>
+                            <div class="finance-input-wrap">
+                                <span class="finance-input-icon"><i class="bi bi-calendar3"></i></span>
+                                <input name="EffectiveFrom" class="finance-form-control" type="date"
+                                       value="@(participacion.ProximoInicioPeriodo?.ToString("yyyy-MM-dd"))" />
+                            </div>
+                            <span class="assoc-note">
+                                Los cambios de porcentaje o corte empiezan al abrir un nuevo período.
+                                Con la configuración actual, la próxima fecha disponible es
+                                @(participacion.ProximoInicioPeriodo?.ToString("dd/MM/yyyy") ?? "—").
+                            </span>
+                        </div>
+
+                        <div class="finance-form-field">
+                            <label class="finance-form-label">Comportamiento en pérdida</label>
+                            <select name="TratamientoPerdidas" class="finance-form-control finance-form-control--no-icon">
+                                <option value="@((int)InvestorLossTreatment.NoDistribution)"
+                                        selected="@(participacion.TratamientoPerdidas == InvestorLossTreatment.NoDistribution)">
+                                    No se arrastra
+                                </option>
+                                <option value="@((int)InvestorLossTreatment.CarryForward)"
+                                        selected="@(participacion.TratamientoPerdidas == InvestorLossTreatment.CarryForward)">
+                                    Se descuenta de ganancias futuras
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="finance-form-field finance-form-full">
+                            <label class="assoc-toggle">
+                                <input type="checkbox" name="EnvioAutomatico" value="true"
+                                       checked="@participacion.EnvioAutomatico" />
+                                <input type="hidden" name="EnvioAutomatico" value="false" />
+                                <span class="assoc-toggle-text">
+                                    <span class="assoc-toggle-title">Enviar su estado de cuenta automáticamente</span>
+                                    <span class="assoc-toggle-sub">
+                                        Al cerrar cada corte. Generar el estado y enviarlo son cosas
+                                        distintas: con esto apagado el estado igual se genera, pero el
+                                        correo lo mandás vos.
+                                    </span>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="assoc-access-actions">
+                        <button type="submit" class="finance-btn-save">
+                            <i class="bi bi-floppy2-fill"></i> Guardar participación
+                        </button>
+                    </div>
+                </form>
+            }
+            else
+            {
+                <p class="assoc-note">
+                    Participación vigente:
+                    <strong>@(participacion.PorcentajeVigente?.ToString("0.##") ?? "—") %</strong>
+                    · @participacion.CorteTexto
+                </p>
+            }
+
+            @if (participacion.Historial.Count > 0)
+            {
+                <table class="assoc-history">
+                    <thead>
+                        <tr>
+                            <th>Porcentaje</th>
+                            <th>Corte</th>
+                            <th>Desde</th>
+                            <th>Hasta</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var fila in participacion.Historial)
+                        {
+                            <tr>
+                                <td><strong>@fila.Porcentaje.ToString("0.##") %</strong></td>
+                                <td>@fila.CorteTexto</td>
+                                <td>@fila.EffectiveFrom.ToString("dd/MM/yyyy")</td>
+                                <td>@(fila.EffectiveTo?.ToString("dd/MM/yyyy") ?? "—")</td>
+                                <td>
+                                    @if (fila.Vigente)
+                                    {
+                                        <span class="assoc-history-current">Vigente</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+
+        @* El bloque que antes repetía "Estados de cuenta" desapareció: ya vive arriba, en el
+           resumen financiero y en "Cortes recientes", con datos reales en vez de solo contadores. *@
+    }
+
+    <div class="finance-form-footer">
+        <div class="finance-form-footer-left">
+            <a asp-action="Index" class="finance-btn-back">
+                <i class="bi bi-arrow-left"></i> Volver a asociados
+            </a>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/asociados.js" asp-append-version="true"></script>
+}

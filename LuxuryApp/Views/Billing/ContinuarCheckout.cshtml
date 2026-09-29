@@ -1,0 +1,58 @@
+@model LuxuryApp.Models.SaaS.BillingCheckoutContinuationViewModel
+
+@{
+    Layout = "_PublicLayout";
+    ViewData["Title"] = "Continuar al checkout";
+    ViewData["PublicBodyClass"] = "public-pricing-page";
+}
+
+<section class="pricing-hero-section">
+    <div class="container">
+        <div class="pricing-hero-card" data-aos="fade-up">
+            <span class="section-kicker">Checkout recurrente</span>
+            <h1>Estamos preparando tu redireccion a Tilopay.</h1>
+            <p>
+                Plan seleccionado: <strong>@Model.PlanName</strong>
+                @if (!string.IsNullOrWhiteSpace(Model.PlanCode))
+                {
+                    <span>(@Model.PlanCode).</span>
+                }
+            </p>
+        </div>
+
+        <div class="billing-code-card mt-4" data-aos="fade-up">
+            <form id="auto-checkout-form" asp-action="Checkout" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="planId" value="@Model.PlanId" />
+                <p class="mb-3">
+                    Si no eres redirigido automaticamente en unos segundos, presiona el boton para continuar.
+                </p>
+                <div class="alert alert-warning text-start" role="alert">
+                    <strong>Importante:</strong> para activar tu suscripcion automaticamente, usa en Tilopay el mismo correo con el que creaste tu cuenta en LuxuryCloud.
+                    @if (!string.IsNullOrWhiteSpace(Model.AccountEmail))
+                    {
+                        <span class="d-block mt-2">Correo actual de tu cuenta: <strong>@Model.AccountEmail</strong></span>
+                    }
+                    @if (Model.IsAddon)
+                    {
+                        <span class="d-block mt-2">Este paquete de WhatsApp se activa aparte y no reemplaza tu plan base actual.</span>
+                    }
+                </div>
+                <button type="submit" class="btn public-btn public-btn-primary w-100">
+                    Continuar a Tilopay
+                </button>
+            </form>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const form = document.getElementById("auto-checkout-form");
+            if (form) {
+                form.submit();
+            }
+        });
+    </script>
+}

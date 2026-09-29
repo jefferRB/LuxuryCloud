@@ -1,0 +1,267 @@
+@model LuxuryApp.Models.Funcionarios.Funcionario
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+<link rel="stylesheet" href="~/css/funcionarios.css" asp-append-version="true">
+
+<div class="kpi-card func-main-card">
+
+    <!-- ── CABECERA ── -->
+    <div class="func-header">
+        <div class="func-header-left module-heading">
+            <span class="module-eyebrow">Gestión de equipo</span>
+            <h2 class="module-title"><i class="bi bi-person-plus-fill module-title-icon" aria-hidden="true"></i>Registrar Funcionario</h2>
+            <p class="module-subtitle">Agrega un nuevo miembro al equipo y define sus condiciones laborales.</p>
+        </div>
+    </div>
+
+    <!-- ── CUERPO DEL FORMULARIO ── -->
+    <div class="func-form-body">
+        <form asp-action="Create" method="post">
+            @Html.AntiForgeryToken()
+
+            @if (!ViewData.ModelState.IsValid && ViewData.ModelState.Values.Any(v => v.Errors.Count > 0))
+            {
+                <div class="func-validation-summary" role="alert">
+                    <div asp-validation-summary="ModelOnly"></div>
+                </div>
+            }
+
+            <div class="func-form-grid">
+
+                <!-- Nombre -->
+                <div class="func-field">
+                    <label asp-for="Nombre" class="func-label">
+                        Nombre <span class="func-required">*</span>
+                    </label>
+                    <div class="func-input-wrap">
+                        <span class="func-input-icon"><i class="bi bi-person"></i></span>
+                        <input asp-for="Nombre" class="func-input" placeholder="Nombre completo" autocomplete="off" />
+                    </div>
+                    <span asp-validation-for="Nombre" class="func-field-error"></span>
+                </div>
+
+                <!-- Teléfono -->
+                <div class="func-field">
+                    <label asp-for="Telefono" class="func-label">Teléfono (opcional)</label>
+                    <div class="func-input-wrap">
+                        <span class="func-input-icon"><i class="bi bi-telephone"></i></span>
+                        <input asp-for="Telefono" class="func-input" placeholder="Ej: 88889999" inputmode="tel" />
+                    </div>
+                    <span asp-validation-for="Telefono" class="func-field-error"></span>
+                </div>
+
+                <!-- Puesto -->
+                <div class="func-field">
+                    <label asp-for="IdPuesto" class="func-label">
+                        Puesto <span class="func-required">*</span>
+                    </label>
+                    <div class="func-input-wrap">
+                        <span class="func-input-icon"><i class="bi bi-briefcase"></i></span>
+                        <select asp-for="IdPuesto"
+                                class="func-input func-select"
+                                asp-items="@(new SelectList(ViewBag.Puestos, "IdPuesto", "NombrePuesto"))">
+                            <option value="">-- Seleccione un puesto --</option>
+                        </select>
+                    </div>
+                    <span asp-validation-for="IdPuesto" class="func-field-error"></span>
+                </div>
+
+                <!-- Fecha Ingreso -->
+                <div class="func-field">
+                    <label asp-for="FechaIngreso" class="func-label">
+                        Fecha de Ingreso <span class="func-required">*</span>
+                    </label>
+                    <div class="func-input-wrap">
+                        <span class="func-input-icon"><i class="bi bi-calendar3"></i></span>
+                        <input asp-for="FechaIngreso" type="date" class="func-input" />
+                    </div>
+                    <span asp-validation-for="FechaIngreso" class="func-field-error"></span>
+                </div>
+
+                <!-- % Ganancia Servicios -->
+                <div class="func-field">
+                    <label asp-for="PorcentajeGanancia" class="func-label">
+                        % Ganancia Servicios <span class="func-required">*</span>
+                    </label>
+                    <div class="func-input-wrap">
+                        <span class="func-input-icon"><i class="bi bi-percent"></i></span>
+                        <input asp-for="PorcentajeGanancia"
+                               id="func-pct-g"
+                               class="func-input"
+                               type="number"
+                               step="0.01"
+                               min="0"
+                               max="100"
+                               placeholder="Ej: 50" />
+                    </div>
+                    <div class="func-pct-bar-preview">
+                        <div class="func-pct-bar-preview-fill func-pct-bar--blue" id="func-bar-g" style="width:0%"></div>
+                    </div>
+                    <span asp-validation-for="PorcentajeGanancia" class="func-field-error"></span>
+                </div>
+
+                <!-- % Ganancia Productos -->
+                <div class="func-field">
+                    <label asp-for="PorcentajeProducto" class="func-label">
+                        % Ganancia Productos <span class="func-required">*</span>
+                    </label>
+                    <div class="func-input-wrap">
+                        <span class="func-input-icon"><i class="bi bi-box-seam"></i></span>
+                        <input asp-for="PorcentajeProducto"
+                               id="func-pct-p"
+                               class="func-input"
+                               type="number"
+                               step="0.01"
+                               min="0"
+                               max="100"
+                               placeholder="Ej: 30" />
+                    </div>
+                    <div class="func-pct-bar-preview">
+                        <div class="func-pct-bar-preview-fill func-pct-bar--purple" id="func-bar-p" style="width:0%"></div>
+                    </div>
+                    <span asp-validation-for="PorcentajeProducto" class="func-field-error"></span>
+                </div>
+
+                <!-- Color en Calendario -->
+                <div class="func-field func-form-full">
+                    <label asp-for="ColorCalendario" class="func-label">
+                        Color en Calendario <span class="func-required">*</span>
+                    </label>
+                    <div class="func-color-wrap">
+                        <input asp-for="ColorCalendario"
+                               id="func-color-input"
+                               type="color"
+                               class="func-color-swatch" />
+                        <div class="func-color-preview-pill" id="func-color-pill">
+                            <i class="bi bi-circle-fill" style="font-size:0.7rem"></i>
+                            <span id="func-color-hex">#000000</span>
+                            <span style="font-weight:400;opacity:0.8;font-size:0.75rem;margin-left:auto;">Identificador en el calendario</span>
+                        </div>
+                    </div>
+                    <span asp-validation-for="ColorCalendario" class="func-field-error"></span>
+                </div>
+
+                <!-- Configuración fiscal del colaborador -->
+                <div class="func-field func-form-full">
+                    <label class="func-label">Configuración fiscal del colaborador</label>
+                    <div class="func-tax-toggle">
+                        <div class="func-fiscal-row">
+                            <div class="func-fiscal-item">
+                                <label asp-for="TipoRelacionColaborador" class="func-sublabel">Tipo de relación</label>
+                                <select asp-for="TipoRelacionColaborador" class="func-input" id="func-tipo-relacion">
+                                    <option value="Empleado">Empleado</option>
+                                    <option value="Independiente">Independiente</option>
+                                    <option value="AlquilerSilla">Alquiler de silla</option>
+                                </select>
+                            </div>
+                            <div class="func-fiscal-item">
+                                <label asp-for="ComisionCalculadaSobre" class="func-sublabel">Comisión calculada sobre</label>
+                                <select asp-for="ComisionCalculadaSobre" class="func-input">
+                                    <option value="BaseSinIva">Base sin IVA</option>
+                                    <option value="TotalCobrado">Total cobrado</option>
+                                </select>
+                            </div>
+                        </div>
+                        <p class="func-tax-hint">
+                            <strong>Base sin IVA</strong>: el porcentaje se calcula sobre el precio sin IVA
+                            (Total ÷ 1.13). <strong>Total cobrado</strong>: se calcula sobre el total con IVA incluido.
+                        </p>
+
+                        <div class="func-fiscal-independiente" id="func-fiscal-independiente">
+                            <div class="func-fiscal-item">
+                                <label asp-for="ModalidadIvaColaborador" class="func-sublabel">Modalidad de IVA del colaborador</label>
+                                <select asp-for="ModalidadIvaColaborador" class="func-input">
+                                    <option value="NoFactura">No factura IVA</option>
+                                    <option value="IvaIncluido">Factura IVA — incluido en su parte</option>
+                                    <option value="IvaAdicional">Factura IVA — adicional sobre la comisión</option>
+                                </select>
+                                <p class="func-tax-hint" style="margin-top:0.35rem;">
+                                    <strong>Incluido en su parte</strong>: su % ya incluye el IVA; se descompone sin subir el total (caso más común).
+                                    <strong>Adicional</strong>: el IVA se suma por encima de la comisión.
+                                </p>
+                            </div>
+                            <div class="func-fiscal-item">
+                                <label asp-for="TarifaIvaFacturaColaborador" class="func-sublabel">Tarifa IVA de su factura (%)</label>
+                                <input asp-for="TarifaIvaFacturaColaborador" class="func-input" type="number"
+                                       step="0.01" min="0" max="100" />
+                            </div>
+                        </div>
+
+                        <div class="form-check form-switch func-tax-switch">
+                            <input asp-for="RequiereFacturaAntesDePagar" class="form-check-input" type="checkbox"
+                                   role="switch" id="func-requiere-factura" />
+                            <label class="form-check-label" for="func-requiere-factura">
+                                Requiere factura antes de pagarle
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="func-info-box">
+                <i class="bi bi-info-circle-fill"></i>
+                <span>Los porcentajes de ganancia determinan cuánto recibe el funcionario de cada servicio y producto vendido. El color se usará para identificarlo en el calendario de citas.</span>
+            </div>
+
+            <div class="func-actions">
+                <button type="submit" class="func-btn func-btn--primary">
+                    <i class="bi bi-floppy2-fill"></i>
+                    Guardar Funcionario
+                </button>
+                <a asp-action="Index" class="func-btn func-btn--ghost">
+                    <i class="bi bi-arrow-left"></i>
+                    Volver al Listado
+                </a>
+            </div>
+
+        </form>
+    </div>
+
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+    (function () {
+        function updateBar(inputId, barId) {
+            var input = document.getElementById(inputId);
+            var bar   = document.getElementById(barId);
+            if (!input || !bar) return;
+            function sync() {
+                var v = Math.min(Math.max(parseFloat(input.value) || 0, 0), 100);
+                bar.style.width = v + "%";
+            }
+            input.addEventListener("input", sync);
+            sync();
+        }
+
+        updateBar("func-pct-g", "func-bar-g");
+        updateBar("func-pct-p", "func-bar-p");
+
+        var colorInput = document.getElementById("func-color-input");
+        var colorPill  = document.getElementById("func-color-pill");
+        var colorHex   = document.getElementById("func-color-hex");
+
+        function syncColor() {
+            if (!colorInput || !colorPill || !colorHex) return;
+            var c = colorInput.value || "#000000";
+            colorPill.style.background = c;
+            colorHex.textContent = c.toUpperCase();
+        }
+
+        if (colorInput) colorInput.addEventListener("input", syncColor);
+        syncColor();
+
+        // La configuración de factura IVA sólo tiene sentido para colaboradores independientes.
+        var tipoRelacion = document.getElementById("func-tipo-relacion");
+        var bloqueIndep  = document.getElementById("func-fiscal-independiente");
+        function syncTipoRelacion() {
+            if (!tipoRelacion || !bloqueIndep) return;
+            bloqueIndep.style.display = tipoRelacion.value === "Independiente" ? "" : "none";
+        }
+        if (tipoRelacion) tipoRelacion.addEventListener("change", syncTipoRelacion);
+        syncTipoRelacion();
+    })();
+    </script>
+}

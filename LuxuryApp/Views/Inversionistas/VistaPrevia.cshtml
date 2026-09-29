@@ -1,0 +1,129 @@
+﻿@using LuxuryApp.Models.Inversionistas
+@model InvestorStatementPreviewViewModel
+
+@*
+    CONSULTA AVANZADA.
+
+    Pantalla secundaria: recalcula CUALQUIER período a partir de una fecha. El flujo normal es
+    "Ciclo en curso" + "Cortes y pagos"; esto queda para revisar historia o emitir a mano un corte
+    viejo. Por eso el botón de generar solo aparece cuando el período YA cerró.
+*@
+
+@{
+    ViewData["Title"] = $"Consulta avanzada — {Model.InvestorNombre}";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/finance-modules.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/investor-settlement.css" asp-append-version="true" />
+}
+
+<div class="finance-page-shell">
+
+    <div class="finance-hero">
+        <div class="finance-hero-left module-heading">
+            <span class="module-eyebrow">Consulta avanzada</span>
+            <h1 class="module-title"><i class="bi bi-sliders module-title-icon" aria-hidden="true"></i>@Model.InvestorNombre</h1>
+            <p class="module-subtitle">@Model.PeriodoEtiqueta · @Model.CorteTexto</p>
+        </div>
+    </div>
+
+    @* Encabezado del corte: las cuatro cosas que hay que saber antes de mirar los números.
+       Todas las fechas vienen del resolver de períodos, ninguna se arma en la vista. *@
+    <div class="inv-cut-header">
+        <div class="inv-cut-card">
+            <span class="inv-cut-label">Período</span>
+            <span class="inv-cut-value">
+                @Model.PeriodoInicio.ToString("dd/MM/yyyy") &rarr; @Model.PeriodoFin.ToString("dd/MM/yyyy")
+            </span>
+        </div>
+        <div class="inv-cut-card">
+            <span class="inv-cut-label">Corte</span>
+            <span class="inv-cut-value">@Model.FechaCorte.ToString("dd/MM/yyyy")</span>
+        </div>
+        <div class="inv-cut-card">
+            <span class="inv-cut-label">Participación</span>
+            <span class="inv-cut-value">@Model.Desglose.ParticipacionPorcentaje.ToString("0.##") %</span>
+        </div>
+        <div class="inv-cut-card">
+            <span class="inv-cut-label">Monto correspondiente</span>
+            <span class="inv-cut-value">₡ @Model.Desglose.ParticipacionCalculada.ToString("N2")</span>
+        </div>
+    </div>
+
+    @if (TempData["Error"] is string error)
+    {
+        <div class="svc-alert svc-alert--danger" role="alert">@error</div>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(Model.Advertencia))
+    {
+        @* Un período abierto NO es un error: se avisa en tono informativo, no en rojo. *@
+        @if (Model.TieneAcuerdoVigente && !Model.PeriodoCerrado)
+        {
+            <div class="inv-callout inv-callout--info">
+                <i class="bi bi-info-circle-fill"></i>
+                <div>@Model.Advertencia</div>
+            </div>
+        }
+        else
+        {
+            <div class="svc-alert svc-alert--danger" role="status">@Model.Advertencia</div>
+        }
+    }
+
+    @if (Model.EstadoExistenteId.HasValue)
+    {
+        <div class="svc-alert svc-alert--success" role="status">
+            Ya existe un estado de cuenta para este periodo (@Model.EstadoExistenteTexto).
+            <a asp-action="Estado" asp-route-id="@Model.EstadoExistenteId.Value">Abrirlo</a>
+        </div>
+    }
+
+    <div class="finance-filters-panel">
+        <form asp-action="VistaPrevia" method="get" class="finance-filters-grid">
+            <input type="hidden" name="id" value="@Model.InvestorId" />
+            <div class="finance-filter-group">
+                <label class="finance-filter-label">Ver el período que contiene esta fecha</label>
+                <input type="date"
+                       name="referencia"
+                       class="finance-filter-input"
+                       value="@Model.PeriodoInicio.ToString("yyyy-MM-dd")" />
+            </div>
+            <div class="finance-filter-group">
+                <button type="submit" class="finance-btn-primary">
+                    <i class="bi bi-search"></i> Ver
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <partial name="_DesgloseCalculo" model="Model.Desglose" />
+
+    <div class="finance-actions">
+        <a asp-controller="Asociados" asp-action="Index" class="finance-btn-back">
+            <i class="bi bi-arrow-left"></i> Volver
+        </a>
+
+        <a asp-action="CicloActual" asp-route-id="@Model.InvestorId" class="finance-btn-secondary">
+            <i class="bi bi-hourglass-split"></i> Ciclo en curso
+        </a>
+
+        <a asp-action="Estados" asp-route-inversionistaId="@Model.InvestorId" class="finance-btn-secondary">
+            <i class="bi bi-clock-history"></i> Historial de cortes
+        </a>
+
+        @* Solo se genera un período CERRADO: congelar uno abierto guardaría números que todavía
+           van a cambiar. *@
+        @if (Model.PuedeGenerar)
+        {
+            <form asp-action="Generar" asp-route-id="@Model.InvestorId" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="referencia" value="@Model.PeriodoInicio.ToString("yyyy-MM-dd")" />
+                <button type="submit" class="finance-btn-primary">
+                    <i class="bi bi-file-earmark-plus"></i> Generar estado de cuenta
+                </button>
+            </form>
+        }
+    </div>
+</div>

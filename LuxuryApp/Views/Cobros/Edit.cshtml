@@ -1,0 +1,296 @@
+@model LuxuryApp.Models.Finanzas.CobroViewModel
+
+@{
+    ViewData["Title"] = "Editar Cobro";
+    var esProducto = Model.Cobro.ProductoId.HasValue && !Model.Cobro.ServicioId.HasValue;
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/finance-modules.css" asp-append-version="true" />
+}
+
+<div class="finance-page-shell">
+
+    <!-- ── HERO ── -->
+    <div class="finance-hero">
+        <div class="finance-hero-left module-heading">
+            <span class="module-eyebrow">GESTIÓN DE INGRESOS</span>
+            <h1 class="module-title"><i class="bi bi-cash-coin module-title-icon" aria-hidden="true"></i>Editar Cobro</h1>
+            <p class="module-subtitle">Actualiza la información del cobro seleccionado.</p>
+        </div>
+    </div>
+
+    <!-- ── FORM ── -->
+    <form asp-action="Edit" asp-route-id="@Model.Cobro.IdCobro" method="post" id="formEditarCobro">
+        @Html.AntiForgeryToken()
+        <input asp-for="Cobro.IdCobro" type="hidden" />
+        <input asp-for="Cobro.ClienteId" type="hidden" />
+        @if (esProducto)
+        {
+            <input asp-for="Cobro.ProductoId" type="hidden" />
+        }
+
+        <!-- BODY -->
+        <div class="finance-form-body">
+
+            @if (!ViewData.ModelState.IsValid && ViewData.ModelState.Values.Any(v => v.Errors.Count > 0))
+            {
+                <div class="finance-validation-summary" role="alert">
+                    <div asp-validation-summary="ModelOnly"></div>
+                </div>
+            }
+
+            <div class="finance-form-grid">
+
+                <!-- Fecha -->
+                <div class="finance-form-field">
+                    <label asp-for="Cobro.FechaCobro" class="finance-form-label">Fecha</label>
+                    <div class="finance-input-wrap">
+                        <span class="finance-input-icon"><i class="bi bi-calendar3"></i></span>
+                        <input asp-for="Cobro.FechaCobro"
+                               class="finance-form-control"
+                               type="datetime-local"
+                               step="60" />
+                    </div>
+                    <span asp-validation-for="Cobro.FechaCobro" class="finance-field-error"></span>
+                </div>
+
+                <!-- Nombre Cliente -->
+                <div class="finance-form-field">
+                    <label asp-for="Cobro.NombreCliente" class="finance-form-label">Nombre Cliente</label>
+                    <div class="finance-input-wrap">
+                        <span class="finance-input-icon"><i class="bi bi-person"></i></span>
+                        <input asp-for="Cobro.NombreCliente"
+                               class="finance-form-control"
+                               placeholder="Nombre del cliente" />
+                    </div>
+                    <span asp-validation-for="Cobro.NombreCliente" class="finance-field-error"></span>
+                </div>
+
+                <!-- Funcionario -->
+                <div class="finance-form-field">
+                    <label asp-for="Cobro.FuncionarioId" class="finance-form-label">Funcionario</label>
+                    <div class="finance-input-wrap">
+                        <span class="finance-input-icon"><i class="bi bi-person-badge"></i></span>
+                        <select asp-for="Cobro.FuncionarioId"
+                                class="finance-form-control"
+                                asp-items="Model.Funcionarios">
+                            <option value="">Seleccione funcionario</option>
+                        </select>
+                    </div>
+                    <span asp-validation-for="Cobro.FuncionarioId" class="finance-field-error"></span>
+                </div>
+
+                <!-- Tipo (solo lectura en edición) -->
+                <div class="finance-form-field">
+                    <label class="finance-form-label">Tipo</label>
+                    <div class="finance-input-wrap">
+                        <span class="finance-input-icon"><i class="bi bi-list-task"></i></span>
+                        <select class="finance-form-control" disabled
+                                style="opacity:0.65;cursor:not-allowed;">
+                            <option value="servicio" selected="@(esProducto ? null : "selected")">Servicio</option>
+                            <option value="producto" selected="@(esProducto ? "selected" : null)">Producto</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Servicio -->
+                <div class="finance-form-field @(esProducto ? "d-none" : "")">
+                    <label asp-for="Cobro.ServicioId" class="finance-form-label">Servicio o Producto</label>
+                    <div class="finance-input-wrap">
+                        <span class="finance-input-icon"><i class="bi bi-box-seam"></i></span>
+                        <select asp-for="Cobro.ServicioId"
+                                class="finance-form-control"
+                                asp-items="Model.Servicios"
+                                disabled="@(esProducto ? "disabled" : null)">
+                            <option value="">Seleccione servicio</option>
+                        </select>
+                    </div>
+                    <span asp-validation-for="Cobro.ServicioId" class="finance-field-error"></span>
+                </div>
+
+                <!-- Producto -->
+                <div class="finance-form-field @(esProducto ? "" : "d-none")">
+                    <label class="finance-form-label">Servicio o Producto</label>
+                    <div class="finance-input-wrap">
+                        <span class="finance-input-icon"><i class="bi bi-box-seam"></i></span>
+                        <select asp-for="Cobro.ProductoId"
+                                class="finance-form-control"
+                                asp-items="Model.Productos"
+                                disabled>
+                            <option value="">Seleccione producto</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Monto -->
+                <div class="finance-form-field">
+                    <label asp-for="Cobro.Monto" class="finance-form-label">Monto</label>
+                    <div class="finance-input-wrap">
+                        <span class="finance-input-icon" style="font-weight:700;font-size:1rem;">₡</span>
+                        <input asp-for="Cobro.Monto"
+                               class="finance-form-control"
+                               id="Monto"
+                               type="number"
+                               step="0.01"
+                               min="0"
+                               autocomplete="off" />
+                    </div>
+                    <span asp-validation-for="Cobro.Monto" class="finance-field-error"></span>
+                </div>
+
+                <!-- Método de Pago -->
+                <div class="finance-form-field">
+                    <label asp-for="Cobro.MetodoPago" class="finance-form-label">Método de Pago</label>
+                    <div class="finance-input-wrap">
+                        <span class="finance-input-icon"><i class="bi bi-credit-card"></i></span>
+                        <select asp-for="Cobro.MetodoPago"
+                                class="finance-form-control"
+                                asp-items="Model.MetodosPago">
+                            <option value="">Seleccione método de pago</option>
+                        </select>
+                    </div>
+                    <span asp-validation-for="Cobro.MetodoPago" class="finance-field-error"></span>
+                </div>
+
+                <!-- Observaciones -->
+                <div class="finance-form-field finance-form-full">
+                    <label asp-for="Cobro.Observaciones" class="finance-form-label">Observaciones</label>
+                    <div class="finance-input-wrap">
+                        <span class="finance-input-icon finance-input-icon--top"><i class="bi bi-chat-text"></i></span>
+                        <textarea asp-for="Cobro.Observaciones"
+                                  class="finance-form-control"
+                                  rows="3"
+                                  style="resize:vertical;"></textarea>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- FOOTER -->
+        <div class="finance-form-footer">
+            <div class="finance-form-footer-left">
+                <button type="submit" class="finance-btn-save">
+                    <i class="bi bi-floppy2-fill"></i> Guardar Cambios
+                </button>
+                <a asp-action="Index" class="finance-btn-back">
+                    <i class="bi bi-arrow-left"></i> Volver
+                </a>
+            </div>
+            <button type="button"
+                    class="finance-btn-danger-form"
+                    onclick="abrirEliminarCobroEdit()">
+                <i class="bi bi-trash3"></i> Eliminar Cobro
+            </button>
+        </div>
+
+    </form>
+</div>
+
+<!-- ── MODAL ELIMINAR COBRO (edit view) ── -->
+<div class="modal fade finance-delete-modal" id="modalEliminarCobroEdit" tabindex="-1"
+     aria-labelledby="lblEliminarCobroEdit" aria-modal="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="finance-delete-modal-title" id="lblEliminarCobroEdit">
+                    <div class="finance-delete-modal-icon">
+                        <i class="bi bi-trash3-fill"></i>
+                    </div>
+                    Eliminar Cobro
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <p class="finance-delete-intro">
+                    ¿Estás seguro que deseas eliminar este cobro? Esta acción no se puede deshacer.
+                </p>
+                <div class="finance-delete-summary">
+                    <div class="finance-delete-summary-row">
+                        <span class="finance-delete-summary-label">
+                            <i class="bi bi-person"></i> Cliente
+                        </span>
+                        <span class="finance-delete-summary-value">@Model.Cobro.NombreCliente</span>
+                    </div>
+                    <div class="finance-delete-summary-row">
+                        <span class="finance-delete-summary-label">
+                            <i class="bi bi-person-badge"></i> Funcionario
+                        </span>
+                        <span class="finance-delete-summary-value" id="editDeleteFuncionario"></span>
+                    </div>
+                    <div class="finance-delete-summary-row">
+                        <span class="finance-delete-summary-label">
+                            <i class="bi bi-tag"></i> Servicio
+                        </span>
+                        <span class="finance-delete-summary-value" id="editDeleteServicio"></span>
+                    </div>
+                    <div class="finance-delete-summary-row">
+                        <span class="finance-delete-summary-label">
+                            <i class="bi bi-currency-exchange"></i> Monto
+                        </span>
+                        <span class="finance-delete-summary-value" id="editDeleteMonto"></span>
+                    </div>
+                    <div class="finance-delete-summary-row">
+                        <span class="finance-delete-summary-label">
+                            <i class="bi bi-calendar3"></i> Fecha
+                        </span>
+                        <span class="finance-delete-summary-value">
+                            @Model.Cobro.FechaCobro.ToString("dd/MM/yyyy HH:mm")
+                        </span>
+                    </div>
+                </div>
+                <div class="finance-delete-warning-box">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <span>Esta acción es permanente. Se eliminará el cobro y se actualizarán los indicadores de ingresos y dashboards.</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="finance-btn-back" data-bs-dismiss="modal">
+                    <i class="bi bi-x-lg"></i> Cancelar
+                </button>
+                <form asp-action="Delete" asp-route-id="@Model.Cobro.IdCobro" method="post" style="margin:0;">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="finance-btn-danger-form">
+                        <i class="bi bi-trash3-fill"></i> Eliminar
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+    function abrirEliminarCobroEdit() {
+        var funcionarioSel = document.querySelector('[name="Cobro.FuncionarioId"]');
+        var servicioSel    = document.querySelector('[name="Cobro.ServicioId"]');
+        var productoSel    = document.querySelector('[name="Cobro.ProductoId"]');
+        var montoSel       = document.getElementById('Monto');
+
+        var funNombre = '';
+        if (funcionarioSel && funcionarioSel.selectedIndex >= 0) {
+            funNombre = funcionarioSel.options[funcionarioSel.selectedIndex].text;
+        }
+
+        var svcNombre = '';
+        if (servicioSel && !servicioSel.disabled && servicioSel.value) {
+            svcNombre = servicioSel.options[servicioSel.selectedIndex].text;
+        } else if (productoSel && !productoSel.disabled && productoSel.value) {
+            svcNombre = productoSel.options[productoSel.selectedIndex].text;
+        }
+
+        var monto = '';
+        if (montoSel && montoSel.value) {
+            monto = '₡ ' + parseFloat(montoSel.value).toLocaleString('es-CR', { minimumFractionDigits: 2 });
+        }
+
+        document.getElementById('editDeleteFuncionario').textContent = funNombre || '—';
+        document.getElementById('editDeleteServicio').textContent    = svcNombre || '—';
+        document.getElementById('editDeleteMonto').textContent       = monto || '—';
+
+        new bootstrap.Modal(document.getElementById('modalEliminarCobroEdit')).show();
+    }
+    </script>
+}

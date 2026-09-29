@@ -1,0 +1,403 @@
+@model LuxuryApp.Models.Reservas.BookingSettingsViewModel
+@{
+    ViewData["Title"] = "Reservas online";
+
+    // Solo se muestra cuando REALMENTE hay errores. El tag helper asp-validation-summary emite
+    // siempre su contenedor (aunque el modelo sea válido), y ese contenedor vacío era la barra
+    // roja fantasma de esta pantalla.
+    var errores = ViewData.ModelState
+        .SelectMany(entrada => entrada.Value?.Errors ?? new Microsoft.AspNetCore.Mvc.ModelBinding.ModelErrorCollection())
+        .Select(error => error.ErrorMessage)
+        .Where(mensaje => !string.IsNullOrWhiteSpace(mensaje))
+        .Distinct()
+        .ToList();
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/finance-modules.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/reservas-admin.css" asp-append-version="true" />
+}
+
+<div class="finance-page-shell reservas-panel-shell">
+
+    @* Mismo hero que "Solicitudes de reserva": la configuración es parte del módulo, no otra página. *@
+    <div class="finance-hero reservas-hero">
+        <div class="finance-hero-left module-heading">
+            <span class="module-eyebrow">Gestión de reservas</span>
+            <h1 class="module-title"><i class="bi bi-calendar-check module-title-icon" aria-hidden="true"></i>Reservas online</h1>
+            <p class="module-subtitle">
+                Configurá cómo tus clientes pueden solicitar citas desde tu enlace público.
+            </p>
+        </div>
+
+        <div class="reservas-hero-actions">
+            <a asp-controller="Reservas" asp-action="Index" class="finance-btn-secondary">
+                <i class="bi bi-arrow-left"></i> Volver a solicitudes
+            </a>
+            <a asp-controller="PaginaPublica" asp-action="Index" class="finance-btn-secondary">
+                <i class="bi bi-window"></i> Página pública
+            </a>
+        </div>
+    </div>
+
+    @if (errores.Count > 0)
+    {
+        <div class="rsv-band">
+            <div class="reservas-alert reservas-alert-error" role="alert">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <div>
+                    @if (errores.Count == 1)
+                    {
+                        <span>@errores[0]</span>
+                    }
+                    else
+                    {
+                        <ul class="rsv-error-list">
+                            @foreach (var mensaje in errores)
+                            {
+                                <li>@mensaje</li>
+                            }
+                        </ul>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+
+    <form asp-controller="Reservas" asp-action="Configuracion" method="post" class="rsv-config" id="reservasConfigForm">
+        @Html.AntiForgeryToken()
+
+        @* ── 1. Estado ─────────────────────────────────────────────────────────────── *@
+        <section class="rsv-section">
+            <div class="rsv-section-head">
+                <h2 class="rsv-section-title"><i class="bi bi-toggle-on"></i> Reservas online</h2>
+            </div>
+
+            <div class="rsv-status @(Model.PublicBookingEnabled ? "is-on" : null)" data-estado-bloque>
+                <label class="rsv-bigswitch" for="PublicBookingEnabled">
+                    <input type="checkbox" asp-for="PublicBookingEnabled" role="switch" id="PublicBookingEnabled" />
+                    <span class="rsv-bigswitch-track" aria-hidden="true"><span class="rsv-bigswitch-thumb"></span></span>
+                    <span class="visually-hidden">Activar reservas online</span>
+                </label>
+
+                @* El estado se escribe con TEXTO, no solo con color: se entiende sin distinguir tonos. *@
+                <div class="rsv-status-text">
+                    <span class="rsv-status-label" data-estado-on>
+                        <span class="rsv-dot rsv-dot-on" aria-hidden="true"></span> Activas
+                    </span>
+                    <span class="rsv-status-label" data-estado-off>
+                        <span class="rsv-dot rsv-dot-off" aria-hidden="true"></span> Desactivadas
+                    </span>
+                    <small data-estado-on>Tus clientes pueden solicitar citas desde tu enlace público.</small>
+                    <small data-estado-off>El enlace seguirá existiendo pero mostrará que las reservas no están disponibles.</small>
+                </div>
+            </div>
+        </section>
+
+        @* ── 2. Enlace público + QR ────────────────────────────────────────────────── *@
+        <section class="rsv-section">
+            <div class="rsv-section-head">
+                <h2 class="rsv-section-title"><i class="bi bi-link-45deg"></i> Tu enlace de reservas</h2>
+            </div>
+
+            <div class="rsv-link-grid">
+                <div class="rsv-link-main">
+                    @if (!string.IsNullOrWhiteSpace(Model.LinkPublico))
+                    {
+                        <div class="rsv-link-bar">
+                            <code id="reservasLink">@Model.LinkPublico</code>
+                            <div class="rsv-link-actions">
+                                <button type="button" class="btn-rsv btn-rsv-soft" id="btnCopiarLink">
+                                    <i class="bi bi-clipboard"></i> Copiar
+                                </button>
+                                <a href="@Model.LinkPublico" target="_blank" rel="noopener" class="btn-rsv btn-rsv-soft">
+                                    <i class="bi bi-box-arrow-up-right"></i> Abrir
+                                </a>
+                            </div>
+                        </div>
+                    }
+
+                    <div class="rsv-field">
+                        <label asp-for="PublicBookingSlug">Enlace personalizado</label>
+                        <div class="rsv-slug-row">
+                            <span class="rsv-slug-prefix">/reservar/</span>
+                            <input asp-for="PublicBookingSlug" class="rsv-input" placeholder="mi-negocio"
+                                   autocomplete="off" spellcheck="false" inputmode="url" />
+                        </div>
+                        <span asp-validation-for="PublicBookingSlug" class="field-validation-error"></span>
+                        <span class="rsv-field-hint">
+                            Solo minúsculas, números y guiones. Si lo dejás vacío, lo generamos desde el nombre de tu negocio.
+                        </span>
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(Model.QrPngUrl))
+                {
+                    <div class="rsv-qr">
+                        <span class="rsv-qr-title">Código QR</span>
+                        <img src="@Model.QrPngUrl" class="rsv-qr-img"
+                             alt="Código QR del enlace de reservas @Model.NombreNegocio" width="150" height="150" />
+                        <p class="rsv-qr-hint">Compartilo para que tus clientes puedan reservar.</p>
+                        <a href="@Model.QrDescargaUrl" class="btn-rsv btn-rsv-soft" download>
+                            <i class="bi bi-download"></i> Descargar QR
+                        </a>
+                    </div>
+                }
+            </div>
+        </section>
+
+        @* ── 3. Reglas generales ───────────────────────────────────────────────────── *@
+        <section class="rsv-section">
+            <div class="rsv-section-head">
+                <h2 class="rsv-section-title"><i class="bi bi-clock-history"></i> Reglas generales</h2>
+                <p class="rsv-section-sub">Con cuánta antelación se puede reservar y cada cuánto se ofrecen horarios.</p>
+            </div>
+
+            <div class="rsv-grid3">
+                <div class="rsv-field">
+                    <label asp-for="PublicBookingMinAdvanceMinutes">Anticipación mínima (minutos)</label>
+                    <input asp-for="PublicBookingMinAdvanceMinutes" type="number" min="0" max="43200" class="rsv-input" />
+                </div>
+                <div class="rsv-field">
+                    <label asp-for="PublicBookingMaxDaysAhead">Días máximos hacia el futuro</label>
+                    <input asp-for="PublicBookingMaxDaysAhead" type="number" min="1" max="365" class="rsv-input" />
+                </div>
+                <div class="rsv-field">
+                    <label asp-for="SlotIntervalMinutes">Intervalo entre horarios (minutos)</label>
+                    <input asp-for="SlotIntervalMinutes" type="number" min="5" max="240" class="rsv-input" />
+                </div>
+            </div>
+        </section>
+
+        @* ── 4. Horario semanal ────────────────────────────────────────────────────── *@
+        <section class="rsv-section">
+            <div class="rsv-section-head">
+                <h2 class="rsv-section-title"><i class="bi bi-calendar-week"></i> Horario semanal</h2>
+                <p class="rsv-section-sub">Cada día puede abrir a una hora distinta. Un día apagado no ofrece horarios.</p>
+            </div>
+
+            <div class="rsv-week">
+                @for (var i = 0; i < Model.Horario.Count; i++)
+                {
+                    var dia = Model.Horario[i];
+                    var idDia = $"dia-{dia.DiaSemana}";
+                    <div class="rsv-week-row @(dia.Abierto ? null : "is-closed")" data-dia-fila>
+                        <input type="hidden" name="Horario[@i].DiaSemana" value="@dia.DiaSemana" />
+
+                        <label class="rsv-week-switch" for="@idDia">
+                            <input type="checkbox" id="@idDia" name="Horario[@i].Abierto" value="true"
+                                   role="switch" data-dia-toggle @(dia.Abierto ? "checked" : null) />
+                            <span class="rsv-bigswitch-track rsv-bigswitch-sm" aria-hidden="true"><span class="rsv-bigswitch-thumb"></span></span>
+                            <span class="rsv-week-day">@dia.NombreDia</span>
+                        </label>
+                        @* Par oculto: sin esto un día apagado no enviaría el campo y el binder no
+                           podría distinguir "cerrado" de "no vino". *@
+                        <input type="hidden" name="Horario[@i].Abierto" value="false" />
+
+                        <div class="rsv-week-times">
+                            <label class="visually-hidden" for="@(idDia)-open">Hora de apertura de @dia.NombreDia</label>
+                            <input type="time" id="@(idDia)-open" class="rsv-input rsv-input-time"
+                                   name="Horario[@i].Apertura" value="@dia.Apertura.ToString("HH\\:mm")"
+                                   data-dia-hora @(dia.Abierto ? null : "disabled") />
+                            <span class="rsv-week-dash" aria-hidden="true">—</span>
+                            <label class="visually-hidden" for="@(idDia)-close">Hora de cierre de @dia.NombreDia</label>
+                            <input type="time" id="@(idDia)-close" class="rsv-input rsv-input-time"
+                                   name="Horario[@i].Cierre" value="@dia.Cierre.ToString("HH\\:mm")"
+                                   data-dia-hora @(dia.Abierto ? null : "disabled") />
+                        </div>
+
+                        <span class="rsv-week-closed" data-dia-cerrado>Cerrado</span>
+                    </div>
+                }
+            </div>
+        </section>
+
+        @* ── 5. Bloqueos recurrentes ───────────────────────────────────────────────── *@
+        <section class="rsv-section">
+            <div class="rsv-section-head">
+                <h2 class="rsv-section-title"><i class="bi bi-slash-circle"></i> Bloqueos recurrentes</h2>
+                <p class="rsv-section-sub">
+                    Períodos que no se ofrecen a tus clientes, por ejemplo almuerzo o reuniones.
+                    También bloquean la agenda del equipo en el calendario.
+                </p>
+            </div>
+
+            @if (Model.BloqueosRecurrentes.Count == 0)
+            {
+                <p class="rsv-empty-inline">
+                    <i class="bi bi-info-circle"></i> Todavía no tenés bloqueos recurrentes.
+                </p>
+            }
+            else
+            {
+                <ul class="rsv-block-list">
+                    @foreach (var bloqueo in Model.BloqueosRecurrentes)
+                    {
+                        <li class="rsv-block">
+                            <div class="rsv-block-text">
+                                <span class="rsv-block-name">@bloqueo.Nombre</span>
+                                <span class="rsv-dim">@bloqueo.Horario · @bloqueo.Dias</span>
+                            </div>
+                            <a asp-controller="BloqueosRecurrentes" asp-action="Editar" asp-route-id="@bloqueo.Id"
+                               class="btn-rsv btn-rsv-soft btn-rsv-sm">
+                                <i class="bi bi-pencil"></i> Editar
+                            </a>
+                        </li>
+                    }
+                </ul>
+            }
+
+            <a asp-controller="BloqueosRecurrentes" asp-action="Crear" class="btn-rsv btn-rsv-soft rsv-self-start">
+                <i class="bi bi-plus-lg"></i> Agregar bloqueo
+            </a>
+        </section>
+
+        @* ── 6. Profesionales ──────────────────────────────────────────────────────── *@
+        <section class="rsv-section">
+            <div class="rsv-section-head">
+                <h2 class="rsv-section-title"><i class="bi bi-people"></i> Profesionales</h2>
+            </div>
+
+            <label class="rsv-switch">
+                <input type="checkbox" asp-for="PublicBookingAllowEmployeeSelection" />
+                <span class="rsv-switch-text">
+                    <span>Permitir que el cliente elija profesional</span>
+                    <small>Si está apagado, el negocio asigna el profesional al confirmar.</small>
+                </span>
+            </label>
+            <label class="rsv-switch">
+                <input type="checkbox" asp-for="PublicBookingAllowAnyEmployee" />
+                <span class="rsv-switch-text">
+                    <span>Ofrecer “Cualquier profesional disponible”</span>
+                    <small>Muestra más horarios libres combinando la agenda de todo el equipo.</small>
+                </span>
+            </label>
+            <label class="rsv-switch">
+                <input type="checkbox" asp-for="PublicBookingShowEmployeePhotos" />
+                <span class="rsv-switch-text">
+                    <span>Mostrar fotos de los profesionales</span>
+                    <small>Si está apagado, se usa el avatar con inicial. Cada profesional también puede ocultar su foto.</small>
+                </span>
+            </label>
+        </section>
+
+        @* ── 7. Servicios publicados ───────────────────────────────────────────────── *@
+        <section class="rsv-section">
+            <div class="rsv-section-head">
+                <h2 class="rsv-section-title"><i class="bi bi-scissors"></i> Servicios publicados</h2>
+                <p class="rsv-section-sub">Elegí qué servicios se muestran en tu enlace y qué profesionales atienden cada uno.</p>
+            </div>
+            <a asp-controller="Reservas" asp-action="Servicios" class="btn-rsv btn-rsv-soft rsv-self-start">
+                <i class="bi bi-sliders"></i> Configurar servicios publicados
+            </a>
+        </section>
+
+        @* ── 8. Mensajes ───────────────────────────────────────────────────────────── *@
+        <section class="rsv-section">
+            <div class="rsv-section-head">
+                <h2 class="rsv-section-title"><i class="bi bi-chat-heart"></i> Mensajes</h2>
+            </div>
+
+            <div class="rsv-grid2">
+                <div class="rsv-field">
+                    <label asp-for="PublicBookingWelcomeMessage">Mensaje de bienvenida (opcional)</label>
+                    <textarea asp-for="PublicBookingWelcomeMessage" rows="2" maxlength="500" class="rsv-input"
+                              placeholder="Ej: ¡Gracias por reservar con nosotros!"></textarea>
+                </div>
+                <div class="rsv-field">
+                    <label asp-for="PublicBookingConfirmationMessage">Mensaje tras enviar la solicitud (opcional)</label>
+                    <textarea asp-for="PublicBookingConfirmationMessage" rows="2" maxlength="500" class="rsv-input"
+                              placeholder="Ej: Tu solicitud fue enviada, te confirmamos pronto."></textarea>
+                </div>
+            </div>
+        </section>
+
+        <div class="rsv-config-actions">
+            <button type="submit" class="finance-btn-primary" id="btnGuardar">
+                <i class="bi bi-save"></i> Guardar cambios
+            </button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            // ── Aviso compacto tras guardar (mismo toast que usa el panel de solicitudes) ──
+            const okMensaje = @Html.Raw(Json.Serialize(TempData["ReservasConfigOk"] as string));
+            if (okMensaje) {
+                const toast = document.createElement('div');
+                toast.className = 'rsv-toast rsv-toast-ok';
+                toast.setAttribute('role', 'status');
+                toast.setAttribute('aria-live', 'polite');
+
+                const icono = document.createElement('i');
+                icono.className = 'bi bi-check-circle-fill';
+                const texto = document.createElement('span');
+                texto.textContent = okMensaje;
+
+                toast.appendChild(icono);
+                toast.appendChild(texto);
+                document.body.appendChild(toast);
+
+                requestAnimationFrame(function () { toast.classList.add('is-visible'); });
+                setTimeout(function () { toast.classList.remove('is-visible'); }, 3500);
+                setTimeout(function () { toast.remove(); }, 3900);
+            }
+
+            // ── Estado activas / desactivadas ──
+            const estadoInput = document.getElementById('PublicBookingEnabled');
+            const estadoBloque = document.querySelector('[data-estado-bloque]');
+            if (estadoInput && estadoBloque) {
+                const pintarEstado = function () {
+                    estadoBloque.classList.toggle('is-on', estadoInput.checked);
+                };
+                estadoInput.addEventListener('change', pintarEstado);
+                pintarEstado();
+            }
+
+            // ── Horario semanal: un día apagado deshabilita sus horas y dice "Cerrado" ──
+            // Es solo comodidad visual: la jornada válida la decide el servidor.
+            document.querySelectorAll('[data-dia-fila]').forEach(function (fila) {
+                const toggle = fila.querySelector('[data-dia-toggle]');
+                if (!toggle) return;
+
+                const horas = fila.querySelectorAll('[data-dia-hora]');
+                const pintar = function () {
+                    fila.classList.toggle('is-closed', !toggle.checked);
+                    horas.forEach(function (input) { input.disabled = !toggle.checked; });
+                };
+
+                toggle.addEventListener('change', pintar);
+                pintar();
+            });
+
+            // Los inputs deshabilitados no se envían; se rehabilitan justo antes del POST para que
+            // el servidor conserve las horas del día cerrado y no tenga que inventarlas.
+            const form = document.getElementById('reservasConfigForm');
+            const btn = document.getElementById('btnGuardar');
+            if (form) {
+                form.addEventListener('submit', function () {
+                    form.querySelectorAll('[data-dia-hora]').forEach(function (input) { input.disabled = false; });
+                    if (btn) {
+                        btn.disabled = true;
+                        btn.innerHTML = '<i class="bi bi-arrow-repeat"></i> Guardando…';
+                    }
+                });
+            }
+
+            // ── Copiar enlace ──
+            const btnCopiar = document.getElementById('btnCopiarLink');
+            if (btnCopiar) {
+                btnCopiar.addEventListener('click', function () {
+                    const link = document.getElementById('reservasLink').textContent.trim();
+                    const original = this.innerHTML;
+                    navigator.clipboard.writeText(link).then(() => {
+                        this.innerHTML = '<i class="bi bi-check2"></i> Copiado';
+                        setTimeout(() => { this.innerHTML = original; }, 1500);
+                    });
+                });
+            }
+        })();
+    </script>
+}

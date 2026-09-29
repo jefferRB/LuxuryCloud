@@ -1,0 +1,178 @@
+@using LuxuryApp.Models.Platform.MissionControl
+@model MissionControlSnapshotViewModel
+
+@{
+    ViewData["Title"] = "Mission Control · Plataforma";
+
+    var overallBadge = Model.OverallState switch
+    {
+        SignalState.Ok or SignalState.Disabled => "platform-badge-success",
+        SignalState.Warning => "platform-badge-warning",
+        SignalState.Critical => "platform-badge-danger",
+        _ => "platform-badge-blue"
+    };
+
+    var overallLabel = Model.OverallState switch
+    {
+        SignalState.Ok or SignalState.Disabled => "Sistema sano",
+        SignalState.Warning => "Requiere atención",
+        SignalState.Critical => "Incidente crítico",
+        _ => "Estado desconocido"
+    };
+
+    var criticalSignals = Model.Signals.Where(s => s.State == SignalState.Critical).ToList();
+    var moneyQueues = Model.Queues.Where(q => q.IsMoneyRelated).ToList();
+    var otherQueues = Model.Queues.Where(q => !q.IsMoneyRelated).ToList();
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/platform.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/platform-mission-control.css" asp-append-version="true" />
+    @* Auto-refresh de triage: el snapshot se cachea 45 s en servidor. *@
+    <meta http-equiv="refresh" content="60" />
+}
+
+<div class="platform-shell">
+    <div class="platform-hero">
+        <div>
+            <span class="platform-eyebrow">
+                <i class="bi bi-speedometer2"></i>
+                Mission Control
+            </span>
+            <h1 class="platform-title">
+                <span class="platform-badge @overallBadge mc-overall-badge">
+                    <i class="bi @(Model.OverallState is SignalState.Ok or SignalState.Disabled ? "bi-check-circle" : "bi-exclamation-octagon")"></i>
+                    @overallLabel
+                </span>
+            </h1>
+            <p class="platform-subtitle">
+                @Model.TotalQueueItems ítems en cola · Generado @Model.GeneratedAtUtc.ToString("HH:mm:ss") UTC
+                <a class="mc-refresh-link" asp-action="Index" asp-route-refresh="true">Actualizar ahora</a>
+            </p>
+        </div>
+        <div class="platform-toolbar">
+            <a class="btn btn-outline-dark platform-btn" asp-action="Tenants">
+                <i class="bi bi-buildings"></i>
+                Tenants
+            </a>
+            <a class="btn btn-outline-dark platform-btn" asp-controller="PlatformUsers" asp-action="Usuarios">
+                <i class="bi bi-people"></i>
+                Usuarios
+            </a>
+            <a class="btn btn-outline-dark platform-btn" href="/Platform/BillingHealth">
+                <i class="bi bi-heart-pulse"></i>
+                Billing Health
+            </a>
+            <a class="btn btn-outline-dark platform-btn" asp-controller="PlatformPaymentRecovery" asp-action="Index">
+                <i class="bi bi-life-preserver"></i>
+                Recuperación de pago
+            </a>
+            <a class="btn btn-outline-dark platform-btn" href="/Platform/RecurringCheckouts">
+                <i class="bi bi-cash-stack"></i>
+                Conciliación
+            </a>
+            <a class="btn btn-outline-dark platform-btn" asp-controller="PlatformUsers" asp-action="Auditoria">
+                <i class="bi bi-clipboard-check"></i>
+                Auditoría
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["PlatformError"] is string platformError)
+    {
+        <div class="platform-alert-stack">
+            <div class="alert alert-danger platform-alert mb-0">@platformError</div>
+        </div>
+    }
+
+    @if (TempData["PlatformSuccess"] is string platformSuccess)
+    {
+        <div class="platform-alert-stack">
+            <div class="alert alert-success platform-alert mb-0">@platformSuccess</div>
+        </div>
+    }
+
+    @if (Model.IsAllClear)
+    {
+        @* Estado verde explícito: la pantalla más frecuente debe poder cerrarse en 10 segundos. *@
+        <section class="platform-section-card mc-all-clear">
+            <i class="bi bi-check-circle-fill"></i>
+            <h2>Todo sano</h2>
+            <p>0 ítems en cola · Sin incidentes activos · Último chequeo @Model.GeneratedAtUtc.ToString("HH:mm:ss") UTC</p>
+        </section>
+    }
+    else if (criticalSignals.Count > 0)
+    {
+        <section class="platform-section-card mc-incidents">
+            <div class="platform-section-header">
+                <div>
+                    <p class="platform-section-kicker">Incidentes</p>
+                    <h2 class="platform-section-title">Atención inmediata</h2>
+                </div>
+            </div>
+            <div class="mc-signal-grid">
+                @foreach (var signal in criticalSignals)
+                {
+                    <partial name="_MissionControlSignal" model="signal" />
+                }
+            </div>
+        </section>
+    }
+
+    <section class="platform-section-card">
+        <div class="platform-section-header">
+            <div>
+                <p class="platform-section-kicker">Señales</p>
+                <h2 class="platform-section-title">Salud del sistema</h2>
+            </div>
+        </div>
+        <div class="mc-signal-grid">
+            @foreach (var signal in Model.Signals)
+            {
+                <partial name="_MissionControlSignal" model="signal" />
+            }
+        </div>
+    </section>
+
+    <div class="row g-4">
+        <div class="col-xl-6">
+            <section class="platform-section-card h-100">
+                <div class="platform-section-header">
+                    <div>
+                        <p class="platform-section-kicker">Colas de trabajo</p>
+                        <h2 class="platform-section-title">Dinero en riesgo</h2>
+                    </div>
+                </div>
+                <div class="mc-queue-list">
+                    @foreach (var queue in moneyQueues)
+                    {
+                        <partial name="_MissionControlQueue" model="queue" />
+                    }
+                </div>
+            </section>
+        </div>
+        <div class="col-xl-6">
+            <section class="platform-section-card h-100">
+                <div class="platform-section-header">
+                    <div>
+                        <p class="platform-section-kicker">Colas de trabajo</p>
+                        <h2 class="platform-section-title">Operación</h2>
+                    </div>
+                </div>
+                <div class="mc-queue-list">
+                    @foreach (var queue in otherQueues)
+                    {
+                        <partial name="_MissionControlQueue" model="queue" />
+                    }
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <p class="mc-pulse">
+        <span class="platform-section-kicker">Pulso de hoy</span>
+        <span><i class="bi bi-credit-card-2-front"></i> @Model.Pulse.PagosConfirmadosHoy pagos confirmados</span>
+        <span><i class="bi bi-whatsapp"></i> @Model.Pulse.MensajesWhatsAppHoy mensajes WhatsApp</span>
+        <span><i class="bi bi-globe"></i> @Model.Pulse.ReservasRecibidasHoy reservas recibidas</span>
+    </p>
+</div>

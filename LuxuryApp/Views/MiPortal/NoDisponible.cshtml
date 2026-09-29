@@ -1,0 +1,21 @@
+@{
+    ViewData["Title"] = "Acceso no disponible";
+    ViewData["PortalActive"] = "";
+}
+
+<div class="lp-card" style="text-align:center;max-width:480px;margin:2rem auto;">
+    <div style="font-size:2.5rem;color:var(--lp-muted);margin-bottom:.5rem;">
+        <i class="bi bi-shield-exclamation"></i>
+    </div>
+    <h1 style="font-size:1.2rem;font-weight:800;margin:0 0 .5rem;">Acceso no disponible</h1>
+    <p class="lp-muted" style="margin:0 0 1.2rem;">
+        Tu acceso al portal no está disponible en este momento. Si crees que es un error,
+        comunícate con tu negocio.
+    </p>
+    <form method="post" action="/Accounts/SalirAplicacion" style="margin:0;">
+        @Html.AntiForgeryToken()
+        <button type="submit" class="lp-btn lp-btn--ghost">
+            <i class="bi bi-box-arrow-right"></i> Cerrar sesión
+        </button>
+    </form>
+</div>

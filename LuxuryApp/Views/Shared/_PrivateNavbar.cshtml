@@ -1,0 +1,141 @@
+@model PrivateNavigationViewModel
+
+@{
+    var currentController = (ViewContext.RouteData.Values["controller"]?.ToString() ?? string.Empty).ToLowerInvariant();
+    var currentAction = (ViewContext.RouteData.Values["action"]?.ToString() ?? string.Empty).ToLowerInvariant();
+    var secondaryItems = Model.SecondaryItems ?? Array.Empty<NavigationMenuItemViewModel>();
+    var hasHighlightedSecondary = false;
+    var hasActiveSecondary = false;
+
+    foreach (var item in secondaryItems)
+    {
+        if (item.Highlight)
+        {
+            hasHighlightedSecondary = true;
+        }
+
+        if (currentController == item.Controller.ToLowerInvariant() &&
+            currentAction == item.Action.ToLowerInvariant())
+        {
+            hasActiveSecondary = true;
+        }
+    }
+
+    string ResolveNavClass(NavigationMenuItemViewModel item)
+    {
+        var isActive =
+            currentController == item.Controller.ToLowerInvariant() &&
+            currentAction == item.Action.ToLowerInvariant();
+
+        return isActive ? "nav-link private-nav-link active" : "nav-link private-nav-link";
+    }
+
+    string ResolveSecondaryText(NavigationMenuItemViewModel item)
+    {
+        var isSubscriptionItem =
+            item.Controller.Equals("Billing", StringComparison.OrdinalIgnoreCase) &&
+            (item.Action.Equals("Suscripcion", StringComparison.OrdinalIgnoreCase) ||
+             item.Action.Equals("Planes", StringComparison.OrdinalIgnoreCase)) &&
+            !item.Highlight;
+
+        return isSubscriptionItem ? "Suscripción" : item.Text;
+    }
+
+    string ResolveOptionsToggleClass()
+    {
+        var baseClass = hasHighlightedSecondary
+            ? "private-options-toggle private-options-toggle-highlight"
+            : "private-options-toggle";
+
+        return hasActiveSecondary ? $"{baseClass} active" : baseClass;
+    }
+}
+
+<nav class="navbar navbar-expand-xl navbar-dark private-navbar" id="privateNavbarSurface">
+    <div class="container-fluid">
+        <a class="navbar-brand private-navbar-brand" asp-controller="@Model.HomeController" asp-action="@Model.HomeAction">
+            <span class="private-brand-mark">L</span>
+
+        </a>
+
+        <button class="navbar-toggler private-navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#privateNavbar" aria-controls="privateNavbar" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="privateNavbar">
+            <ul class="navbar-nav me-auto mb-3 mb-xl-0">
+                @foreach (var item in Model.PrimaryItems)
+                {
+                    <li class="nav-item">
+                        <a class="@ResolveNavClass(item)" asp-controller="@item.Controller" asp-action="@item.Action">
+                            <i class="bi @item.Icon"></i>
+                            <span>@item.Text</span>
+                        </a>
+                    </li>
+                }
+            </ul>
+
+            <div class="private-navbar-meta">
+
+
+                @if (Model.IsAuthenticated)
+                {
+                    <div class="dropdown private-options-dropdown">
+                        <button class="@ResolveOptionsToggleClass()"
+                                type="button"
+                                data-bs-toggle="dropdown"
+                                aria-expanded="false">
+                            <i class="bi bi-sliders2"></i>
+                            <span>Opciones</span>
+                            <i class="bi bi-chevron-down private-options-toggle-caret"></i>
+                        </button>
+
+                        <div class="dropdown-menu dropdown-menu-end private-options-menu">
+                            @foreach (var item in secondaryItems)
+                            {
+                                var isCurrentItem =
+                                    currentController == item.Controller.ToLowerInvariant() &&
+                                    currentAction == item.Action.ToLowerInvariant();
+
+                                <a class="dropdown-item private-options-item @(isCurrentItem ? "active" : string.Empty)"
+                                   asp-controller="@item.Controller"
+                                   asp-action="@item.Action">
+                                    <span class="private-options-item-title">
+                                        <i class="bi @item.Icon"></i>
+                                        <span>@ResolveSecondaryText(item)</span>
+                                    </span>
+                                </a>
+                            }
+
+                            <div class="dropdown-divider private-options-divider"></div>
+
+                            <button type="button"
+                                    class="dropdown-item private-options-item private-options-item-theme"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#themeStyleModal">
+                                <span class="private-options-item-stack">
+                                    <span class="private-options-item-title">
+                                        <i class="bi bi-palette2"></i>
+                                        <span>Estilo</span>
+                                    </span>
+                                    <small class="private-options-item-detail" data-luxury-appearance-current>
+                                        Clasico marmol
+                                    </small>
+                                </span>
+                                <i class="bi bi-chevron-right private-options-item-chevron"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="private-user-block">
+                        <span class="private-user-name">@Model.AccountDisplayName</span>
+                        <form method="post" asp-controller="Accounts" asp-action="SalirAplicacion">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn private-logout-button">Salir</button>
+                        </form>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</nav>

@@ -1,0 +1,48 @@
+@model LuxuryApp.Models.Funcionarios.Puesto
+
+<form id="formPuesto">
+
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="IdPuesto" />
+
+    <div class="func-modal-field">
+        <label asp-for="NombrePuesto" class="func-modal-label">
+            Nombre del puesto <span class="func-required">*</span>
+        </label>
+        <div class="func-modal-input-wrap">
+            <span class="func-modal-input-icon"><i class="bi bi-tag"></i></span>
+            <input asp-for="NombrePuesto"
+                   class="func-modal-input func-modal-input--with-icon"
+                   placeholder="Ej. Barbero, Estilista..." />
+        </div>
+        <span asp-validation-for="NombrePuesto" class="func-field-error"></span>
+    </div>
+
+    <div class="func-modal-field">
+        <label asp-for="Detalle" class="func-modal-label">Detalle (opcional)</label>
+        <div class="func-modal-input-wrap">
+            <span class="func-modal-input-icon func-modal-input-icon--top"><i class="bi bi-file-text"></i></span>
+            <textarea asp-for="Detalle"
+                      class="func-modal-input func-modal-input--with-icon"
+                      rows="2"
+                      placeholder="Descripción breve del puesto..."
+                      style="resize:vertical;"></textarea>
+        </div>
+        <span asp-validation-for="Detalle" class="func-field-error"></span>
+    </div>
+
+    <div style="display:flex;gap:0.65rem;justify-content:flex-end;margin-top:0.75rem;">
+        <button type="button"
+                class="func-btn func-btn--ghost"
+                onclick="cerrarFormPuesto()">
+            Cancelar
+        </button>
+        <button type="button"
+                class="func-btn func-btn--primary"
+                onclick="guardarPuesto()">
+            <i class="bi bi-floppy2-fill"></i>
+            @(Model.IdPuesto > 0 ? "Guardar Cambios" : "Guardar Puesto")
+        </button>
+    </div>
+
+</form>

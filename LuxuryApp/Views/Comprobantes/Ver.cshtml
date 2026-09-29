@@ -1,0 +1,153 @@
+@model LuxuryApp.Models.Comprobantes.ComprobanteCobro
+@using LuxuryApp.Services.Comprobantes
+@{
+    Layout = null;
+    ViewData["Title"] = $"Comprobante {Model.NumeroInterno}";
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>@ViewData["Title"]</title>
+    <style>
+        :root { --tinta:#111; --gris:#666; --linea:#eee; --suave:#f7f7f7; }
+        * { box-sizing: border-box; }
+        body { margin:0; background:#f1f1f3; color:var(--tinta);
+               font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; padding:24px 12px; }
+        .wrap { max-width:720px; margin:0 auto; }
+        .acciones { display:flex; gap:8px; justify-content:flex-end; margin-bottom:12px; flex-wrap:wrap; }
+        .btn { display:inline-block; padding:10px 18px; border-radius:8px; font-size:14px; font-weight:600;
+               text-decoration:none; border:none; cursor:pointer; }
+        .btn-primario { background:var(--tinta); color:#fff; }
+        .btn-suave { background:#fff; color:var(--tinta); border:1px solid #d8d8d8; }
+        .doc { background:#fff; border-radius:14px; box-shadow:0 6px 24px rgba(0,0,0,.08); overflow:hidden; }
+        .doc-head { background:var(--tinta); color:#fff; padding:24px 28px; display:flex;
+                    justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap; }
+        .negocio { font-size:20px; font-weight:700; }
+        .negocio small { display:block; font-size:12px; font-weight:400; opacity:.8; margin-top:4px; }
+        .doc-tipo { text-align:right; }
+        .doc-tipo .et { font-size:12px; opacity:.8; }
+        .doc-tipo .num { font-size:16px; font-weight:700; }
+        .doc-body { padding:24px 28px; }
+        .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:20px; }
+        .box { background:var(--suave); border-radius:10px; padding:14px; }
+        .box .lbl { font-size:11px; text-transform:uppercase; letter-spacing:.4px; color:var(--gris); }
+        .box .val { font-size:15px; font-weight:600; margin-top:2px; }
+        .box .sub { font-size:13px; color:var(--gris); margin-top:2px; }
+        table { width:100%; border-collapse:collapse; margin-top:8px; }
+        th { background:var(--tinta); color:#fff; font-size:12px; text-align:left; padding:10px; }
+        th.r, td.r { text-align:right; }
+        td { padding:10px; border-bottom:1px solid var(--linea); font-size:14px; }
+        .tot { margin-top:16px; margin-left:auto; width:280px; }
+        .tot .fila { display:flex; justify-content:space-between; padding:5px 0; font-size:14px; color:var(--gris); }
+        .tot .grande { border-top:1px solid var(--linea); margin-top:6px; padding-top:10px;
+                       font-size:20px; font-weight:700; color:var(--tinta); }
+        .obs { margin-top:18px; }
+        .obs .lbl { font-size:11px; text-transform:uppercase; letter-spacing:.4px; color:var(--gris); }
+        .legal { padding:16px 28px 24px; border-top:1px solid var(--linea); }
+        .legal .pie { font-size:12px; color:var(--gris); }
+        .legal .ley { font-size:11px; color:#999; font-style:italic; margin-top:4px; }
+        @@media (max-width:520px){ .grid2{ grid-template-columns:1fr; } .tot{ width:100%; } }
+        @@media print{ body{ background:#fff; padding:0; } .acciones{ display:none; } .doc{ box-shadow:none; } }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <div class="acciones">
+            <a class="btn btn-suave" href="/comprobantes/@Model.TokenPublico/pdf">Descargar PDF</a>
+            <button class="btn btn-primario" onclick="window.print()">Imprimir</button>
+        </div>
+
+        <div class="doc">
+            <div class="doc-head">
+                <div class="negocio">
+                    @Model.NombreNegocioSnapshot
+                    <small>
+                        @if (!string.IsNullOrWhiteSpace(Model.CedulaNegocioSnapshot)) { <span>Cédula: @Model.CedulaNegocioSnapshot</span> }
+                        @if (!string.IsNullOrWhiteSpace(Model.TelefonoNegocioSnapshot)) { <span> · Tel: @Model.TelefonoNegocioSnapshot</span> }
+                    </small>
+                </div>
+                <div class="doc-tipo">
+                    <div class="et">Comprobante interno · No fiscal</div>
+                    <div class="num">@Model.NumeroInterno</div>
+                    <div class="et">@ComprobanteTextos.Fecha(Model.FechaEmision)</div>
+                </div>
+            </div>
+
+            <div class="doc-body">
+                <div class="grid2">
+                    <div class="box">
+                        <div class="lbl">Cliente</div>
+                        <div class="val">@Model.NombreClienteSnapshot</div>
+                        @if (!string.IsNullOrWhiteSpace(Model.EmailDestino)) { <div class="sub">@Model.EmailDestino</div> }
+                        @if (!string.IsNullOrWhiteSpace(Model.TelefonoClienteSnapshot)) { <div class="sub">@Model.TelefonoClienteSnapshot</div> }
+                    </div>
+                    <div class="box">
+                        <div class="lbl">Método de pago</div>
+                        <div class="val">@(string.IsNullOrWhiteSpace(Model.MetodoPago) ? "—" : Model.MetodoPago)</div>
+                        <div class="sub">Moneda: @Model.Moneda</div>
+                    </div>
+                </div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Descripción</th>
+                            <th class="r">Cant.</th>
+                            <th class="r">Base sin IVA</th>
+                            <th class="r">IVA</th>
+                            <th class="r">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var linea in Model.Lineas)
+                        {
+                            <tr>
+                                <td>@linea.Descripcion</td>
+                                <td class="r">@linea.Cantidad.ToString("#,##0.##", ComprobanteTextos.CulturaCR)</td>
+                                <td class="r">@ComprobanteTextos.Colones(linea.Subtotal, Model.Moneda)</td>
+                                <td class="r">@ComprobanteTextos.Colones(linea.Impuesto, Model.Moneda)</td>
+                                <td class="r">@ComprobanteTextos.Colones(linea.Total, Model.Moneda)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+
+                @* Snapshot fiscal (Fase 1): Subtotal = base sin IVA, Impuesto = IVA incluido.
+                   Fallback histórico (Impuesto == 0): solo se muestra el Total. *@
+                <div class="tot">
+                    @if (Model.Impuesto > 0)
+                    {
+                        <div class="fila"><span>Base sin IVA</span><span>@ComprobanteTextos.Colones(Model.Subtotal, Model.Moneda)</span></div>
+                        @if (Model.Descuento > 0)
+                        {
+                            <div class="fila"><span>Descuento</span><span>-@ComprobanteTextos.Colones(Model.Descuento, Model.Moneda)</span></div>
+                        }
+                        <div class="fila"><span>IVA incluido</span><span>@ComprobanteTextos.Colones(Model.Impuesto, Model.Moneda)</span></div>
+                    }
+                    else if (Model.Descuento > 0)
+                    {
+                        <div class="fila"><span>Descuento</span><span>-@ComprobanteTextos.Colones(Model.Descuento, Model.Moneda)</span></div>
+                    }
+                    <div class="fila grande"><span>Total cobrado</span><span>@ComprobanteTextos.Colones(Model.Total, Model.Moneda)</span></div>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(Model.Observacion))
+                {
+                    <div class="obs">
+                        <div class="lbl">Observación</div>
+                        <div>@Model.Observacion</div>
+                    </div>
+                }
+            </div>
+
+            <div class="legal">
+                <div class="pie">@ComprobanteTextos.PieGenerado</div>
+                <div class="ley">@ComprobanteTextos.LeyendaLegal</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

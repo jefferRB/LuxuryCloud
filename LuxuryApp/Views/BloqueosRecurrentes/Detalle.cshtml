@@ -1,0 +1,187 @@
+@using LuxuryApp.Models.Horarios
+@model RecurringScheduleRuleDetailViewModel
+
+@{
+    ViewData["Title"] = $"Bloqueo — {Model.Nombre}";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/finance-modules.css" asp-append-version="true" />
+}
+
+<div class="finance-page-shell">
+
+    <div class="finance-hero">
+        <div class="finance-hero-left module-heading">
+            <span class="module-eyebrow">Bloqueo recurrente</span>
+            <h1 class="module-title"><i class="bi bi-clock-history module-title-icon" aria-hidden="true"></i>@Model.Nombre</h1>
+            <p class="module-subtitle">
+                @Model.Horario · @Model.Dias · @Model.AlcanceTexto ·
+                @(Model.Activa ? "Vigente" : "Pausado")
+            </p>
+        </div>
+    </div>
+
+    @if (TempData["Mensaje"] is string mensaje)
+    {
+        <div class="svc-alert svc-alert--success" role="status">@mensaje</div>
+    }
+
+    @if (TempData["Error"] is string error)
+    {
+        <div class="svc-alert svc-alert--danger" role="alert">@error</div>
+    }
+
+    <div class="finance-form-body">
+        <table class="finance-table">
+            <tbody>
+                <tr>
+                    <td>Vigencia</td>
+                    <td>
+                        @Model.VigenteDesde.ToString("dd/MM/yyyy")
+                        @(Model.VigenteHasta.HasValue ? $"— {Model.VigenteHasta.Value:dd/MM/yyyy}" : "— sin fecha final")
+                    </td>
+                </tr>
+                <tr>
+                    <td>Texto en el calendario</td>
+                    <td>@(Model.EtiquetaCalendario ?? Model.Nombre)</td>
+                </tr>
+                <tr>
+                    <td>Motivo</td>
+                    <td>@(Model.Motivo ?? "—")</td>
+                </tr>
+                <tr>
+                    <td>Colaboradores</td>
+                    <td>
+                        @if (Model.Colaboradores.Any())
+                        {
+                            @string.Join(", ", Model.Colaboradores)
+                        }
+                        else
+                        {
+                            <span>Todos los colaboradores activos</span>
+                        }
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    @* ── Excepciones ── *@
+    <div class="finance-form-body">
+        <h2 class="finance-subtitle">Excepciones</h2>
+        <div class="finance-form-info-box">
+            <i class="bi bi-info-circle-fill"></i>
+            Una excepción cambia lo que pasa en <strong>una fecha concreta</strong> sin tocar la regla general.
+            Por ejemplo: el 15 de agosto una colaboradora almuerza de 2:00 a 3:00 p. m.
+        </div>
+
+        @if (Model.Excepciones.Any())
+        {
+            <table class="finance-table">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Aplica a</th>
+                        <th>Qué pasa</th>
+                        <th>Motivo</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var excepcion in Model.Excepciones)
+                    {
+                        <tr>
+                            <td>@excepcion.Fecha.ToString("dd/MM/yyyy")</td>
+                            <td>@excepcion.AlcanceTexto</td>
+                            <td>@excepcion.TipoTexto</td>
+                            <td>@(excepcion.Motivo ?? "—")</td>
+                            <td>
+                                <form asp-action="QuitarExcepcion" asp-route-id="@excepcion.Id" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="ruleId" value="@Model.Id" />
+                                    <button type="submit" class="finance-btn-row-delete">
+                                        <i class="bi bi-trash"></i> Quitar
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <p class="svc-sub">Sin excepciones registradas.</p>
+        }
+
+        <form asp-action="AgregarExcepcion" method="post" class="finance-form-grid">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="RuleId" value="@Model.Id" />
+
+            <div class="finance-form-field">
+                <label class="finance-form-label">Fecha <span class="finance-required">*</span></label>
+                <input type="date" name="Fecha" value="@DateTime.Today.ToString("yyyy-MM-dd")"
+                       class="finance-form-control finance-form-control--no-icon" required />
+            </div>
+
+            <div class="finance-form-field">
+                <label class="finance-form-label">Colaborador</label>
+                <select name="FuncionarioId" class="finance-form-control">
+                    <option value="">Todos ese día</option>
+                    @foreach (var funcionario in Model.FuncionariosDisponibles)
+                    {
+                        <option value="@funcionario.Id">@funcionario.Nombre</option>
+                    }
+                </select>
+            </div>
+
+            <div class="finance-form-field">
+                <label class="finance-form-label">Qué pasa</label>
+                <select name="Tipo" class="finance-form-control">
+                    <option value="@((int)RecurringScheduleExceptionType.Omitir)">Ese día no hay bloqueo</option>
+                    <option value="@((int)RecurringScheduleExceptionType.CambiarHorario)">Ese día cambia el horario</option>
+                    <option value="@((int)RecurringScheduleExceptionType.ExcluirColaborador)">Excluir a ese colaborador</option>
+                </select>
+            </div>
+
+            <div class="finance-form-field">
+                <label class="finance-form-label">Nueva hora inicial</label>
+                <input type="time" name="HoraInicioAlternativa"
+                       class="finance-form-control finance-form-control--no-icon" />
+            </div>
+
+            <div class="finance-form-field">
+                <label class="finance-form-label">Nueva hora final</label>
+                <input type="time" name="HoraFinAlternativa"
+                       class="finance-form-control finance-form-control--no-icon" />
+            </div>
+
+            <div class="finance-form-field">
+                <label class="finance-form-label">Motivo</label>
+                <input type="text" name="Motivo" maxlength="200"
+                       class="finance-form-control finance-form-control--no-icon" />
+            </div>
+
+            <div class="finance-form-field">
+                <button type="submit" class="finance-btn-secondary">
+                    <i class="bi bi-plus-circle"></i> Agregar excepción
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div class="finance-actions">
+        <a asp-action="Index" class="finance-btn-back"><i class="bi bi-arrow-left"></i> Volver</a>
+        <a asp-action="Editar" asp-route-id="@Model.Id" class="finance-btn-secondary">
+            <i class="bi bi-pencil"></i> Editar regla
+        </a>
+        <form asp-action="Finalizar" asp-route-id="@Model.Id" method="post"
+              onsubmit="return confirm('El bloqueo dejará de aplicar desde hoy. El historial se conserva. ¿Continuar?');">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="finance-btn-row-delete">
+                <i class="bi bi-slash-circle"></i> Finalizar bloqueo
+            </button>
+        </form>
+    </div>
+</div>

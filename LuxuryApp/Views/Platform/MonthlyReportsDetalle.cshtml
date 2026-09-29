@@ -1,0 +1,412 @@
+@using LuxuryApp.Models.Reports
+@model LuxuryApp.Models.Platform.PlatformMonthlyReportDetailViewModel
+
+@{
+    ViewData["Title"] = $"Resumen mensual - {Model.BusinessName}";
+
+    var meses = new[]
+    {
+        "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+        "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+    };
+
+    (string cls, string text) LogChip(string status) => status switch
+    {
+        MonthlyReportEmailStatus.Sent => ("platform-badge-success", "Enviado"),
+        MonthlyReportEmailStatus.Failed => ("platform-badge-danger", "Falló"),
+        MonthlyReportEmailStatus.Skipped => ("platform-badge-dark", "Omitido"),
+        _ => ("platform-badge-warning", "Pendiente")
+    };
+
+    string ExclusionBadge(MonthlyReportExclusionReason reason) => reason switch
+    {
+        MonthlyReportExclusionReason.Funcionario => "platform-badge-warning",
+        MonthlyReportExclusionReason.Duplicate => "platform-badge-dark",
+        _ => "platform-badge-danger"
+    };
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/platform.css" asp-append-version="true" />
+}
+
+<div class="platform-shell">
+    <div class="platform-hero">
+        <div>
+            <span class="platform-eyebrow">
+                <i class="bi bi-envelope-paper"></i>
+                Resumen Ejecutivo Mensual
+            </span>
+            <h1 class="platform-title">@Model.BusinessName</h1>
+            <p class="platform-subtitle">
+                @(Model.TenantActivo ? "Negocio activo" : "Negocio suspendido") ·
+                Reporte @(Model.Settings.IsEnabled ? "activado" : "desactivado") ·
+                Último envío automático: @(Model.LastAutomaticSentAt?.ToString("dd/MM/yyyy HH:mm") ?? "nunca")
+            </p>
+        </div>
+        <div class="platform-toolbar">
+            <a class="btn btn-outline-dark platform-btn" asp-controller="PlatformMonthlyReports" asp-action="Index">
+                <i class="bi bi-arrow-left"></i>
+                Volver
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["PlatformError"] is string platformError)
+    {
+        <div class="platform-alert-stack">
+            <div class="alert alert-danger platform-alert mb-0">@platformError</div>
+        </div>
+    }
+    @if (TempData["PlatformSuccess"] is string platformSuccess)
+    {
+        <div class="platform-alert-stack">
+            <div class="alert alert-success platform-alert mb-0">@platformSuccess</div>
+        </div>
+    }
+
+    <form asp-controller="PlatformMonthlyReports" asp-action="SaveSettings" asp-route-tenantId="@Model.TenantId"
+          method="post" class="platform-form">
+        @Html.AntiForgeryToken()
+
+        <div class="row g-4">
+            <!-- Card 1: Automatización -->
+            <div class="col-12 col-xl-6">
+                <section class="platform-section-card">
+                    <div class="platform-section-header">
+                        <div>
+                            <p class="platform-section-kicker">Automatización</p>
+                            <h2 class="platform-section-title">Envío automático</h2>
+                        </div>
+                    </div>
+
+                    <div class="platform-toggle-tile mb-3">
+                        <div class="form-check form-switch m-0">
+                            <input asp-for="Settings.IsEnabled" class="form-check-input" type="checkbox" role="switch" id="d-enabled" />
+                        </div>
+                        <label class="platform-form-label m-0" for="d-enabled">Activar envío mensual</label>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <label asp-for="Settings.SendDayOfMonth" class="platform-form-label"></label>
+                            <select asp-for="Settings.SendDayOfMonth" class="form-select">
+                                @for (var d = 1; d <= 28; d++)
+                                {
+                                    <option value="@d">@d</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label asp-for="Settings.SendHour" class="platform-form-label"></label>
+                            <select asp-for="Settings.SendHour" class="form-select">
+                                @for (var h = 0; h <= 23; h++)
+                                {
+                                    <option value="@h">@($"{h:00}:00")</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+
+                    <p class="platform-form-copy mt-3">
+                        Se envía el resumen <strong>del mes anterior</strong> en la fecha configurada.
+                        Con día 1 a las 08:00, el 1 de julio se envía junio.
+                    </p>
+                    <div class="platform-badge-row mt-2">
+                        <span class="platform-badge @(Model.SchedulerEnabled ? "platform-badge-success" : "platform-badge-warning")">
+                            <i class="bi bi-robot"></i>
+                            Scheduler global @(Model.SchedulerEnabled ? "activo" : "inactivo")
+                        </span>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Card 3: Contenido -->
+            <div class="col-12 col-xl-6">
+                <section class="platform-section-card">
+                    <div class="platform-section-header">
+                        <div>
+                            <p class="platform-section-kicker">Contenido</p>
+                            <h2 class="platform-section-title">Secciones del correo</h2>
+                        </div>
+                    </div>
+
+                    <div class="row g-2">
+                        <div class="col-12 col-md-6">
+                            <div class="platform-toggle-tile">
+                                <div class="form-check form-switch m-0">
+                                    <input asp-for="Settings.IncludeFinancialData" class="form-check-input" type="checkbox" role="switch" id="d-fin" />
+                                </div>
+                                <label class="platform-form-label m-0" for="d-fin">Información financiera</label>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <div class="platform-toggle-tile">
+                                <div class="form-check form-switch m-0">
+                                    <input asp-for="Settings.IncludeOperationalData" class="form-check-input" type="checkbox" role="switch" id="d-ope" />
+                                </div>
+                                <label class="platform-form-label m-0" for="d-ope">Información operativa</label>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <div class="platform-toggle-tile">
+                                <div class="form-check form-switch m-0">
+                                    <input asp-for="Settings.IncludeMonthOverMonth" class="form-check-input" type="checkbox" role="switch" id="d-mom" />
+                                </div>
+                                <label class="platform-form-label m-0" for="d-mom">Comparación mes anterior</label>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <div class="platform-toggle-tile">
+                                <div class="form-check form-switch m-0">
+                                    <input asp-for="Settings.IncludeRecommendations" class="form-check-input" type="checkbox" role="switch" id="d-rec" />
+                                </div>
+                                <label class="platform-form-label m-0" for="d-rec">Recomendaciones</label>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Card 2: Destinatarios -->
+            <div class="col-12">
+                <section class="platform-section-card">
+                    <div class="platform-section-header">
+                        <div>
+                            <p class="platform-section-kicker">Destinatarios</p>
+                            <h2 class="platform-section-title">Quién recibe el reporte</h2>
+                            <p class="platform-section-copy">
+                                Nunca se envía a funcionarios ni a clientes. La vista previa refleja la última configuración guardada.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-12 col-lg-5">
+                            <div class="platform-toggle-tile mb-2">
+                                <div class="form-check form-switch m-0">
+                                    <input asp-for="Settings.SendToAllAdmins" class="form-check-input" type="checkbox" role="switch" id="d-admins" />
+                                </div>
+                                <label class="platform-form-label m-0" for="d-admins">Enviar a los administradores</label>
+                            </div>
+                            <div class="platform-toggle-tile mb-2">
+                                <div class="form-check form-switch m-0">
+                                    <input asp-for="Settings.RequireConfirmedEmail" class="form-check-input" type="checkbox" role="switch" id="d-conf" />
+                                </div>
+                                <label class="platform-form-label m-0" for="d-conf">Requerir correo confirmado</label>
+                            </div>
+                            <div class="platform-toggle-tile mb-3">
+                                <div class="form-check form-switch m-0">
+                                    <input asp-for="Settings.IncludeManualRecipients" class="form-check-input" type="checkbox" role="switch" id="d-manual" />
+                                </div>
+                                <label class="platform-form-label m-0" for="d-manual">Usar correos adicionales</label>
+                            </div>
+
+                            <label asp-for="Settings.AdditionalRecipients" class="platform-form-label"></label>
+                            <textarea asp-for="Settings.AdditionalRecipients" class="form-control" rows="2"
+                                      placeholder="correo1@ejemplo.com, correo2@ejemplo.com"></textarea>
+                            <span asp-validation-for="Settings.AdditionalRecipients" class="field-validation-error"></span>
+                        </div>
+
+                        <div class="col-12 col-lg-7">
+                            <div class="platform-metric-list" style="grid-template-columns: 1fr;">
+                                <div class="platform-metric">
+                                    <span class="platform-metric-label">
+                                        <i class="bi bi-check2-circle"></i> Incluidos (@Model.Recipients.Included.Count)
+                                    </span>
+                                    @if (Model.Recipients.Included.Count == 0)
+                                    {
+                                        <span class="platform-form-copy">Ninguno. Guardá la configuración para actualizar la vista previa.</span>
+                                    }
+                                    else
+                                    {
+                                        <div class="platform-badge-row">
+                                            @foreach (var r in Model.Recipients.Included)
+                                            {
+                                                <span class="platform-badge platform-badge-success" title="@r.Source">@r.Email</span>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+
+                                @if (Model.Recipients.Excluded.Count > 0)
+                                {
+                                    <div class="platform-metric">
+                                        <span class="platform-metric-label">
+                                            <i class="bi bi-x-octagon"></i> Excluidos (@Model.Recipients.Excluded.Count)
+                                        </span>
+                                        <div class="platform-badge-row">
+                                            @foreach (var r in Model.Recipients.Excluded)
+                                            {
+                                                <span class="platform-badge @ExclusionBadge(r.Reason)" title="@r.ReasonText">
+                                                    @r.Email — @r.ReasonText
+                                                </span>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-dark platform-btn">
+                            <i class="bi bi-floppy2-fill"></i>
+                            Guardar configuración
+                        </button>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </form>
+
+    <!-- Card 4: Envíos manuales -->
+    <section class="platform-section-card">
+        <div class="platform-section-header">
+            <div>
+                <p class="platform-section-kicker">Envíos manuales</p>
+                <h2 class="platform-section-title">Prueba y envío real</h2>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-12 col-lg-6">
+                <p class="platform-form-label mb-1">Enviar prueba</p>
+                <p class="platform-form-copy mb-3">Va a un correo interno. No cuenta como envío real.</p>
+                <form asp-controller="PlatformMonthlyReports" asp-action="SendTest" asp-route-tenantId="@Model.TenantId"
+                      method="post" class="platform-inline-form">
+                    @Html.AntiForgeryToken()
+                    <div class="row g-2 align-items-end">
+                        <div class="col-6 col-md-3">
+                            <label class="platform-form-label" for="t-mes">Mes</label>
+                            <select name="month" id="t-mes" class="form-select form-select-sm">
+                                @for (var m = 1; m <= 12; m++)
+                                {
+                                    <option value="@m" selected="@(m == Model.DefaultMonth)">@meses[m - 1]</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <label class="platform-form-label" for="t-anio">Año</label>
+                            <select name="year" id="t-anio" class="form-select form-select-sm">
+                                @for (var a = Model.DefaultYear + 1; a >= Model.DefaultYear - 3; a--)
+                                {
+                                    <option value="@a" selected="@(a == Model.DefaultYear)">@a</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="platform-form-label" for="t-mail">Correo interno</label>
+                            <input type="email" name="recipientEmail" id="t-mail" class="form-control form-control-sm"
+                                   placeholder="tu-correo@luxurycloud.app" required maxlength="256" />
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary btn-sm platform-btn">
+                                <i class="bi bi-send"></i> Enviar prueba
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <div class="col-12 col-lg-6">
+                <div class="platform-note-card">
+                    <h3><i class="bi bi-broadcast"></i> Enviar reporte real</h3>
+                    <p>
+                        Este envío sí cuenta como reporte real y no se duplicará para destinatarios
+                        que ya lo recibieron.
+                    </p>
+                    <form asp-controller="PlatformMonthlyReports" asp-action="SendReal" asp-route-tenantId="@Model.TenantId"
+                          method="post"
+                          onsubmit="return confirm('¿Disparar el ENVÍO REAL para @Model.BusinessName? Se enviará a los destinatarios reales del negocio.');">
+                        @Html.AntiForgeryToken()
+                        <div class="row g-2 align-items-end">
+                            <div class="col-6 col-md-3">
+                                <select name="month" class="form-select form-select-sm" aria-label="Mes">
+                                    @for (var m = 1; m <= 12; m++)
+                                    {
+                                        <option value="@m" selected="@(m == Model.DefaultMonth)">@meses[m - 1]</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <select name="year" class="form-select form-select-sm" aria-label="Año">
+                                    @for (var a = Model.DefaultYear + 1; a >= Model.DefaultYear - 3; a--)
+                                    {
+                                        <option value="@a" selected="@(a == Model.DefaultYear)">@a</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <input type="text" name="confirmacion" class="form-control form-control-sm platform-uppercase-input"
+                                       placeholder="Escribí ENVIAR" autocomplete="off" aria-label="Confirmación" />
+                            </div>
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-danger btn-sm platform-btn">
+                                    <i class="bi bi-broadcast"></i> Enviar reporte real
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Card 5: Últimos envíos -->
+    <section class="platform-section-card">
+        <div class="platform-section-header">
+            <div>
+                <p class="platform-section-kicker">Bitácora</p>
+                <h2 class="platform-section-title">Últimos envíos</h2>
+            </div>
+        </div>
+
+        @if (Model.Logs.Count == 0)
+        {
+            <div class="platform-empty-state">
+                <i class="bi bi-inbox"></i>
+                <p class="mb-0">Sin envíos registrados para este negocio.</p>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table platform-table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Periodo</th>
+                            <th>Destino</th>
+                            <th>Tipo</th>
+                            <th>Estado</th>
+                            <th>Error</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var log in Model.Logs)
+                        {
+                            var chip = LogChip(log.Status);
+                            <tr>
+                                <td class="platform-table-meta text-nowrap">@log.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td class="platform-table-meta text-nowrap">@($"{log.ReportMonth:00}/{log.ReportYear}")</td>
+                                <td class="platform-table-meta text-break">@log.RecipientEmail</td>
+                                <td>
+                                    <span class="platform-badge @(log.IsTest ? "platform-badge-dark" : "platform-badge-blue")">
+                                        @(log.IsTest ? "Prueba" : "Real")
+                                    </span>
+                                </td>
+                                <td><span class="platform-badge @chip.cls">@chip.text</span></td>
+                                <td class="platform-table-meta text-break">@(log.ErrorMessage ?? "—")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

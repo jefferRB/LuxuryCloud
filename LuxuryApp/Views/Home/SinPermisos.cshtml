@@ -1,0 +1,19 @@
+@{
+    ViewData["Title"] = "Sin módulos asignados";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/finance-modules.css" asp-append-version="true" />
+}
+
+<div class="finance-page-shell">
+    <div class="finance-empty-state" style="margin-top:2rem;">
+        <div class="finance-empty-icon"><i class="bi bi-shield-lock"></i></div>
+        <p class="finance-empty-title">Tu cuenta todavía no tiene módulos asignados</p>
+        <p class="finance-empty-subtitle">
+            Ya podés iniciar sesión, pero el administrador del negocio aún no te concedió acceso a
+            ninguna sección. Pedile que te asigne permisos desde <strong>Asociados</strong> y volvé
+            a entrar: los cambios aplican de inmediato.
+        </p>
+    </div>
+</div>

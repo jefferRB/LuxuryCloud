@@ -1,0 +1,490 @@
+@model LuxuryApp.Models.SaaS.BillingPlanesViewModel
+@{
+    ViewData["Title"] = "Suscripción";
+    var sub = Model.CurrentSubscription;
+    var hasBaseAccess = sub?.CanAccessApp == true || Model.CurrentAccess?.CanAccessApp == true;
+    var toneClass = sub?.StatusTone switch
+    {
+        "success" => "sub-state--ok",
+        "warning" => "sub-state--warn",
+        "danger" => "sub-state--danger",
+        "info" => "sub-state--info",
+        _ => "sub-state--muted"
+    };
+
+    // Botón "Regularizar pago" (SOLO para estados de recuperación / impago): usa url_renew de TiloPay,
+    // que puede realizar un COBRO INMEDIATO. No es "actualizar tarjeta": el copy lo deja explícito.
+    // La banda de avisos sólo se dibuja si hay algo que decir. Con CSS (:empty) no bastaba:
+    // Razor deja saltos de línea dentro del contenedor, así que el selector nunca casaba y
+    // quedaba una franja vacía entre el encabezado y la primera sección.
+    var hayAvisos =
+        TempData["BillingError"] is string ||
+        TempData["BillingSuccess"] is string ||
+        sub?.CanReactivateRenewal == true ||
+        sub?.ShowSupportPauseNotice == true ||
+        sub?.PaymentInGrace == true ||
+        sub?.PaymentGraceExpired == true ||
+        sub?.PaymentSuspended == true;
+
+    Func<object?, Microsoft.AspNetCore.Html.IHtmlContent> regularizePaymentButton = @<form asp-action="ActualizarTarjeta" method="post" class="d-inline"
+            onsubmit="return confirm('Vas a pagar/regularizar tu suscripción ahora. TiloPay puede cobrar de inmediato con tu método de pago. ¿Continuar?');">
+        @Html.AntiForgeryToken()
+        <button type="submit" class="sub-btn sub-btn--primary">
+            <i class="bi bi-credit-card"></i> Regularizar pago
+        </button>
+    </form>;
+}
+
+@section Styles {
+    @* Mismo shell que Reservas, Mi cuenta y WhatsApp: un solo ancho, radio y sombra. *@
+    <link rel="stylesheet" href="~/css/finance-modules.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/subscription.css" asp-append-version="true" />
+}
+
+@* Toda la pantalla vive DENTRO de una sola card de módulo; adentro se separa en bandas.
+   La lógica comercial (planes, estados, add-ons, TiloPay) no cambió: sólo el contenedor. *@
+<div class="finance-page-shell sub-shell">
+    <div class="finance-hero">
+        <div class="finance-hero-left module-heading">
+            <span class="module-eyebrow">Cuenta</span>
+            <h1 class="module-title"><i class="bi bi-credit-card-2-front module-title-icon" aria-hidden="true"></i>Suscripción</h1>
+            <p class="module-subtitle">Revisá tu plan, tus add-ons y el estado comercial de tu cuenta.</p>
+        </div>
+        <div class="sub-hero-actions">
+            <a asp-controller="WhatsApp" asp-action="Index" class="finance-btn-secondary">
+                <i class="bi bi-whatsapp"></i> Configurar WhatsApp
+            </a>
+        </div>
+    </div>
+
+    @if (hayAvisos)
+    {
+    <div class="finance-band sub-banners">
+    @if (TempData["BillingError"] is string billingError)
+    {
+        <div class="sub-alert sub-alert--error"><i class="bi bi-exclamation-triangle"></i> @billingError</div>
+    }
+    @if (TempData["BillingSuccess"] is string billingSuccess)
+    {
+        <div class="sub-alert sub-alert--ok"><i class="bi bi-check2-circle"></i> @billingSuccess</div>
+    }
+
+    @* ── Renovación cancelada, aún vigente (Caso B) ── *@
+    @if (sub?.CanReactivateRenewal == true)
+    {
+        <div class="sub-alert sub-alert--warn">
+            <i class="bi bi-info-circle"></i>
+            Suscripción cancelada. Tu acceso seguirá activo hasta
+            <strong>@(sub.CurrentPeriodEndDisplay ?? "el fin del período")</strong>. No se harán nuevos cobros.
+        </div>
+    }
+
+    @* ── Renovación pausada por soporte (acción Platform, no del cliente) ── *@
+    @if (sub?.ShowSupportPauseNotice == true)
+    {
+        <div class="sub-alert sub-alert--warn">
+            <i class="bi bi-pause-circle"></i>
+            Tu renovación está pausada por soporte. Tu acceso seguirá activo hasta
+            <strong>@(sub.CurrentPeriodEndDisplay ?? "el fin del período")</strong>.
+            No se harán nuevos cobros mientras esté pausada. Contactá soporte para reactivarla.
+        </div>
+    }
+
+    @* ── Recuperación de pago: gracia / gracia vencida / suspensión (no se mezcla con pausa) ── *@
+    @if (sub?.PaymentInGrace == true)
+    {
+        @* Gracia vigente: la cuenta SIGUE activa. Nunca se presenta como suscripción terminada. No se muestra un
+           número de intentos: LuxuryCloud solo sabe de los rechazos que TiloPay le notificó. *@
+        <div class="sub-alert sub-alert--warn">
+            <div>
+                <i class="bi bi-exclamation-triangle"></i>
+                <strong>No pudimos procesar tu renovación.</strong>
+                El cobro de tu suscripción no pudo procesarse y los intentos de cobro no tuvieron éxito.
+                Tu cuenta continúa activa durante el período de gracia, hasta el
+                <strong>@(sub.GracePeriodEndsDisplay ?? "fin del período de gracia")</strong>.
+                Si el pago no se regulariza antes de esa fecha, el acceso puede suspenderse.
+            </div>
+            @if (Model.RecurrentUpdateAvailable)
+            {
+                <div class="mt-2">@regularizePaymentButton(null)</div>
+            }
+        </div>
+    }
+    else if (sub?.PaymentGraceExpired == true)
+    {
+        <div class="sub-alert sub-alert--error">
+            <div>
+                <i class="bi bi-exclamation-octagon"></i>
+                @if (sub.CanAccessApp)
+                {
+                    <text>El período de gracia terminó y tu pago sigue pendiente. Tu acceso continúa activo por ahora, pero puede suspenderse en cualquier momento: regularizá el pago.</text>
+                }
+                else
+                {
+                    <text>El período de gracia terminó y tu pago sigue pendiente. El acceso está suspendido hasta regularizar el pago.</text>
+                }
+            </div>
+            @if (Model.RecurrentUpdateAvailable)
+            {
+                <div class="mt-2">@regularizePaymentButton(null)</div>
+            }
+        </div>
+    }
+    else if (sub?.PaymentSuspended == true)
+    {
+        <div class="sub-alert sub-alert--error">
+            <div>
+                <i class="bi bi-lock"></i>
+                Tu cuenta está suspendida por pago pendiente. Actualizá tu método de pago para reactivarla.
+            </div>
+            @if (Model.RecurrentUpdateAvailable)
+            {
+                <div class="mt-2">@regularizePaymentButton(null)</div>
+            }
+        </div>
+    }
+
+    </div><!-- /.finance-band -->
+    }
+
+    @* ── 1. Estado actual ── *@
+    <section class="finance-section sub-state-card">
+        <div class="sub-state-main">
+            <span class="sub-card-kicker">Estado actual</span>
+            @if (sub is not null)
+            {
+                <h2 class="sub-state-plan">@(sub.PlanName ?? "Sin plan base")</h2>
+                @* Cuando manda la recuperación de pago, el badge principal refleja ese estado
+                   (nunca "En gracia" si la gracia venció). Si no, se muestra el estado genérico. *@
+                @if (sub.PaymentStateBadgeLabel is { } recoveryBadge)
+                {
+                    var recoveryTone = sub.PaymentInGrace ? "sub-state--warn" : "sub-state--danger";
+                    var recoveryIcon = sub.PaymentInGrace ? "bi-hourglass-split" : sub.PaymentSuspended ? "bi-lock" : "bi-exclamation-octagon";
+                    <span class="sub-state-badge @recoveryTone"><i class="bi @recoveryIcon"></i> @recoveryBadge</span>
+                }
+                else
+                {
+                    <span class="sub-state-badge @toneClass">@sub.StatusLabel</span>
+                }
+                @if (sub.ShowSupportPauseNotice)
+                {
+                    <span class="sub-state-badge sub-state--warn ms-1"><i class="bi bi-pause-circle"></i> Renovación pausada</span>
+                }
+                <div class="sub-state-meta">
+                    @* En recuperación de pago el período pagado ya terminó: "Vigente hasta" y "Próximo cobro"
+                       con una fecha pasada confunden. Se muestra el período pagado y el cobro pendiente. *@
+                    @if (sub.HasPaymentRecoveryBanner && !string.IsNullOrEmpty(sub.CurrentPeriodEndDisplay))
+                    {
+                        <span><i class="bi bi-calendar-event"></i> Período pagado hasta <strong>@sub.CurrentPeriodEndDisplay</strong></span>
+                        <span><i class="bi bi-arrow-repeat"></i> Cobro <strong>pendiente</strong></span>
+                    }
+                    else if (!string.IsNullOrEmpty(sub.CurrentPeriodEndDisplay))
+                    {
+                        <span><i class="bi bi-calendar-event"></i> Vigente hasta <strong>@sub.CurrentPeriodEndDisplay</strong></span>
+                    }
+                    @if (!sub.HasPaymentRecoveryBanner && sub.ShowSupportPauseNotice)
+                    {
+                        <span><i class="bi bi-arrow-repeat"></i> Próximo cobro <strong>Pausado</strong></span>
+                    }
+                    else if (!sub.HasPaymentRecoveryBanner && !string.IsNullOrEmpty(sub.NextBillingDateDisplay))
+                    {
+                        <span><i class="bi bi-arrow-repeat"></i> Próximo cobro <strong>@sub.NextBillingDateDisplay</strong></span>
+                    }
+                    @if (sub.PaymentGraceExpired && !string.IsNullOrEmpty(sub.GracePeriodEndsDisplay))
+                    {
+                        <span class="sub-state--danger"><i class="bi bi-exclamation-octagon"></i> Gracia vencida el <strong>@sub.GracePeriodEndsDisplay</strong></span>
+                    }
+                    else if ((sub.PaymentInGrace || sub.IsInGracePeriod) && !string.IsNullOrEmpty(sub.GracePeriodEndsDisplay))
+                    {
+                        <span class="sub-state--warn"><i class="bi bi-hourglass-split"></i> Gracia hasta <strong>@sub.GracePeriodEndsDisplay</strong></span>
+                    }
+                </div>
+            }
+            else
+            {
+                <h2 class="sub-state-plan">Sin suscripción activa</h2>
+                <p class="sub-state-empty">Tu cuenta existe y conserva sus datos. Solo falta activar o regularizar una suscripción mensual para usar la plataforma.</p>
+            }
+        </div>
+        <div class="sub-state-action">
+            @* En estado de recuperación, el botón "Regularizar pago" vive en el banner (arriba).
+               En estado ACTIVO/vigente NO se ofrece actualizar tarjeta en línea: url_renew de TiloPay
+               COBRA/renueva de inmediato (no es update-only). Se indica contactar soporte. *@
+            @if (sub?.ShouldContactSupportToChangeCard == true && Model.RecurrentUpdateAvailable)
+            {
+                <div class="sub-hint sub-hint--muted">
+                    <i class="bi bi-info-circle"></i>
+                    Para cambiar la tarjeta sin adelantar un cobro, <a href="mailto:soporte@luxurycloud.app">contactá soporte</a>.
+                </div>
+            }
+            @if (!(sub?.CanReactivateRenewal == true) && !(sub?.IsRenewalPaused == true) && !(sub?.PaymentSuspended == true))
+            {
+                <a href="#planes" class="sub-btn sub-btn--primary">
+                    @(hasBaseAccess ? "Cambiar plan" : "Ver planes")
+                </a>
+            }
+            @if (sub?.CanReactivateRenewal == true && Model.RecurrentUpdateAvailable)
+            {
+                <button type="button" class="sub-btn sub-btn--primary" data-bs-toggle="modal" data-bs-target="#reactivarRenovacionModal">
+                    <i class="bi bi-arrow-clockwise"></i> Reactivar renovación
+                </button>
+            }
+            @if (sub?.CanRequestCancellation == true && Model.RecurrentUpdateAvailable)
+            {
+                <button type="button" class="sub-btn sub-btn--soft" data-bs-toggle="modal" data-bs-target="#cancelRenovacionModal">
+                    <i class="bi bi-x-circle"></i> Cancelar suscripción
+                </button>
+            }
+        </div>
+    </section>
+
+    @* ── 2. Resumen de tu cuenta ── *@
+    <section class="finance-section">
+        <div class="finance-section-head">
+            <h2 class="finance-section-title"><i class="bi bi-clipboard-data"></i> Resumen de tu cuenta</h2>
+        </div>
+        <div class="sub-summary-grid">
+        <div class="sub-card sub-summary-card">
+            <span class="sub-summary-icon"><i class="bi bi-credit-card-2-front"></i></span>
+            <span class="sub-summary-label">Plan y estado</span>
+            <strong class="sub-summary-value">@(sub?.PlanName ?? "Sin plan base")</strong>
+            @* Acceso otorgado por plataforma (exento/interno): no hay estado de cobro que mostrar. *@
+            <span class="sub-summary-foot">
+                @(sub?.IsPlatformGrantedAccess == true
+                    ? "Acceso incluido (sin cobro)"
+                    : sub?.StatusLabel ?? "Sin suscripción")
+            </span>
+        </div>
+        <div class="sub-card sub-summary-card">
+            <span class="sub-summary-icon"><i class="bi bi-people"></i></span>
+            <span class="sub-summary-label">Funcionarios</span>
+            <strong class="sub-summary-value">@(sub?.ActiveFuncionarios ?? 0)<span class="sub-summary-of"> / @(sub?.MaxFuncionarios?.ToString() ?? "∞")</span></strong>
+            <span class="sub-summary-foot">Usados / límite del plan</span>
+        </div>
+        <div class="sub-card sub-summary-card">
+            <span class="sub-summary-icon"><i class="bi bi-whatsapp"></i></span>
+            <span class="sub-summary-label">WhatsApp add-on</span>
+            @if (sub?.HasWhatsAppAddon == true)
+            {
+                <strong class="sub-summary-value">@sub.WhatsAppAddonName</strong>
+                @if (sub.WhatsAppManualGrantExpired)
+                {
+                    <span class="sub-summary-foot sub-summary-foot--warn">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        Acceso manual <strong>vencido</strong> — sin envíos hasta renovar el acceso.
+                    </span>
+                }
+                else if (sub.WhatsAppAddonIsManualGrant)
+                {
+                    var vigencia = sub.WhatsAppManualGrantIndefinite
+                        ? "indefinido"
+                        : "vigente hasta " + (sub.WhatsAppManualGrantExpiresDisplay ?? "—");
+                    <span class="sub-summary-foot">
+                        Acceso manual/canje · @vigencia
+                        @if (sub.WhatsAppAddonNeedsConfiguration)
+                        {
+                            <text> · <strong>falta configurar</strong></text>
+                        }
+                        · <a asp-controller="WhatsApp" asp-action="Index">Configurar</a>
+                    </span>
+                }
+                else if (sub.WhatsAppAddonNeedsConfiguration)
+                {
+                    <span class="sub-summary-foot sub-summary-foot--warn">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        Paquete activo · <strong>falta configurar WhatsApp</strong> ·
+                        <a asp-controller="WhatsApp" asp-action="Index">Configurar WhatsApp</a>
+                    </span>
+                }
+                else if (sub.WhatsAppAddonCancelAtPeriodEnd)
+                {
+                    <span class="sub-summary-foot">No se renovará · activo hasta @(sub.WhatsAppAddonEndsDisplay ?? "el fin del período") · <a asp-controller="WhatsApp" asp-action="Index">Configurar</a></span>
+                }
+                else if (sub.WhatsAppNextBillingDateDisplay is not null)
+                {
+                    <span class="sub-summary-foot">@sub.WhatsAppAddonStatusLabel · próx. cobro @sub.WhatsAppNextBillingDateDisplay · <a asp-controller="WhatsApp" asp-action="Index">Configurar</a></span>
+                }
+                else
+                {
+                    <span class="sub-summary-foot">@sub.WhatsAppAddonStatusLabel · <a asp-controller="WhatsApp" asp-action="Index">Configurar</a></span>
+                }
+            }
+            else
+            {
+                <strong class="sub-summary-value">Sin paquete</strong>
+                <span class="sub-summary-foot"><a href="#paquetes">Ver paquetes</a></span>
+            }
+        </div>
+        <div class="sub-card sub-summary-card">
+            <span class="sub-summary-icon"><i class="bi bi-calendar-check"></i></span>
+            <span class="sub-summary-label">Próxima renovación</span>
+            @if (sub?.IsRenewalPaused == true)
+            {
+                <strong class="sub-summary-value">Pausada</strong>
+                <span class="sub-summary-foot">Sin nuevos cobros</span>
+            }
+            else
+            {
+                <strong class="sub-summary-value">@(sub?.NextBillingDateDisplay ?? "—")</strong>
+                <span class="sub-summary-foot">Plan base</span>
+            }
+        </div>
+        </div>
+    </section>
+
+    @* ── 3. Selección de plan ── *@
+    <section class="finance-section" id="planes">
+        <div class="finance-section-head">
+            <h2 class="finance-section-title"><i class="bi bi-boxes"></i> Elegí tu plan</h2>
+            <p class="finance-section-sub">Ajustá la cantidad de funcionarios y el ciclo de facturación; el precio se actualiza al instante.</p>
+        </div>
+    @if (sub?.IsRenewalPaused == true)
+    {
+        <div class="sub-alert sub-alert--warn">
+            <i class="bi bi-lock"></i>
+            Tu suscripción está pausada. Contactá soporte para reactivarla antes de cambiar de plan.
+        </div>
+    }
+    else if (sub?.PaymentSuspended == true)
+    {
+        <div class="sub-alert sub-alert--error">
+            <i class="bi bi-lock"></i>
+            Tu cuenta está suspendida por pago pendiente. Actualizá tu método de pago para reactivarla antes de cambiar de plan.
+        </div>
+    }
+    else if (sub?.CanReactivateRenewal == true)
+    {
+        <div class="sub-alert sub-alert--warn">
+            <i class="bi bi-lock"></i>
+            Para cambiar de plan, primero reactivá tu renovación.
+        </div>
+    }
+    else if (Model.Calculator is not null)
+    {
+        <partial name="_SubscriptionCalculator" model="Model.Calculator" />
+    }
+
+    </section>
+
+    @* ── 4. Add-ons ── *@
+    <section class="finance-section" id="paquetes">
+        <div class="finance-section-head">
+            <h2 class="finance-section-title"><i class="bi bi-whatsapp"></i> Paquetes WhatsApp</h2>
+            <p class="finance-section-sub">El add-on de WhatsApp se cobra por separado del plan base y se consume por periodo mensual.</p>
+        </div>
+    <partial name="_WhatsAppPackageCards" model="@(new LuxuryApp.Models.SaaS.WhatsAppPackageCardsViewModel
+        {
+            Cards = Model.WhatsAppAddonCards,
+            CurrentAddonCode = sub?.WhatsAppAddonCode,
+            HasBaseAccess = hasBaseAccess,
+            HasActiveAddon = sub?.HasWhatsAppAddon == true
+        })" />
+
+    @if (sub?.WhatsAppAddonCancelAtPeriodEnd == true)
+    {
+        <div class="sub-alert sub-alert--warn">
+            <i class="bi bi-info-circle"></i>
+            Tu paquete de WhatsApp no se renovará. Seguirá activo hasta @(sub.WhatsAppAddonEndsDisplay ?? "el fin del período").
+        </div>
+    }
+    else if (sub?.CanCancelWhatsAppAddon == true)
+    {
+        <form asp-action="CancelarWhatsAppAddon" method="post" class="sub-addon-cancel-form"
+              onsubmit="return confirm('¿Cancelar la renovación del paquete de WhatsApp? Seguirá activo hasta el fin del período ya pagado y no se renovará. Tu plan base no se ve afectado.');">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="sub-btn sub-btn--ghost">
+                <i class="bi bi-x-circle"></i> Cancelar renovación del paquete WhatsApp
+            </button>
+        </form>
+    }
+
+    </section>
+
+    @* ── 5. Facturación / detalles ── *@
+    <section class="finance-section sub-promo-card">
+        <div>
+            <span class="sub-card-kicker">Código promocional</span>
+            <h3 class="sub-promo-title">¿Recibiste un código oficial?</h3>
+            <p class="sub-promo-sub">Activá acceso temporal sin tarjeta ingresando tu código.</p>
+        </div>
+        <form asp-controller="Billing" asp-action="AplicarCodigoPromocional" method="post" class="sub-promo-form">
+            @Html.AntiForgeryToken()
+            <input id="accessCode" name="accessCode" class="sub-input" maxlength="100" placeholder="Código de acceso" />
+            <button type="submit" class="sub-btn sub-btn--soft">Aplicar código</button>
+        </form>
+    </section>
+</div>
+
+@if (sub?.CanRequestCancellation == true && Model.RecurrentUpdateAvailable)
+{
+    @* Modal declarativo (data-bs-*): sin new bootstrap.Modal para evitar overlays duplicados. *@
+    <div class="modal fade" id="cancelRenovacionModal" tabindex="-1" aria-labelledby="cancelRenovacionTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="cancelRenovacionTitle">Cancelar renovación</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-2">
+                        No se harán nuevos cobros. Tu acceso seguirá activo hasta
+                        <strong>@(sub.CurrentPeriodEndDisplay ?? "el fin del período")</strong>.
+                        Después de esa fecha, tu cuenta quedará sin acceso al plan.
+                    </p>
+                    <ul class="list-unstyled small text-muted mb-2">
+                        <li><i class="bi bi-credit-card-2-front"></i> Plan actual: <strong>@(sub.PlanName ?? "Plan base")</strong></li>
+                        <li><i class="bi bi-calendar-event"></i> Fecha efectiva: <strong>@(sub.CurrentPeriodEndDisplay ?? "—")</strong></li>
+                    </ul>
+                    <p class="small mb-0"><i class="bi bi-info-circle"></i> No perderás acceso inmediatamente.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="sub-btn sub-btn--soft" data-bs-dismiss="modal">Volver</button>
+                    <form asp-action="CancelarRenovacion" method="post" class="d-inline" data-disable-on-submit>
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="sub-btn sub-btn--primary">Sí, cancelar renovación</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (sub?.CanReactivateRenewal == true && Model.RecurrentUpdateAvailable)
+{
+    <div class="modal fade" id="reactivarRenovacionModal" tabindex="-1" aria-labelledby="reactivarRenovacionTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="reactivarRenovacionTitle">Reactivar renovación</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-2">
+                        Tu suscripción volverá a renovarse normalmente. Se reactivará el mismo plan
+                        (<strong>@(sub.PlanName ?? "Plan base")</strong>) sin iniciar un pago nuevo.
+                    </p>
+                    <p class="small mb-0"><i class="bi bi-info-circle"></i> Solo disponible mientras tu período pagado siga vigente (hasta @(sub.CurrentPeriodEndDisplay ?? "el fin del período")).</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="sub-btn sub-btn--soft" data-bs-dismiss="modal">Volver</button>
+                    <form asp-action="ReactivarRenovacion" method="post" class="d-inline" data-disable-on-submit>
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="sub-btn sub-btn--primary">Sí, reactivar renovación</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        // Anti doble-click: al enviar, se deshabilita el botón (el backend además es idempotente).
+        document.querySelectorAll('form[data-disable-on-submit]').forEach(function (form) {
+            form.addEventListener('submit', function () {
+                var btn = form.querySelector('button[type="submit"]');
+                if (btn) { btn.disabled = true; btn.textContent = 'Procesando…'; }
+            });
+        });
+    </script>
+}

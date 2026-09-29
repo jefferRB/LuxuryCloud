@@ -1,0 +1,140 @@
+@model LuxuryApp.Models.Identity.AccountSettingsPageViewModel
+@using LuxuryApp.Models.Identity
+
+@{
+    ViewData["Title"] = "Mi cuenta";
+
+    // Indicador de perfil completo: mismo cálculo que ya tenía la pantalla (correo + nombre +
+    // teléfono). Es presentación pura, no toca reglas de negocio.
+    var camposCompletos = 1; // el correo siempre existe
+    if (!string.IsNullOrWhiteSpace(Model.Profile.Name)) camposCompletos++;
+    if (!string.IsNullOrWhiteSpace(Model.Profile.PhoneNumber)) camposCompletos++;
+    var perfilPorcentaje = (int)Math.Round(camposCompletos / 3.0 * 100);
+
+    // ModelState es UNO por request y lo comparten todas las secciones. Sin esto, un error
+    // de nivel modelo al guardar el IVA aparecería también arriba, en el resumen de errores
+    // del perfil. Cada sección muestra el resumen SOLO si el POST fue suyo.
+    ViewData["AccountFocusSection"] = Model.FocusSection ?? AccountSettingsSections.Perfil;
+}
+
+@section Styles {
+    @* El shell (.finance-page-shell + .finance-hero + .finance-section) es el mismo que usan
+       Reservas, Ingresos y Egresos: un solo ancho, un solo radio, una sola sombra. *@
+    <link rel="stylesheet" href="~/css/finance-modules.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/account-module.css" asp-append-version="true" />
+}
+
+<div class="finance-page-shell account-shell">
+
+    @* ── Header del módulo ─────────────────────────────────────────────────── *@
+    <div class="finance-hero">
+        <div class="finance-hero-left module-heading">
+            <span class="module-eyebrow">Gestión de cuenta</span>
+            <h1 class="module-title"><i class="bi bi-person-circle module-title-icon" aria-hidden="true"></i>Mi cuenta</h1>
+            <p class="module-subtitle">
+                Administrá tu información personal, la seguridad de tu acceso, tus preferencias
+                y la configuración de tu negocio.
+            </p>
+        </div>
+
+        <div class="finance-kpi-grid">
+            <div class="finance-kpi-card">
+                <span class="finance-kpi-icon finance-kpi-icon-blue"><i class="bi bi-envelope-fill"></i></span>
+                <div>
+                    <span class="finance-kpi-label">Correo vinculado</span>
+                    <span class="finance-kpi-value account-kpi-email" title="@Model.Profile.Email">@Model.Profile.Email</span>
+                </div>
+            </div>
+            <div class="finance-kpi-card">
+                <span class="finance-kpi-icon finance-kpi-icon-violet"><i class="bi bi-person-check-fill"></i></span>
+                <div>
+                    <span class="finance-kpi-label">Perfil completo</span>
+                    <span class="finance-kpi-value finance-kpi-value-violet">@perfilPorcentaje%</span>
+                </div>
+            </div>
+            <div class="finance-kpi-card">
+                @* El estado de seguridad refleja el 2FA real, no un texto fijo. *@
+                <span class="finance-kpi-icon @(Model.Security.TwoFactorEnabled ? "finance-kpi-icon-green" : "finance-kpi-icon-orange")">
+                    <i class="bi @(Model.Security.TwoFactorEnabled ? "bi-shield-fill-check" : "bi-shield-fill-exclamation")"></i>
+                </span>
+                <div>
+                    <span class="finance-kpi-label">Seguridad</span>
+                    <span class="finance-kpi-value @(Model.Security.TwoFactorEnabled ? "finance-kpi-value-green" : "finance-kpi-value-orange")">
+                        @(Model.Security.TwoFactorEnabled ? "Dos pasos activa" : "Solo contraseña")
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* ── Feedback de guardado ──────────────────────────────────────────────── *@
+    @if (TempData["Mensaje"] is string mensajeOk)
+    {
+        <div class="finance-band">
+            <div class="account-alert account-alert--ok" role="status">
+                <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+                <span>@mensajeOk</span>
+            </div>
+        </div>
+    }
+    @if (TempData["Error"] is string mensajeError)
+    {
+        <div class="finance-band">
+            <div class="account-alert account-alert--error" role="alert">
+                <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+                <span>@mensajeError</span>
+            </div>
+        </div>
+    }
+
+    @* ── Secciones ─────────────────────────────────────────────────────────────
+       Cada una con su propio formulario y su propio endpoint: un error guardando el
+       IVA no impide guardar el teléfono. Ver AccountSettingsPageViewModel. *@
+    <partial name="_AccountProfile" model="Model.Profile" />
+    <partial name="_AccountSecurity" model="Model.Security" />
+    <partial name="_AccountPreferences" />
+
+    @if (Model.Fiscal is not null)
+    {
+        @* Sólo el Administrador. Para el resto la sección ni siquiera se construye. *@
+        <partial name="_AccountFiscalSettings" model="Model.Fiscal" />
+    }
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    <script>
+    (function () {
+        "use strict";
+
+        // Evita el doble submit y deja claro que algo está pasando.
+        function marcarEnviando(formId, buttonId, texto) {
+            var form = document.getElementById(formId);
+            var boton = document.getElementById(buttonId);
+            if (!form || !boton) { return; }
+
+            form.addEventListener("submit", function () {
+                boton.disabled = true;
+                boton.innerHTML = '<i class="bi bi-hourglass-split"></i> ' + texto;
+            });
+        }
+
+        marcarEnviando("formCuenta", "btnGuardarCambios", "Guardando…");
+        marcarEnviando("formEnlace", "btnEnviarEnlace", "Enviando…");
+        marcarEnviando("formFiscal", "btnGuardarFiscal", "Guardando…");
+
+        // Al volver de un guardado (o de una ruta legacy) el navegador ya salta al ancla.
+        // Esto sólo cubre el caso en que el servidor repinta la página con errores: el
+        // fragmento no viaja en un POST, así que lo posiciona el servidor.
+        var foco = @Html.Raw(Json.Serialize(Model.FocusSection));
+        if (foco) {
+            var destino = document.getElementById(foco);
+            if (destino) {
+                destino.scrollIntoView({ behavior: "smooth", block: "start" });
+            }
+        }
+    })();
+    </script>
+}

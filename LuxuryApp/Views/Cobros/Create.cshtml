@@ -1,0 +1,535 @@
+@model LuxuryApp.Models.Finanzas.CobroViewModel
+
+@{
+    ViewData["Title"] = "Registrar Cobro";
+    var esProducto       = Model.Cobro.ProductoId.HasValue && !Model.Cobro.ServicioId.HasValue;
+    var selectedServicio = !esProducto ? "selected" : null;
+    var selectedProducto = esProducto  ? "selected" : null;
+    var disabledServicio = esProducto  ? "disabled" : null;
+    var disabledProducto = esProducto  ? null : "disabled";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/finance-modules.css" asp-append-version="true" />
+}
+
+<div class="finance-page-shell">
+
+    <!-- ── HERO ── -->
+    <div class="finance-hero">
+        <div class="finance-hero-left module-heading">
+            <span class="module-eyebrow">GESTIÓN DE INGRESOS</span>
+            <h1 class="module-title"><i class="bi bi-cash-coin module-title-icon" aria-hidden="true"></i>Registrar Cobro</h1>
+            <p class="module-subtitle">Registra un nuevo cobro de servicios o productos.</p>
+        </div>
+    </div>
+
+    <!-- ── FORM ── -->
+    <form asp-action="Create" method="post" id="formCrearCobro">
+        @Html.AntiForgeryToken()
+
+        <!-- BODY -->
+        <div class="finance-form-body">
+
+            <!-- Info box -->
+            <div class="finance-form-info-box">
+                <i class="bi bi-info-circle-fill"></i>
+                El cliente puede buscarse entre los registrados escribiendo su nombre.
+            </div>
+
+            @if (!ViewData.ModelState.IsValid && ViewData.ModelState.Values.Any(v => v.Errors.Count > 0))
+            {
+                <div class="finance-validation-summary" role="alert">
+                    <div asp-validation-summary="ModelOnly"></div>
+                </div>
+            }
+
+            <div class="finance-form-grid">
+
+                <!-- Fecha -->
+                <div class="finance-form-field">
+                    <label asp-for="Cobro.FechaCobro" class="finance-form-label">
+                        Fecha <span class="finance-required">*</span>
+                    </label>
+                    <div class="finance-input-wrap">
+                        <span class="finance-input-icon"><i class="bi bi-calendar3"></i></span>
+                        <input asp-for="Cobro.FechaCobro"
+                               class="finance-form-control"
+                               type="datetime-local"
+                               step="60" />
+                    </div>
+                    <span asp-validation-for="Cobro.FechaCobro" class="finance-field-error"></span>
+                </div>
+
+                <!-- Nombre Cliente -->
+                <div class="finance-form-field">
+                    <label asp-for="Cobro.NombreCliente" class="finance-form-label">
+                        Nombre Cliente <span class="finance-required">*</span>
+                    </label>
+                    <div class="cliente-autocomplete-wrapper" id="cobro-cliente-wrapper">
+                        <div class="finance-input-wrap">
+                            <span class="finance-input-icon"><i class="bi bi-person"></i></span>
+                            <input asp-for="Cobro.NombreCliente"
+                                   id="cobro-cliente-nombre"
+                                   class="finance-form-control"
+                                   placeholder="Escribe para buscar un cliente registrado..."
+                                   autocomplete="off"
+                                   style="padding-right:2.25rem;" />
+                            <span style="position:absolute;right:0.875rem;color:var(--private-muted-text);font-size:0.85rem;pointer-events:none;">
+                                <i class="bi bi-search"></i>
+                            </span>
+                        </div>
+                        <input asp-for="Cobro.ClienteId" id="Cobro_ClienteId" type="hidden" />
+                        <div class="cliente-autocomplete-dropdown d-none"
+                             id="cobro-cliente-dropdown"
+                             role="listbox"></div>
+                    </div>
+                    <span asp-validation-for="Cobro.NombreCliente" class="finance-field-error"></span>
+                </div>
+
+                <!-- Funcionario -->
+                <div class="finance-form-field">
+                    <label asp-for="Cobro.FuncionarioId" class="finance-form-label">
+                        Funcionario <span class="finance-required">*</span>
+                    </label>
+                    <div class="finance-input-wrap">
+                        <span class="finance-input-icon"><i class="bi bi-person-badge"></i></span>
+                        <select asp-for="Cobro.FuncionarioId"
+                                id="cobro-funcionario-select"
+                                class="finance-form-control"
+                                asp-items="Model.Funcionarios">
+                            <option value="">Seleccione funcionario</option>
+                        </select>
+                    </div>
+                    <span asp-validation-for="Cobro.FuncionarioId" class="finance-field-error"></span>
+                </div>
+
+                <!-- Tipo -->
+                <div class="finance-form-field">
+                    <label class="finance-form-label">Tipo <span class="finance-required">*</span></label>
+                    <div class="finance-input-wrap">
+                        <span class="finance-input-icon"><i class="bi bi-list-task"></i></span>
+                        <select id="TipoItem" name="TipoItem" class="finance-form-control">
+                            <option value="servicio" selected="@selectedServicio">Servicio</option>
+                            <option value="producto" selected="@selectedProducto">Producto</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Servicio -->
+                <div class="finance-form-field @(esProducto ? "d-none" : "")" id="ServicioContainer">
+                    <label asp-for="Cobro.ServicioId" class="finance-form-label">
+                        Servicio o Producto <span class="finance-required">*</span>
+                    </label>
+                    <div class="finance-input-wrap">
+                        <span class="finance-input-icon"><i class="bi bi-box-seam"></i></span>
+                        <select asp-for="Cobro.ServicioId"
+                                class="finance-form-control"
+                                asp-items="Model.Servicios"
+                                id="ServicioId"
+                                disabled="@disabledServicio">
+                            <option value="">Seleccione servicio o producto</option>
+                        </select>
+                    </div>
+                    <span asp-validation-for="Cobro.ServicioId" class="finance-field-error"></span>
+                </div>
+
+                <!-- Producto -->
+                <div class="finance-form-field @(esProducto ? "" : "d-none")" id="ProductoContainer">
+                    <label class="finance-form-label">
+                        Servicio o Producto <span class="finance-required">*</span>
+                    </label>
+                    <div class="finance-input-wrap">
+                        <span class="finance-input-icon"><i class="bi bi-box-seam"></i></span>
+                        <select asp-for="Cobro.ProductoId"
+                                class="finance-form-control"
+                                asp-items="Model.Productos"
+                                id="ProductoId"
+                                disabled="@disabledProducto">
+                            <option value="">Seleccione servicio o producto</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Monto -->
+                <div class="finance-form-field">
+                    <label asp-for="Cobro.Monto" class="finance-form-label">
+                        Monto <span class="finance-required">*</span>
+                    </label>
+                    <div class="finance-input-wrap">
+                        <span class="finance-input-icon" style="font-weight:700;font-size:1rem;">₡</span>
+                        <input asp-for="Cobro.Monto"
+                               class="finance-form-control"
+                               id="Monto"
+                               type="number"
+                               step="0.01"
+                               min="0"
+                               autocomplete="off"
+                               placeholder="0.00" />
+                    </div>
+                    <span asp-validation-for="Cobro.Monto" class="finance-field-error"></span>
+                </div>
+
+                <!-- Método de Pago -->
+                <div class="finance-form-field">
+                    <label asp-for="Cobro.MetodoPago" class="finance-form-label">
+                        Método de Pago <span class="finance-required">*</span>
+                    </label>
+                    <div class="finance-input-wrap">
+                        <span class="finance-input-icon"><i class="bi bi-credit-card"></i></span>
+                        <select asp-for="Cobro.MetodoPago"
+                                class="finance-form-control"
+                                asp-items="Model.MetodosPago">
+                            <option value="">Seleccione método de pago</option>
+                        </select>
+                    </div>
+                    <span asp-validation-for="Cobro.MetodoPago" class="finance-field-error"></span>
+                </div>
+
+                <!-- Observaciones -->
+                <div class="finance-form-field finance-form-full">
+                    <label asp-for="Cobro.Observaciones" class="finance-form-label">Observaciones</label>
+                    <div class="finance-input-wrap">
+                        <span class="finance-input-icon finance-input-icon--top"><i class="bi bi-chat-text"></i></span>
+                        <textarea asp-for="Cobro.Observaciones"
+                                  class="finance-form-control"
+                                  rows="3"
+                                  placeholder="Agrega observaciones adicionales (opcional)"
+                                  style="resize:vertical;"></textarea>
+                    </div>
+                </div>
+
+                <!-- Comprobante digital interno (opcional) -->
+                <div class="finance-form-field finance-form-full">
+                    <div class="finance-historial-section">
+                        <div class="finance-historial-check-row">
+                            <input type="checkbox" id="EnviarComprobante" name="EnviarComprobante" value="true" />
+                            <input type="hidden" name="EnviarComprobante" value="false" />
+                            <label class="finance-historial-check-label" for="EnviarComprobante">
+                                <i class="bi bi-envelope-paper me-1"></i>
+                                Enviar comprobante por correo
+                            </label>
+                        </div>
+                        <p class="finance-historial-help">
+                            Genera un comprobante digital interno (no fiscal) y lo envía al correo del cliente.
+                        </p>
+                        <div id="comprobante-email-container" style="display:none; margin-top:0.75rem;">
+                            <label class="finance-form-label" for="EmailComprobante" style="margin-bottom:0.35rem;">
+                                Correo del cliente
+                            </label>
+                            <div class="finance-input-wrap">
+                                <span class="finance-input-icon"><i class="bi bi-at"></i></span>
+                                <input type="email"
+                                       id="EmailComprobante"
+                                       name="EmailComprobante"
+                                       class="finance-form-control"
+                                       placeholder="correo@ejemplo.com"
+                                       autocomplete="off" />
+                            </div>
+                            <div class="finance-historial-check-row" id="guardar-email-row" style="display:none; margin-top:0.6rem;">
+                                <input type="checkbox" id="GuardarEmailEnCliente" name="GuardarEmailEnCliente" value="true" />
+                                <input type="hidden" name="GuardarEmailEnCliente" value="false" />
+                                <label class="finance-historial-check-label" for="GuardarEmailEnCliente">
+                                    <i class="bi bi-person-check me-1"></i>
+                                    Guardar este correo en el perfil del cliente
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Historial de servicio (condicional) -->
+                <div class="finance-form-field finance-form-full"
+                     id="historial-servicios-section"
+                     style="display:none;">
+                    <div class="finance-historial-section">
+                        <div class="finance-historial-check-row">
+                            <input type="checkbox"
+                                   id="ActualizarNotasServicio"
+                                   name="ActualizarNotasServicio"
+                                   value="true" />
+                            <input type="hidden" name="ActualizarNotasServicio" value="false" />
+                            <label class="finance-historial-check-label" for="ActualizarNotasServicio">
+                                <i class="bi bi-clipboard-list me-1"></i>
+                                Actualizar notas de servicio del cliente
+                            </label>
+                        </div>
+                        <p class="finance-historial-help">
+                            Actualiza las notas de servicio en el perfil del cliente vinculado a este cobro.
+                        </p>
+                        <div id="notas-servicio-container" style="display:none; margin-top:0.75rem;">
+                            <label class="finance-form-label" style="margin-bottom:0.35rem;">Notas de Servicio</label>
+                            <textarea id="NotasServicioTexto"
+                                      name="NotasServicioTexto"
+                                      class="finance-form-control finance-form-control--no-icon"
+                                      rows="4"
+                                      placeholder="Ingrese las notas de servicio..."></textarea>
+                            <p class="finance-historial-help" style="margin-top:0.35rem;">
+                                Este texto reemplazará las notas actuales del cliente.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- FOOTER -->
+        <div class="finance-form-footer">
+            <div class="finance-form-footer-left">
+                <button type="submit" class="finance-btn-save">
+                    <i class="bi bi-floppy2-fill"></i> Guardar Cobro
+                </button>
+                <a asp-action="Index" class="finance-btn-back">
+                    <i class="bi bi-arrow-left"></i> Volver
+                </a>
+            </div>
+            <button type="reset" class="finance-btn-clear">
+                <i class="bi bi-eraser"></i> Limpiar formulario
+            </button>
+        </div>
+
+    </form>
+</div>
+
+@section Scripts {
+<script>
+(function () {
+    'use strict';
+
+    var DEBOUNCE_MS = 300;
+    var MIN_LENGTH = 3;
+
+    var wrapper        = document.getElementById('cobro-cliente-wrapper');
+    var input          = document.getElementById('cobro-cliente-nombre');
+    var hiddenId       = document.getElementById('Cobro_ClienteId');
+    var dropdown       = document.getElementById('cobro-cliente-dropdown');
+    var tipoSelect     = document.getElementById('TipoItem');
+    var servicioSel    = document.getElementById('ServicioId');
+    var funcSel        = document.getElementById('cobro-funcionario-select');
+    var histSection    = document.getElementById('historial-servicios-section');
+    var histCheck      = document.getElementById('ActualizarNotasServicio');
+    var notasContainer = document.getElementById('notas-servicio-container');
+    var notasTextarea  = document.getElementById('NotasServicioTexto');
+
+    var enviarCompCheck   = document.getElementById('EnviarComprobante');
+    var compEmailContainer= document.getElementById('comprobante-email-container');
+    var compEmailInput    = document.getElementById('EmailComprobante');
+    var guardarEmailRow   = document.getElementById('guardar-email-row');
+
+    if (!input || !hiddenId || !dropdown) return;
+
+    var debounceTimer = null;
+    var abortController = null;
+    var cachedNotas = null;
+    var clienteCorreo = '';
+
+    /* ── autocomplete ─────────────────────────────────────── */
+    function showDropdown() { dropdown.classList.remove('d-none'); }
+    function hideDropdown() { dropdown.classList.add('d-none'); dropdown.innerHTML = ''; }
+
+    function clearClienteId() {
+        hiddenId.value = '';
+        cachedNotas = null;
+        clienteCorreo = '';
+        updateHistorialSection();
+        updateComprobanteSection();
+    }
+
+    function setCliente(id, nombre, correo) {
+        input.value = nombre;
+        hiddenId.value = id;
+        clienteCorreo = correo || '';
+        hideDropdown();
+        fetchNotasCliente(id);
+        updateHistorialSection();
+        updateComprobanteSection();
+    }
+
+    async function fetchNotasCliente(clienteId) {
+        cachedNotas = null;
+        try {
+            var resp = await fetch('/Clientes/ObtenerNotasServicio?clienteId=' + encodeURIComponent(clienteId));
+            if (!resp.ok) return;
+            var data = await resp.json();
+            cachedNotas = data.descripcion || '';
+        } catch (e) {
+            console.warn('[CobrosNotas]', e);
+        }
+    }
+
+    function buildItem(cliente) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'cliente-autocomplete-item';
+        btn.setAttribute('role', 'option');
+
+        var name = document.createElement('span');
+        name.className = 'cliente-autocomplete-name';
+        name.textContent = cliente.nombre || 'Cliente';
+
+        var phone = document.createElement('span');
+        phone.className = 'cliente-autocomplete-phone';
+        phone.textContent = cliente.telefono || '';
+
+        btn.appendChild(name);
+        btn.appendChild(phone);
+        btn.addEventListener('mousedown', function (e) { e.preventDefault(); });
+        btn.addEventListener('click', function () { setCliente(String(cliente.id), cliente.nombre || '', cliente.correo || ''); });
+        return btn;
+    }
+
+    function buildManualBtn() {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'cliente-autocomplete-manual';
+        btn.textContent = 'Escribir manualmente / ocultar sugerencias';
+        btn.addEventListener('mousedown', function (e) { e.preventDefault(); });
+        btn.addEventListener('click', function () { clearClienteId(); hideDropdown(); input.focus(); });
+        return btn;
+    }
+
+    function renderResults(clientes) {
+        dropdown.innerHTML = '';
+        if (!clientes.length) {
+            var empty = document.createElement('div');
+            empty.className = 'cliente-autocomplete-empty';
+            empty.textContent = 'Sin coincidencias';
+            dropdown.appendChild(empty);
+        } else {
+            clientes.forEach(function (c) { dropdown.appendChild(buildItem(c)); });
+        }
+        dropdown.appendChild(buildManualBtn());
+        showDropdown();
+    }
+
+    async function fetchSuggestions(term) {
+        if (abortController) abortController.abort();
+        abortController = typeof AbortController !== 'undefined' ? new AbortController() : null;
+        try {
+            var resp = await fetch('/Clientes/Autocompletado?term=' + encodeURIComponent(term),
+                { signal: abortController ? abortController.signal : undefined });
+            if (!resp.ok) return;
+            var data = await resp.json();
+            if (input.value.trim() === term) renderResults(data);
+        } catch (e) {
+            if (e && e.name !== 'AbortError') console.warn('[CobrosAutocomplete]', e);
+        }
+    }
+
+    input.addEventListener('input', function () {
+        var term = input.value.trim();
+        clearClienteId();
+        clearTimeout(debounceTimer);
+        hideDropdown();
+        if (term.length < MIN_LENGTH) return;
+        debounceTimer = setTimeout(function () { fetchSuggestions(term); }, DEBOUNCE_MS);
+    });
+
+    input.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') { hideDropdown(); }
+    });
+
+    input.addEventListener('blur', function () {
+        setTimeout(function () {
+            if (!wrapper.contains(document.activeElement)) hideDropdown();
+        }, 150);
+    });
+
+    /* ── tipo toggle ──────────────────────────────────────── */
+    var servicioContainer = document.getElementById('ServicioContainer');
+    var productoContainer = document.getElementById('ProductoContainer');
+    var productoSel       = document.getElementById('ProductoId');
+    var montoInput        = document.getElementById('Monto');
+
+    if (tipoSelect) {
+        tipoSelect.addEventListener('change', function () {
+            var esServicio = this.value === 'servicio';
+            if (servicioContainer) servicioContainer.classList.toggle('d-none', !esServicio);
+            if (productoContainer) productoContainer.classList.toggle('d-none', esServicio);
+            if (servicioSel) { servicioSel.disabled = !esServicio; servicioSel.value = ''; }
+            if (productoSel) { productoSel.disabled = esServicio; productoSel.value = ''; }
+            if (montoInput) montoInput.value = '';
+            updateHistorialSection();
+        });
+    }
+
+    if (servicioSel) {
+        servicioSel.addEventListener('change', function () {
+            var id = this.value;
+            if (id && montoInput) {
+                fetch('/Cobros/ObtenerPrecioServicio?id=' + encodeURIComponent(id))
+                    .then(function (r) { return r.ok ? r.json() : null; })
+                    .then(function (d) { if (d && montoInput) montoInput.value = d.precio; })
+                    .catch(function () {});
+            }
+            updateHistorialSection();
+        });
+    }
+
+    if (productoSel) {
+        productoSel.addEventListener('change', function () {
+            var id = this.value;
+            if (id && montoInput) {
+                fetch('/Cobros/ObtenerPrecioProducto?id=' + encodeURIComponent(id))
+                    .then(function (r) { return r.ok ? r.json() : null; })
+                    .then(function (d) { if (d && montoInput) montoInput.value = d.precio; })
+                    .catch(function () {});
+            }
+        });
+    }
+
+    if (funcSel) funcSel.addEventListener('change', updateHistorialSection);
+
+    /* ── historial section ────────────────────────────────── */
+    function updateHistorialSection() {
+        if (!histSection || !histCheck) return;
+        var tieneCliente  = hiddenId.value !== '';
+        var esServicio    = tipoSelect && tipoSelect.value === 'servicio';
+        var tieneServicio = servicioSel && servicioSel.value !== '';
+        var tieneFuncion  = funcSel && funcSel.value !== '';
+        var mostrar       = tieneCliente && esServicio && tieneServicio && tieneFuncion;
+        histSection.style.display = mostrar ? '' : 'none';
+        if (!mostrar) {
+            histCheck.checked = false;
+            if (notasContainer) notasContainer.style.display = 'none';
+        }
+    }
+
+    if (histCheck) {
+        histCheck.addEventListener('change', function () {
+            if (!notasContainer || !notasTextarea) return;
+            if (histCheck.checked) {
+                notasContainer.style.display = '';
+                if (notasTextarea.value === '' && cachedNotas !== null) {
+                    notasTextarea.value = cachedNotas;
+                }
+            } else {
+                notasContainer.style.display = 'none';
+            }
+        });
+    }
+
+    updateHistorialSection();
+
+    /* ── comprobante por correo ───────────────────────────── */
+    function updateComprobanteSection() {
+        if (!enviarCompCheck || !compEmailContainer) return;
+        var activo = enviarCompCheck.checked;
+        compEmailContainer.style.display = activo ? '' : 'none';
+
+        if (activo && compEmailInput && !compEmailInput.value && clienteCorreo) {
+            compEmailInput.value = clienteCorreo;
+        }
+
+        var tieneCliente = hiddenId.value !== '';
+        if (guardarEmailRow) {
+            guardarEmailRow.style.display = (activo && tieneCliente) ? '' : 'none';
+        }
+    }
+
+    if (enviarCompCheck) enviarCompCheck.addEventListener('change', updateComprobanteSection);
+    updateComprobanteSection();
+}());
+</script>
+}

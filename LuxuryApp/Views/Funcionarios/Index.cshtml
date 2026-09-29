@@ -1,0 +1,611 @@
+@model LuxuryApp.Models.Funcionarios.FuncionariosIndexViewModel
+@using System.Globalization
+@using LuxuryApp.Models.Funcionarios
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+<link rel="stylesheet" href="~/css/funcionarios.css" asp-append-version="true">
+
+<style>
+    .func-acc-badge{display:inline-flex;align-items:center;gap:.3rem;margin-top:.3rem;
+        font-size:.68rem;font-weight:600;padding:.12rem .45rem;border-radius:999px;line-height:1.2;}
+    .func-acc-badge--ok{background:rgba(16,185,129,.12);color:#047857;}
+    .func-acc-badge--blocked{background:rgba(220,38,38,.12);color:#b91c1c;}
+    .func-acc-badge--none{background:rgba(100,116,139,.12);color:#475569;}
+</style>
+
+@{
+    var ic = CultureInfo.InvariantCulture;
+}
+
+@functions {
+    static (string Text, string Css, string Icon) AccesoBadge(FuncionarioAccesoEstado estado) => estado switch
+    {
+        FuncionarioAccesoEstado.AccesoActivo => ("Acceso activo", "func-acc-badge--ok", "bi-key-fill"),
+        FuncionarioAccesoEstado.AccesoBloqueado => ("Acceso bloqueado", "func-acc-badge--blocked", "bi-lock-fill"),
+        _ => ("Sin acceso", "func-acc-badge--none", "bi-dash-circle")
+    };
+}
+
+<!-- ── CARD PRINCIPAL (header + botones + tabla en un solo contenedor) ── -->
+<div class="kpi-card func-main-card">
+
+    <!-- ── A. HEADER ── -->
+    <div class="func-header">
+
+        <div class="func-header-left module-heading">
+            <span class="module-eyebrow">Gestión de equipo</span>
+            <h2 class="module-title"><i class="bi bi-person-vcard-fill module-title-icon" aria-hidden="true"></i>Funcionarios</h2>
+            <p class="module-subtitle">Administra tu equipo y su información laboral.</p>
+        </div>
+
+        <div class="func-header-stats">
+
+            <div class="func-stat-chip">
+                <span class="func-stat-top-label">Total Funcionarios</span>
+                <i class="bi bi-people func-stat-icon"></i>
+                <span class="func-stat-num">@Model.TotalFuncionarios</span>
+                <span class="func-stat-sub">registrados</span>
+            </div>
+
+            <div class="func-stat-chip func-stat-chip--active">
+                <span class="func-stat-top-label">Funcionarios Activos</span>
+                <i class="bi bi-person-check func-stat-icon"></i>
+                <span class="func-stat-num">
+                    <span class="func-stat-dot"></span>
+                    @Model.TotalActivos
+                </span>
+                <span class="func-stat-sub">activos</span>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- ── B. BARRA DE ACCIONES ── -->
+    <div class="func-action-bar">
+
+        <div class="func-action-left">
+            <a asp-action="Create" class="func-btn func-btn--primary">
+                <i class="bi bi-plus-lg"></i>
+                Nuevo Funcionario
+            </a>
+            <a asp-action="PagosSemana" class="func-btn func-btn--ghost">
+                <i class="bi bi-cash-coin"></i>
+                Ver Pagos de la Semana
+            </a>
+        </div>
+
+        <button class="func-btn func-btn--ghost"
+                data-bs-toggle="modal"
+                data-bs-target="#modalPuestos"
+                onclick="cargarPuestos()">
+            <i class="bi bi-tags-fill"></i>
+            Gestionar Puestos
+        </button>
+
+    </div>
+
+    <!-- ── C. ALERTAS ── -->
+    @if (TempData["Mensaje"] != null)
+    {
+        <div class="func-alert-wrap">
+            <div class="func-alert func-alert--success">
+                <i class="bi bi-check-circle-fill"></i>
+                @TempData["Mensaje"]
+            </div>
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="func-alert-wrap">
+            <div class="func-alert func-alert--danger">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                @TempData["Error"]
+            </div>
+        </div>
+    }
+
+    <!-- ── D. TABLA (desktop / laptop — visible desde lg) ── -->
+    <div class="func-table-wrap employees-desktop-table d-none d-lg-block">
+        <table class="func-table">
+
+            <thead>
+                <tr>
+                    <th>Funcionario</th>
+                    <th>Puesto</th>
+                    <th>% Ganancia</th>
+                    <th>% Producto</th>
+                    <th>Color</th>
+                    <th>Fecha Ingreso</th>
+                    <th>Estado</th>
+                    <th class="text-center">Acciones</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                @if (Model.Funcionarios.Any())
+                {
+                    foreach (var f in Model.Funcionarios)
+                    {
+                        var inicial = f.Nombre.Length > 0
+                            ? char.ToUpper(f.Nombre[0]).ToString()
+                            : "?";
+                        var pctG = ((double)Math.Min(f.PorcentajeGanancia, 100)).ToString("F1", ic);
+                        var pctP = ((double)Math.Min(f.PorcentajeProducto, 100)).ToString("F1", ic);
+
+                        <tr>
+
+                            <!-- FUNCIONARIO: avatar + nombre + teléfono -->
+                            <td>
+                                <div class="func-person">
+                                    <div class="func-avatar"
+                                         style="background-color: @f.ColorCalendario">
+                                        @inicial
+                                    </div>
+                                    <div class="func-person-info">
+                                        <span class="func-name">@f.Nombre</span>
+                                        @if (!string.IsNullOrWhiteSpace(f.Telefono))
+                                        {
+                                            <span class="func-phone">
+                                                <i class="bi bi-telephone"></i>
+                                                @f.Telefono
+                                            </span>
+                                        }
+                                    </div>
+                                </div>
+                            </td>
+
+                            <!-- PUESTO -->
+                            <td>@f.NombrePuesto</td>
+
+                            <!-- % GANANCIA + barra -->
+                            <td>
+                                <div class="func-pct">
+                                    <span class="func-pct-val">@f.PorcentajeGanancia %</span>
+                                    <div class="func-bar">
+                                        <div class="func-bar-fill func-bar--blue"
+                                             style="width: @pctG%"></div>
+                                    </div>
+                                </div>
+                            </td>
+
+                            <!-- % PRODUCTO + barra -->
+                            <td>
+                                <div class="func-pct">
+                                    <span class="func-pct-val">@f.PorcentajeProducto %</span>
+                                    <div class="func-bar">
+                                        <div class="func-bar-fill func-bar--purple"
+                                             style="width: @pctP%"></div>
+                                    </div>
+                                </div>
+                            </td>
+
+                            <!-- COLOR: pill con hex -->
+                            <td>
+                                <span class="func-color-pill"
+                                      style="background-color: @f.ColorCalendario">
+                                    @f.ColorCalendario
+                                </span>
+                            </td>
+
+                            <!-- FECHA INGRESO -->
+                            <td>
+                                <span class="func-date">
+                                    <i class="bi bi-calendar3"></i>
+                                    @f.FechaIngreso.ToString("dd/MM/yyyy")
+                                </span>
+                            </td>
+
+                            <!-- ESTADO -->
+                            <td>
+                                @if (f.Activo)
+                                {
+                                    <span class="func-status func-status--active">
+                                        <span class="func-dot func-dot--green"></span>
+                                        Activo
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="func-status func-status--inactive">
+                                        <span class="func-dot func-dot--gray"></span>
+                                        Inactivo
+                                    </span>
+                                }
+                                @{ var accDesktop = AccesoBadge(f.AccesoEstado); }
+                                <br />
+                                <span class="func-acc-badge @accDesktop.Css" title="Acceso al portal del funcionario">
+                                    <i class="bi @accDesktop.Icon"></i>
+                                    @accDesktop.Text
+                                </span>
+                            </td>
+
+                            <!-- ACCIONES: Editar + Toggle activo/inactivo (SIN tres puntitos) -->
+                            <td>
+                                <div class="func-acts">
+
+                                    <a asp-action="Edit"
+                                       asp-route-id="@f.IdFuncionario"
+                                       class="func-act-btn func-act--edit"
+                                       title="Editar funcionario">
+                                        <i class="bi bi-pencil-square"></i>
+                                    </a>
+
+                                    @if (f.Activo)
+                                    {
+                                        <button type="button"
+                                                class="func-act-btn func-act--toggle-on"
+                                                title="Desactivar"
+                                                data-id="@f.IdFuncionario"
+                                                data-nombre="@f.Nombre"
+                                                onclick="abrirDesactivar(this)">
+                                            <i class="bi bi-toggle-on"></i>
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <button type="button"
+                                                class="func-act-btn func-act--toggle-off"
+                                                title="Activar"
+                                                data-id="@f.IdFuncionario"
+                                                data-nombre="@f.Nombre"
+                                                onclick="abrirActivar(this)">
+                                            <i class="bi bi-toggle-off"></i>
+                                        </button>
+                                    }
+
+                                </div>
+                            </td>
+
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="8">
+                            <div class="func-empty">
+                                <i class="bi bi-people func-empty-icon"></i>
+                                <span class="func-empty-text">No hay funcionarios registrados</span>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+
+        </table>
+    </div>
+
+    <!-- ── E. CARDS MÓVIL (visible solo por debajo de lg) ── -->
+    <div class="employees-mobile-list d-lg-none">
+        @if (Model.Funcionarios.Any())
+        {
+            foreach (var f in Model.Funcionarios)
+            {
+                var inicialM = f.Nombre.Length > 0
+                    ? char.ToUpper(f.Nombre[0]).ToString()
+                    : "?";
+                var pctGM = ((double)Math.Min(f.PorcentajeGanancia, 100)).ToString("F1", ic);
+                var pctPM = ((double)Math.Min(f.PorcentajeProducto, 100)).ToString("F1", ic);
+
+                <div class="employee-mobile-card">
+
+                    <!-- HEADER: avatar + nombre + estado -->
+                    <div class="employee-mobile-header">
+                        <div class="func-avatar employee-mobile-avatar"
+                             style="background-color: @f.ColorCalendario">
+                            @inicialM
+                        </div>
+                        <div class="employee-mobile-identity">
+                            <span class="func-name">@f.Nombre</span>
+                            @if (!string.IsNullOrWhiteSpace(f.Telefono))
+                            {
+                                <span class="func-phone">
+                                    <i class="bi bi-telephone"></i>
+                                    @f.Telefono
+                                </span>
+                            }
+                        </div>
+                        <div class="employee-mobile-status-wrap">
+                            @if (f.Activo)
+                            {
+                                <span class="func-status func-status--active">
+                                    <span class="func-dot func-dot--green"></span>
+                                    Activo
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="func-status func-status--inactive">
+                                    <span class="func-dot func-dot--gray"></span>
+                                    Inactivo
+                                </span>
+                            }
+                            @{ var accMobile = AccesoBadge(f.AccesoEstado); }
+                            <span class="func-acc-badge @accMobile.Css" title="Acceso al portal del funcionario">
+                                <i class="bi @accMobile.Icon"></i>
+                                @accMobile.Text
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- META: puesto + fecha + color -->
+                    <div class="employee-mobile-meta">
+                        <div class="employee-mobile-meta-item">
+                            <span class="employee-mobile-label">
+                                <i class="bi bi-briefcase"></i> Puesto
+                            </span>
+                            <span class="employee-mobile-value">@f.NombrePuesto</span>
+                        </div>
+                        <div class="employee-mobile-meta-item">
+                            <span class="employee-mobile-label">
+                                <i class="bi bi-calendar3"></i> Ingreso
+                            </span>
+                            <span class="employee-mobile-value">@f.FechaIngreso.ToString("dd/MM/yyyy")</span>
+                        </div>
+                        <div class="employee-mobile-meta-item">
+                            <span class="employee-mobile-label">
+                                <i class="bi bi-palette"></i> Color
+                            </span>
+                            <span class="func-color-pill"
+                                  style="background-color: @f.ColorCalendario">
+                                @f.ColorCalendario
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- BARRAS: % Ganancia y % Producto -->
+                    <div class="employee-mobile-bars">
+                        <div class="employee-mobile-bar-row">
+                            <div class="employee-mobile-bar-header">
+                                <span class="employee-mobile-label">% Ganancia</span>
+                                <span class="func-pct-val">@f.PorcentajeGanancia %</span>
+                            </div>
+                            <div class="func-bar employee-mobile-bar-track">
+                                <div class="func-bar-fill func-bar--blue"
+                                     style="width: @pctGM%"></div>
+                            </div>
+                        </div>
+                        <div class="employee-mobile-bar-row">
+                            <div class="employee-mobile-bar-header">
+                                <span class="employee-mobile-label">% Producto</span>
+                                <span class="func-pct-val">@f.PorcentajeProducto %</span>
+                            </div>
+                            <div class="func-bar employee-mobile-bar-track">
+                                <div class="func-bar-fill func-bar--purple"
+                                     style="width: @pctPM%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ACCIONES -->
+                    <div class="employee-mobile-actions">
+                        <a asp-action="Edit"
+                           asp-route-id="@f.IdFuncionario"
+                           class="func-act-btn func-act--edit employee-mobile-act-btn"
+                           title="Editar funcionario">
+                            <i class="bi bi-pencil-square"></i>
+                            <span>Editar</span>
+                        </a>
+
+                        @if (f.Activo)
+                        {
+                            <button type="button"
+                                    class="func-act-btn func-act--toggle-on employee-mobile-act-btn"
+                                    title="Desactivar"
+                                    data-id="@f.IdFuncionario"
+                                    data-nombre="@f.Nombre"
+                                    onclick="abrirDesactivar(this)">
+                                <i class="bi bi-toggle-on"></i>
+                                <span>Desactivar</span>
+                            </button>
+                        }
+                        else
+                        {
+                            <button type="button"
+                                    class="func-act-btn func-act--toggle-off employee-mobile-act-btn"
+                                    title="Activar"
+                                    data-id="@f.IdFuncionario"
+                                    data-nombre="@f.Nombre"
+                                    onclick="abrirActivar(this)">
+                                <i class="bi bi-toggle-off"></i>
+                                <span>Activar</span>
+                            </button>
+                        }
+                    </div>
+
+                </div>
+            }
+        }
+        else
+        {
+            <div class="func-empty">
+                <i class="bi bi-people func-empty-icon"></i>
+                <span class="func-empty-text">No hay funcionarios registrados</span>
+            </div>
+        }
+    </div>
+
+</div>
+
+<!-- ── FORMS OCULTOS PARA ACCIONES DE ESTADO ── -->
+<form id="formDesactivar" asp-action="Desactivar" method="post" class="d-none">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="id" id="desactivarId" />
+</form>
+<form id="formActivar" asp-action="Activar" method="post" class="d-none">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="id" id="activarId" />
+</form>
+
+<!-- ── MODAL: DESACTIVAR FUNCIONARIO ── -->
+<div class="modal fade func-modal" id="modalDesactivar" tabindex="-1" aria-labelledby="lblDesactivarIdx">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="func-modal-title func-modal-title--warning" id="lblDesactivarIdx">
+                    <i class="bi bi-toggle-on"></i>
+                    Desactivar funcionario
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="func-modal-person">
+                    <div class="func-avatar" id="desactivarAvatar"
+                         style="background:#64748b;width:2.5rem;height:2.5rem;font-size:1rem;">?</div>
+                    <div>
+                        <span class="func-modal-person-name" id="desactivarNombre"></span>
+                        <span class="func-modal-person-sub">Funcionario activo</span>
+                    </div>
+                </div>
+                <div class="func-modal-warning-box func-modal-warning-box--amber">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <span>Al desactivarlo no podrá ser asignado a nuevas citas ni aparecerá en el calendario. Su historial se conserva intacto.</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="func-btn func-btn--ghost" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="func-btn func-btn--warning"
+                        onclick="document.getElementById('formDesactivar').submit()">
+                    <i class="bi bi-toggle-on"></i>
+                    Confirmar desactivación
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── MODAL: ACTIVAR FUNCIONARIO ── -->
+<div class="modal fade func-modal" id="modalActivar" tabindex="-1" aria-labelledby="lblActivarIdx">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="func-modal-title func-modal-title--green" id="lblActivarIdx">
+                    <i class="bi bi-toggle-off"></i>
+                    Activar funcionario
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="func-modal-person">
+                    <div class="func-avatar" id="activarAvatar"
+                         style="background:#64748b;width:2.5rem;height:2.5rem;font-size:1rem;">?</div>
+                    <div>
+                        <span class="func-modal-person-name" id="activarNombre"></span>
+                        <span class="func-modal-person-sub">Funcionario inactivo</span>
+                    </div>
+                </div>
+                <p style="font-size:0.88rem;color:var(--private-muted-text,#64748b);line-height:1.55;margin:0;">
+                    Al activarlo volverá a estar disponible para asignación de citas y aparecerá en el calendario y el módulo de pagos.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="func-btn func-btn--ghost" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="func-btn func-btn--success"
+                        onclick="document.getElementById('formActivar').submit()">
+                    <i class="bi bi-toggle-off"></i>
+                    Confirmar activación
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── MODAL PUESTOS ── -->
+<div class="modal fade" id="modalPuestos" tabindex="-1" aria-labelledby="lblModalPuestos">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header" style="background:linear-gradient(135deg,rgba(var(--private-accent-rgb), 0.08),rgba(var(--private-accent-alt-rgb), 0.08));border-bottom:1px solid var(--private-surface-border,rgba(15,23,42,0.1));">
+                <div style="display:flex;align-items:center;gap:0.65rem;">
+                    <div class="func-brand-icon" style="width:2.25rem;height:2.25rem;font-size:1.05rem;flex-shrink:0;">
+                        <i class="bi bi-tags-fill"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title" id="lblModalPuestos"
+                            style="font-size:1rem;font-weight:800;color:var(--private-surface-text,#111827);margin:0;display:flex;align-items:center;gap:0.4rem;">
+                            Gestionar Puestos
+                        </h5>
+                        <p style="font-size:0.76rem;color:var(--private-muted-text,#64748b);margin:0;">
+                            Administra los puestos disponibles para tus funcionarios.
+                        </p>
+                    </div>
+                </div>
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <div id="contenedorPuestos"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── MODAL: CONFIRMAR ELIMINAR PUESTO ── -->
+<div class="modal fade func-modal" id="modalEliminarPuesto" tabindex="-1" aria-labelledby="lblEliminarPuesto">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="func-modal-title func-modal-title--danger" id="lblEliminarPuesto">
+                    <i class="bi bi-trash3-fill"></i>
+                    Eliminar Puesto
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <div class="func-modal-person">
+                    <div style="width:2.5rem;height:2.5rem;border-radius:0.6rem;background:rgba(220,38,38,0.1);display:flex;align-items:center;justify-content:center;font-size:1.15rem;color:#dc2626;flex-shrink:0;">
+                        <i class="bi bi-tag-fill"></i>
+                    </div>
+                    <div>
+                        <span class="func-modal-person-name" id="eliminarPuestoNombre"></span>
+                        <span class="func-modal-person-sub">Puesto</span>
+                    </div>
+                </div>
+                <div class="func-modal-warning-box">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <span>
+                        Esta acción es permanente y no se puede deshacer.
+                        Solo es posible si el puesto no tiene funcionarios asociados.
+                    </span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <input type="hidden" id="eliminarPuestoId" value="" />
+                <button type="button" class="func-btn func-btn--ghost" data-bs-dismiss="modal">
+                    Cancelar
+                </button>
+                <button type="button"
+                        class="func-btn func-btn--danger"
+                        onclick="var id=document.getElementById('eliminarPuestoId').value; bootstrap.Modal.getInstance(document.getElementById('modalEliminarPuesto')).hide(); eliminarPuesto(id);">
+                    <i class="bi bi-trash3-fill"></i>
+                    Eliminar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function abrirDesactivar(btn) {
+        var id     = btn.dataset.id;
+        var nombre = btn.dataset.nombre;
+        var inicial = nombre && nombre.length > 0 ? nombre[0].toUpperCase() : "?";
+        document.getElementById("desactivarId").value         = id;
+        document.getElementById("desactivarNombre").textContent = nombre;
+        document.getElementById("desactivarAvatar").textContent = inicial;
+        new bootstrap.Modal(document.getElementById("modalDesactivar")).show();
+    }
+
+    function abrirActivar(btn) {
+        var id     = btn.dataset.id;
+        var nombre = btn.dataset.nombre;
+        var inicial = nombre && nombre.length > 0 ? nombre[0].toUpperCase() : "?";
+        document.getElementById("activarId").value         = id;
+        document.getElementById("activarNombre").textContent = nombre;
+        document.getElementById("activarAvatar").textContent  = inicial;
+        new bootstrap.Modal(document.getElementById("modalActivar")).show();
+    }
+</script>

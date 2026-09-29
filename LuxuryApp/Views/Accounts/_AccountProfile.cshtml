@@ -1,0 +1,73 @@
+@model LuxuryApp.Models.Identity.CuentaViewModel
+@*
+    Sección "Perfil personal" de Mi cuenta.
+
+    Formulario propio: guarda nombre y teléfono, nada más. El correo se muestra bloqueado porque
+    no se cambia desde acá (igual que antes de la unificación visual).
+*@
+
+@{
+    // Ver la nota en Cuenta.cshtml: el resumen de errores de nivel modelo es de quien envió
+    // el formulario, no de toda la pantalla.
+    var muestraResumen = (ViewData["AccountFocusSection"] as string)
+        == LuxuryApp.Models.Identity.AccountSettingsSections.Perfil;
+}
+
+<section class="finance-section" id="@LuxuryApp.Models.Identity.AccountSettingsSections.Perfil">
+    <div class="finance-section-head">
+        <h2 class="finance-section-title"><i class="bi bi-person-fill"></i> Perfil personal</h2>
+        <p class="finance-section-sub">
+            Tu nombre visible y tu teléfono se usan en tu perfil dentro de la plataforma.
+        </p>
+    </div>
+
+    <form asp-controller="Accounts" asp-action="Cuenta" method="post" novalidate id="formCuenta">
+        @Html.AntiForgeryToken()
+
+        @if (muestraResumen)
+        {
+            <div asp-validation-summary="ModelOnly" class="account-validation-summary"></div>
+        }
+
+        <div class="account-form-grid">
+            <div class="account-field">
+                <label class="account-field-label" for="cuentaCorreo">Correo electrónico</label>
+                <div class="account-input-wrapper">
+                    <i class="bi bi-envelope account-input-icon" aria-hidden="true"></i>
+                    <input type="email"
+                           id="cuentaCorreo"
+                           class="account-input account-input--locked"
+                           value="@Model.Email"
+                           disabled
+                           readonly />
+                    <i class="bi bi-lock-fill account-input-lock" aria-hidden="true"></i>
+                </div>
+                <span class="account-input-hint">El correo no se puede cambiar desde aquí.</span>
+            </div>
+
+            <div class="account-field">
+                <label asp-for="Name" class="account-field-label"></label>
+                <div class="account-input-wrapper">
+                    <i class="bi bi-person account-input-icon" aria-hidden="true"></i>
+                    <input asp-for="Name" class="account-input" placeholder="Tu nombre visible" />
+                </div>
+                <span asp-validation-for="Name" class="account-field-error"></span>
+            </div>
+
+            <div class="account-field">
+                <label asp-for="PhoneNumber" class="account-field-label"></label>
+                <div class="account-input-wrapper">
+                    <i class="bi bi-telephone account-input-icon" aria-hidden="true"></i>
+                    <input asp-for="PhoneNumber" class="account-input" placeholder="+506 8888-8888" />
+                </div>
+                <span asp-validation-for="PhoneNumber" class="account-field-error"></span>
+            </div>
+        </div>
+
+        <div class="finance-section-actions finance-section-actions--inline">
+            <button type="submit" class="finance-btn-primary" id="btnGuardarCambios">
+                <i class="bi bi-floppy"></i> Guardar perfil
+            </button>
+        </div>
+    </form>
+</section>

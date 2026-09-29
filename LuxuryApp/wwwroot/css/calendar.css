@@ -1,0 +1,526 @@
+﻿/* ===============================
+   CALENDARIO
+================================ */
+
+.calendar-container {
+
+    width: 100%;
+    padding: 16px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 2);
+    backdrop-filter: blur(6px);
+    border: 2px solid var(--primary-color);
+    box-shadow: 0 0 25px #004445;
+}
+
+/* Header */
+.calendar-header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+    .calendar-header h4 {
+        font-size: 24px;
+        font-weight: 600;
+        letter-spacing: 1px;
+        color: #003636;
+        text-transform: capitalize;
+        margin: 0;
+    }
+.calendar-header .btn {
+    border-radius: 10px;
+}
+
+/* Grid */
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 5px;
+}
+
+.calendar-day-name {
+    text-align: center;
+    font-weight: 600;
+    color: #004445;
+    padding-bottom: 4px;
+}
+
+/* Días */
+.calendar-day {
+    border-radius: 12px;
+    border: 1px solid #e0e0e0;
+    height: 100px;
+    padding: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: #fff;
+}
+
+    .calendar-day:hover {
+        background: #038283;
+        transform: translateY(-2px);
+    }
+
+    .calendar-day.selected {
+        border: 2px solid var(--primary-color);
+        background-color: var(--primary-soft);
+    }
+    .calendar-day.today {
+        border: 2px solid #004445;
+    }
+
+
+
+
+/* ===============================
+   DAY VIEW – NUEVA AGENDA
+================================ */
+
+.day-view-container {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.day-view-title {
+    font-weight: 700;
+    color: #004445;
+    margin-bottom: 15px;
+}
+
+/* GRID PRINCIPAL */
+.day-grid {
+
+    display: flex;
+    position: relative;
+    border: 4px solid #e0e0e0;
+    border-radius: 14px;
+    overflow: hidden;
+
+
+}
+
+/* Columna horas */
+.time-column {
+    width: 80px;
+    background: #fafafa;
+    border-right: 1px solid #ddd;
+
+}
+
+.time-slot {
+    height: 30px;
+    border-bottom: 1px dashed rgba(0, 0, 0, 0.18);
+    font-size: 12px;
+    padding-left: 6px;
+    display: flex;
+    align-items: flex-start;
+}
+
+/* Contenedor funcionarios */
+.funcionarios-container {
+
+    display: flex;
+    flex: 1;
+    position: relative;
+}
+
+/* Columna individual */
+.funcionario-column {
+    flex: 1;
+    border-right: 1px solid #eee;
+    position: relative;
+}
+
+    .funcionario-column:last-child {
+        border-right: none;
+    }
+
+/* Línea horizontal base */
+.slot-line {
+    height: 30px;
+    border-bottom: 1px dashed rgba(0, 0, 0, 0.20);
+}
+
+.calendar-slot {
+    cursor: pointer;
+    position: relative;
+    user-select: none;
+}
+
+/* BLOQUE DE CITA */
+.cita-bloque {
+    position: absolute;
+    left: 6px;
+    right: 6px;
+    border-radius: 12px;
+    border: 2px solid rgba(255, 255, 255, 0.6);
+    padding: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    color: #fff;
+    cursor: pointer;
+    overflow: hidden;
+    box-shadow: 0 6px 15px rgba(0,0,0,0.25);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+    line-height: 1.4;
+}
+
+    .cita-bloque small {
+         display: block;
+    font-size: 12px;
+    font-weight: 500;
+    opacity: 0.95;
+    margin-top: 4px;
+    }
+
+    .cita-bloque:hover {
+        transform: scale(1.03);
+        box-shadow: 0 8px 18px rgba(0,0,0,0.35);
+    }
+.cita-preview {
+    position: absolute;
+    left: 5px;
+    right: 5px;
+    border-radius: 8px;
+    pointer-events: none;
+}
+.calendar-hour.drag-over {
+    background: rgba(0,0,0,0.05);
+}
+
+/* ===============================
+   PANEL LATERAL – CITAS
+================================ */
+
+#listaTareas {
+    padding-bottom: 4rem;
+}
+
+.side-cita-card {
+    list-style: none;
+    background: #ffffff;
+    border-radius: 18px;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+    position: relative;
+    border: 1px solid transparent;
+    background-image: linear-gradient(#ffffff, #ffffff), linear-gradient(135deg, #004445, #008080);
+    background-origin: border-box;
+    background-clip: padding-box, border-box;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+    .side-cita-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 14px 30px rgba(0, 68, 69, 0.25);
+    }
+
+    .side-cita-card strong {
+        color: #004445;
+        font-weight: 600;
+    }
+
+    .side-cita-card small {
+        color: #444;
+        line-height: 1.6;
+        display: block;
+        margin-top: 6px;
+    }
+
+
+.dia-ocupado {
+    background: #ffb3b3 !important;
+    color: #6b0000 !important;
+    font-weight: 600;
+}
+
+/* ===============================
+   AUTOCOMPLETADO CLIENTES
+================================ */
+
+.cliente-autocomplete-wrapper {
+    position: relative;
+}
+
+/* El dropdown usa EXCLUSIVAMENTE los tokens del tema privado (--private-*). Antes tenía colores
+   fijos (azul oscuro + turquesa), asi que se veia igual en todos los temas y quedaba ilegible en
+   los claros. No se crea un sistema de color nuevo: son los mismos tokens del resto de modulos. */
+.cliente-autocomplete-dropdown {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    z-index: 1090;
+    max-height: 240px;
+    overflow-y: auto;
+    background: var(--private-surface-bg-strong, #ffffff);
+    border: 1px solid var(--private-input-border, rgba(15, 23, 42, 0.14));
+    border-radius: 10px;
+    box-shadow: var(--private-panel-shadow, 0 16px 36px rgba(15, 23, 42, 0.18));
+    padding: 6px;
+}
+
+/* Futurista premium: sus superficies son translucidas A PROPOSITO (efecto glass), y ningun tema
+   tiene un token opaco de "overlay". El modal puede permitirselo porque difumina la pagina que
+   queda detras; este dropdown, en cambio, se abre SOBRE los campos del propio formulario, asi que
+   con alpha 0.9 se alcanzaban a leer Telefono y Servicio a traves de el.
+
+   Se corrige SOLO la superficie de este componente, redefiniendo el token sobre el propio elemento
+   con el MISMO color del tema a opacidad completa (rgba(11, 18, 42, .9) -> rgb(11, 18, 42)). La
+   declaracion de arriba sigue siendo var(--private-surface-bg-strong), el token global no se toca
+   y ningun otro componente ni tema cambia. Borde, sombra, texto y accent siguen siendo los del
+   tema, por lo que conserva su identidad futurista. */
+html.surface-glass .cliente-autocomplete-dropdown,
+html[data-luxury-surface-theme="glass"] .cliente-autocomplete-dropdown {
+    --private-surface-bg-strong: rgb(11, 18, 42);
+}
+
+.cliente-autocomplete-item,
+.cliente-autocomplete-manual {
+    width: 100%;
+    border: 0;
+    background: transparent;
+    color: var(--private-surface-text, #111827);
+    text-align: left;
+}
+
+.cliente-autocomplete-item {
+    display: block;
+    padding: 9px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.cliente-autocomplete-item:hover,
+.cliente-autocomplete-item:focus,
+.cliente-autocomplete-item.is-active {
+    background: rgba(var(--private-accent-rgb, 37, 99, 235), 0.14);
+    outline: none;
+}
+
+.cliente-autocomplete-item:focus-visible {
+    box-shadow: 0 0 0 2px var(--private-accent-ring, rgba(37, 99, 235, 0.28));
+}
+
+.cliente-autocomplete-name {
+    display: block;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.cliente-autocomplete-phone {
+    display: block;
+    margin-top: 2px;
+    color: var(--private-muted-text, #64748b);
+    font-size: 0.88rem;
+}
+
+.cliente-autocomplete-empty {
+    padding: 9px 10px;
+    color: var(--private-muted-text, #64748b);
+    font-size: 0.92rem;
+}
+
+.cliente-autocomplete-manual {
+    margin-top: 4px;
+    padding: 8px 10px;
+    border-top: 1px solid var(--private-table-border, rgba(15, 23, 42, 0.08));
+    color: var(--private-chart-accent, var(--private-accent, #2563eb));
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.cliente-autocomplete-manual:hover,
+.cliente-autocomplete-manual:focus,
+.cliente-autocomplete-manual.is-active {
+    background: rgba(var(--private-accent-rgb, 37, 99, 235), 0.18);
+    border-radius: 6px;
+    outline: none;
+}
+
+/* ===============================
+   ESTADO DEL CLIENTE EN "NUEVA CITA"
+   Zona compacta bajo Teléfono. Alturas estables para que el formulario no salte.
+================================ */
+
+.cal-cliente-estado {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.45rem;
+    min-height: 1.6rem;
+    margin: 0.35rem 0 0.75rem;
+    font-size: 0.82rem;
+    line-height: 1.35;
+}
+
+/* Sin nada que decir el bloque desaparece por completo, para no dejar un hueco vacío. */
+.cal-cliente-estado.is-empty {
+    display: none;
+}
+
+.cal-cliente-estado-registrado {
+    color: var(--private-chart-success, #16a34a);
+    font-weight: 600;
+}
+
+.cal-cliente-estado-hint {
+    color: var(--private-muted-text, #64748b);
+}
+
+.cal-cliente-estado-aviso {
+    color: var(--private-chart-warning, #d97706);
+}
+
+.cal-cliente-estado .form-check {
+    margin: 0;
+    min-height: auto;
+}
+
+.cal-cliente-estado .form-check-label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--private-surface-text, #111827);
+    cursor: pointer;
+}
+
+.cal-cliente-estado-icon {
+    flex-shrink: 0;
+    line-height: 1.35;
+}
+
+/* Decisión sobre el cliente al confirmar una reserva online */
+.cal-booking-cliente-opciones:empty {
+    display: none;
+}
+
+.cal-booking-cliente-lista {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--private-surface-border, rgba(15, 23, 42, 0.08));
+    border-radius: 10px;
+    background: var(--private-row-bg, rgba(255, 255, 255, 0.96));
+}
+
+.cal-booking-cliente-lista .form-check-label {
+    font-size: 0.85rem;
+    color: var(--private-surface-text, #111827);
+    cursor: pointer;
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   DESCANSO PARA VARIOS FUNCIONARIOS
+
+   Todo se resuelve con los tokens semánticos --private-* del sistema privado, de
+   modo que el bloque acompaña a cualquier tema (claro, oscuro, rosa, azul,
+   futurista premium) sin un hex por tema.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+.cal-multiselect {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.15rem 0.75rem;
+    max-height: 11rem;
+    overflow-y: auto;
+    padding: 0.55rem 0.7rem;
+    border: 1px solid var(--private-input-border, rgba(15, 23, 42, 0.12));
+    border-radius: 10px;
+    background: var(--private-input-bg, rgba(255, 255, 255, 0.96));
+}
+
+/* Una sola columna en móvil: dos quedan demasiado apretadas para tocar con el dedo. */
+@media (max-width: 575.98px) {
+    .cal-multiselect {
+        grid-template-columns: 1fr;
+        max-height: 13rem;
+    }
+}
+
+.cal-multiselect-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 2rem;
+    margin: 0;
+    padding-left: 1.5rem;
+}
+
+.cal-multiselect-item .form-check-label {
+    font-size: 0.86rem;
+    line-height: 1.3;
+    color: var(--private-surface-text, #111827);
+    cursor: pointer;
+    overflow-wrap: anywhere;
+}
+
+/* El foco tiene que verse: es la única pista para quien navega con teclado. */
+.cal-multiselect-item .form-check-input:focus-visible {
+    outline: 2px solid var(--private-chart-accent, #2563eb);
+    outline-offset: 2px;
+}
+
+.cal-multiselect-resumen {
+    margin: 0.35rem 0 0;
+    font-size: 0.78rem;
+    color: var(--private-muted-text, #6b7280);
+}
+
+.cal-multiselect-resumen.is-warning {
+    color: var(--private-chart-warning, #d97706);
+    font-weight: 600;
+}
+
+.cal-descanso-ayuda {
+    margin: 0.4rem 0 0;
+    font-size: 0.76rem;
+    line-height: 1.35;
+    color: var(--private-muted-text, #6b7280);
+}
+
+/* Panel de conflictos: explica POR QUÉ un día no se puede elegir. */
+.cal-descanso-conflictos {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin-top: 0.75rem;
+    padding: 0.7rem 0.85rem;
+    border: 1px solid var(--private-chart-warning, #d97706);
+    border-radius: 10px;
+    background: rgba(217, 119, 6, 0.08);
+}
+
+.cal-descanso-conflicto-titulo {
+    margin: 0 0 0.3rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--private-surface-text, #111827);
+}
+
+.cal-descanso-conflicto-lista {
+    margin: 0;
+    padding-left: 1.1rem;
+    font-size: 0.8rem;
+    line-height: 1.45;
+    color: var(--private-surface-text, #111827);
+}
+
+/* Día sin espacio para todos los funcionarios seleccionados. El color es apoyo:
+   el motivo va siempre en el tooltip y en el panel de conflictos. */
+.flatpickr-day.cal-dia-no-disponible,
+.flatpickr-day.cal-dia-no-disponible.flatpickr-disabled {
+    color: var(--private-muted-text, #6b7280);
+    background: rgba(217, 119, 6, 0.14);
+    border-color: transparent;
+    text-decoration: line-through;
+    cursor: not-allowed;
+    opacity: 0.75;
+}
+
+.cal-btn-save:disabled,
+.cal-btn-save.is-disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    filter: grayscale(0.25);
+}

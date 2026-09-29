@@ -1,0 +1,29 @@
+@model ContractPageViewModel
+
+@{
+    Layout = "_PublicLayout";
+    ViewData["Title"] = "Contrato vigente";
+    ViewData["PublicBodyClass"] = "public-contract-page";
+}
+
+<section class="contract-page-section">
+    <div class="container">
+        <div class="section-heading text-center" data-aos="fade-up">
+            <span class="section-kicker">Contrato del servicio</span>
+            <h2>Consulta la version vigente del contrato de uso antes de crear tu cuenta.</h2>
+            <p>
+                Este documento agrupa terminos y condiciones, privacidad, pagos y consentimiento de tratamiento de datos
+                en una sola version controlada desde base de datos.
+            </p>
+        </div>
+
+        <div data-aos="fade-up">
+            <partial name="_ContractDocumentContent" model="Model" />
+        </div>
+
+        <div class="contract-page-actions" data-aos="fade-up">
+            <a class="btn public-btn public-btn-primary" asp-controller="Accounts" asp-action="Registro">Crear cuenta</a>
+            <a class="btn public-btn public-btn-secondary" asp-controller="Billing" asp-action="Planes">Ver precios</a>
+        </div>
+    </div>
+</section>

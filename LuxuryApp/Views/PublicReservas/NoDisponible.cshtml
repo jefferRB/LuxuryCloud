@@ -1,0 +1,27 @@
+@{
+    Layout = null;
+    ViewData["Title"] = "Reservas no disponibles";
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>@ViewData["Title"]</title>
+    <link rel="stylesheet" href="~/css/public-reservas.css" asp-append-version="true" />
+</head>
+<body>
+    <div class="pb-wrap">
+        <div class="pb-card pb-nodisp">
+            <span class="pb-eyebrow">Reservas online</span>
+            <div class="pb-nodisp-icon">🗓️</div>
+            <h1>Reservas no disponibles</h1>
+            <p>Este negocio no tiene reservas online disponibles en este momento.</p>
+        </div>
+        <footer class="pb-footer">
+            <span>Reservas con tecnología <strong>LuxuryCloud</strong></span>
+        </footer>
+    </div>
+</body>
+</html>

@@ -1,0 +1,1016 @@
+@using LuxuryApp.Models.SaaS
+@model LuxuryApp.Models.Platform.PlatformDashboardViewModel
+
+@{
+    ViewData["Title"] = "Tenants · Plataforma";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/platform.css" asp-append-version="true" />
+}
+
+<div class="platform-shell">
+    <div class="platform-hero">
+        <div>
+            <span class="platform-eyebrow">
+                <i class="bi bi-shield-lock"></i>
+                Modulo interno premium
+            </span>
+            <h1 class="platform-title">Tenants y acceso comercial</h1>
+            <p class="platform-subtitle">
+                Gobierno de tenants: acceso comercial, WhatsApp y actividad. Las senales de salud y colas de trabajo viven en Mission Control.
+            </p>
+        </div>
+        <div class="platform-toolbar">
+            <a class="btn btn-outline-dark platform-btn" asp-controller="Platform" asp-action="Index">
+                <i class="bi bi-speedometer2"></i>
+                Mission Control
+            </a>
+            <a class="btn btn-outline-dark platform-btn" asp-controller="PlatformUsers" asp-action="Usuarios">
+                <i class="bi bi-people"></i>
+                Usuarios
+            </a>
+            <a class="btn btn-outline-dark platform-btn" asp-controller="PlatformUsers" asp-action="Auditoria">
+                <i class="bi bi-clipboard-check"></i>
+                Auditoría
+            </a>
+            <a class="btn btn-outline-dark platform-btn" asp-controller="PlatformPaymentRecovery" asp-action="Index">
+                <i class="bi bi-life-preserver"></i>
+                Recuperación de pago
+            </a>
+            <a class="btn btn-outline-dark platform-btn" asp-action="PromotionalCodes">
+                <i class="bi bi-ticket-perforated"></i>
+                Gestionar codigos
+            </a>
+            <a class="btn btn-outline-dark platform-btn" asp-controller="PlatformMonthlyReports" asp-action="Index">
+                <i class="bi bi-envelope-paper"></i>
+                Resumen mensual
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["PlatformError"] is string platformError)
+    {
+        <div class="platform-alert-stack">
+            <div class="alert alert-danger platform-alert mb-0">@platformError</div>
+        </div>
+    }
+
+    @if (TempData["PlatformSuccess"] is string platformSuccess)
+    {
+        <div class="platform-alert-stack">
+            <div class="alert alert-success platform-alert mb-0">@platformSuccess</div>
+        </div>
+    }
+
+    <div class="row g-4 mb-4">
+        <div class="col-md-6 col-xl-3">
+            <article class="platform-stat-card">
+                <div class="platform-stat-top">
+                    <div>
+                        <p class="platform-stat-label">Tenants</p>
+                        <p class="platform-stat-value">@Model.TotalTenants</p>
+                    </div>
+                    <span class="platform-stat-icon is-gold">
+                        <i class="bi bi-buildings"></i>
+                    </span>
+                </div>
+                <p class="platform-stat-note">Base multitenant actualmente registrada en la plataforma.</p>
+            </article>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <article class="platform-stat-card">
+                <div class="platform-stat-top">
+                    <div>
+                        <p class="platform-stat-label">Usuarios</p>
+                        <p class="platform-stat-value">@Model.TotalUsers</p>
+                    </div>
+                    <span class="platform-stat-icon is-blue">
+                        <i class="bi bi-people"></i>
+                    </span>
+                </div>
+                <p class="platform-stat-note">Usuarios activos o historicos visibles desde la consola interna.</p>
+            </article>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <article class="platform-stat-card">
+                <div class="platform-stat-top">
+                    <div>
+                        <p class="platform-stat-label">Suscripciones activas</p>
+                        <p class="platform-stat-value">@Model.TotalActiveSubscriptions</p>
+                    </div>
+                    <span class="platform-stat-icon is-green">
+                        <i class="bi bi-credit-card-2-front"></i>
+                    </span>
+                </div>
+                <p class="platform-stat-note">Tenants con trial o suscripcion comercial vigente.</p>
+            </article>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <article class="platform-stat-card">
+                <div class="platform-stat-top">
+                    <div>
+                        <p class="platform-stat-label">Codigos promocionales</p>
+                        <p class="platform-stat-value">@Model.TotalPromotionalCodes</p>
+                    </div>
+                    <span class="platform-stat-icon is-slate">
+                        <i class="bi bi-stars"></i>
+                    </span>
+                </div>
+                <p class="platform-stat-note">Instrumentos comerciales listos para activacion sin tarjeta.</p>
+            </article>
+        </div>
+    </div>
+
+    <section class="platform-section-card mb-4">
+        <div class="platform-section-header">
+            <div>
+                <p class="platform-section-kicker">Gobierno comercial</p>
+                <h2 class="platform-section-title">Tenants y acceso efectivo</h2>
+                <p class="platform-section-copy">
+                    Ajusta el modo comercial y el plan forzado cuando aplique. La resolucion efectiva sigue pasando por la capa central de acceso comercial.
+                </p>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table platform-table align-middle">
+                <thead>
+                    <tr>
+                        <th>Tenant</th>
+                        <th>Estado / Salud</th>
+                        <th>Uso 30d</th>
+                        <th>Configuracion comercial</th>
+                        <th>Plan efectivo</th>
+                        <th class="text-end">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var tenant in Model.Tenants)
+                    {
+                        <tr>
+                            <td>
+                                <div class="platform-table-title">@tenant.TenantName</div>
+                                @* Contacto principal por regla determinista (admin > funcionario). Si el
+                                   dato NO viene de un administrador se marca en vez de mostrarlo como si lo fuera. *@
+                                <div class="platform-table-meta">
+                                    <i class="bi @(tenant.OwnerIsFallback ? "bi-exclamation-triangle" : "bi-person-badge")"></i>
+                                    @(tenant.OwnerEmail ?? "Sin usuario principal")
+                                </div>
+                                @if (tenant.OwnerIsFallback || tenant.OwnerWarnings.Count > 0)
+                                {
+                                    <div class="platform-table-meta">
+                                        <span class="platform-badge platform-badge-warning">
+                                            @TenantOwnerResolution.DescribeSource(tenant.OwnerSource)
+                                        </span>
+                                    </div>
+                                    foreach (var warning in tenant.OwnerWarnings)
+                                    {
+                                        <div class="platform-table-meta text-warning-emphasis">@warning</div>
+                                    }
+                                }
+                                @if (tenant.LastActivityUtc.HasValue)
+                                {
+                                    <div class="platform-table-meta">
+                                        Última actividad: @tenant.LastActivityUtc.Value.ToString("yyyy-MM-dd")
+                                    </div>
+                                }
+                            </td>
+                            <td>
+                                <div class="platform-stack">
+                                    <span class="platform-badge @tenant.Health.BadgeClass">
+                                        <i class="bi @tenant.Health.Icon"></i>
+                                        @tenant.Health.Label
+                                    </span>
+                                    <span class="platform-badge @(tenant.TenantActive ? "platform-badge-success" : "platform-badge-danger")">
+                                        <i class="bi @(tenant.TenantActive ? "bi-check-circle" : "bi-pause-circle")"></i>
+                                        @(tenant.TenantActive ? "Activo" : "Suspendido")
+                                    </span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="platform-table-meta">
+                                    <i class="bi bi-calendar-check"></i> @tenant.Citas30d citas
+                                </div>
+                                <div class="platform-table-meta">
+                                    <i class="bi bi-cash-stack"></i> @tenant.Cobros30d cobros
+                                </div>
+                                @if (tenant.BookingRequests30d > 0)
+                                {
+                                    <div class="platform-table-meta">
+                                        <i class="bi bi-globe"></i> @tenant.BookingRequests30d reservas
+                                        @if (tenant.BookingRequestsPending > 0)
+                                        {
+                                            <span class="platform-badge platform-badge-warning ms-1">@tenant.BookingRequestsPending pend.</span>
+                                        }
+                                    </div>
+                                }
+                            </td>
+                            <td>
+                                <form asp-action="UpdateTenantCommercialSettings" method="post" class="row g-2 platform-inline-form">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="tenantId" value="@tenant.TenantId" />
+                                    <div class="col-12 col-xl-4">
+                                        <select class="form-select form-select-sm" name="commercialAccessMode" aria-label="Modo comercial">
+                                            <option value="@TenantCommercialAccessMode.RequiresSubscription" selected="@(tenant.CommercialAccessMode == TenantCommercialAccessMode.RequiresSubscription)">Requiere suscripcion</option>
+                                            <option value="@TenantCommercialAccessMode.Exempt" selected="@(tenant.CommercialAccessMode == TenantCommercialAccessMode.Exempt)">Exento</option>
+                                            <option value="@TenantCommercialAccessMode.Internal" selected="@(tenant.CommercialAccessMode == TenantCommercialAccessMode.Internal)">Interno</option>
+                                            @if (tenant.CommercialAccessMode == TenantCommercialAccessMode.PendingVerification)
+                                            {
+                                                <option value="@TenantCommercialAccessMode.PendingVerification" selected>Pendiente verificacion</option>
+                                            }
+                                        </select>
+                                    </div>
+                                    @{
+                                        var forcedIsAdvanced = tenant.ForcedPlanId.HasValue &&
+                                            Model.AdvancedPlanOptions.Any(plan => plan.Id == tenant.ForcedPlanId.Value);
+                                    }
+                                    <div class="col-12 col-xl-4">
+                                        @* SOLO planes base comerciales. Los paquetes WhatsApp (WA400/WA800/WA1200)
+                                           no aparecen aqui y el servidor los rechaza como plan base: se administran
+                                           en su propio control. Legacy/prueba viven en la seccion avanzada de abajo. *@
+                                        <select class="form-select form-select-sm" name="forcedPlanId" aria-label="Plan base forzado">
+                                            <option value="" selected="@(!tenant.ForcedPlanId.HasValue)">Sin plan forzado</option>
+                                            <optgroup label="Plan base comercial">
+                                                @foreach (var plan in Model.BasePlanOptions)
+                                                {
+                                                    <option value="@plan.Id" selected="@(tenant.ForcedPlanId == plan.Id)">
+                                                        @plan.Nombre — @(plan.MaxFuncionarios.HasValue ? $"{plan.MaxFuncionarios} func." : "ilimitado")
+                                                    </option>
+                                                }
+                                            </optgroup>
+                                            @if (forcedIsAdvanced)
+                                            {
+                                                @* El plan actual es legacy/prueba: se incluye seleccionado para que
+                                                   guardar sin tocarlo no lo borre. *@
+                                                <optgroup label="Actual (legacy / prueba)">
+                                                    @foreach (var plan in Model.AdvancedPlanOptions.Where(p => p.Id == tenant.ForcedPlanId))
+                                                    {
+                                                        <option value="@plan.Id" selected="selected">@plan.Nombre (legacy)</option>
+                                                    }
+                                                </optgroup>
+                                            }
+                                        </select>
+                                        @if (forcedIsAdvanced)
+                                        {
+                                            <div class="platform-table-meta text-warning-emphasis">
+                                                <i class="bi bi-exclamation-triangle"></i>
+                                                Plan legacy/prueba. Migrar a LC_M_/LC_A_.
+                                            </div>
+                                        }
+                                    </div>
+                                    <div class="col-12 col-xl-4">
+                                        <input class="form-control form-control-sm" name="commercialNotes" placeholder="Notas internas" value="@tenant.CommercialNotes" />
+                                    </div>
+                                    <div class="col-12">
+                                        <button type="submit" class="btn btn-dark btn-sm platform-btn">
+                                            <i class="bi bi-floppy"></i>
+                                            Guardar
+                                        </button>
+                                    </div>
+
+                                    @if (Model.AdvancedPlanOptions.Count > 0)
+                                    {
+                                        <div class="col-12">
+                                            @* Seccion avanzada colapsada: campo APARTE (legacyForcedPlanId). Si se elige
+                                               algo aqui, el servidor lo usa en lugar del selector comercial y lo audita
+                                               como eleccion legacy. Nombres distintos para no romper el model binding. *@
+                                            <details class="platform-advanced-plans" @(forcedIsAdvanced ? "open" : null)>
+                                                <summary class="platform-table-meta">
+                                                    <i class="bi bi-tools"></i>
+                                                    Planes legacy / prueba (avanzado)
+                                                </summary>
+                                                <div class="platform-table-meta mt-2">
+                                                    Sólo para migrar un tenant histórico. Queda registrado en auditoría.
+                                                </div>
+                                                <select class="form-select form-select-sm mt-2" name="legacyForcedPlanId" aria-label="Plan legacy o de prueba">
+                                                    <option value="">— No usar plan legacy —</option>
+                                                    @foreach (var plan in Model.AdvancedPlanOptions)
+                                                    {
+                                                        <option value="@plan.Id">@plan.Nombre (@(plan.Codigo ?? "sin codigo"))</option>
+                                                    }
+                                                </select>
+                                            </details>
+                                        </div>
+                                    }
+                                </form>
+                            </td>
+                            <td>
+                                <div class="platform-stack">
+                                    <div class="platform-table-title">@(tenant.EffectivePlanName ?? "Sin acceso comercial")</div>
+                                    <span class="platform-badge @(tenant.CanAccessApp ? "platform-badge-success" : "platform-badge-danger")">
+                                        <i class="bi @(tenant.CanAccessApp ? "bi-unlock" : "bi-lock")"></i>
+                                        @(tenant.CanAccessApp ? "Con acceso" : "Sin acceso")
+                                    </span>
+
+                                    @* Quien paga el acceso base. Manual/exento NUNCA es dinero en riesgo. *@
+                                    @if (tenant.CanAccessApp)
+                                    {
+                                        <span class="platform-badge @(tenant.AccessBillingSource == TenantAccessBillingSource.ProviderRecurring ? "platform-badge-blue" : "platform-badge-neutral")">
+                                            @(tenant.AccessBillingSource switch
+                                            {
+                                                TenantAccessBillingSource.ProviderRecurring => "Pagado TiloPay",
+                                                TenantAccessBillingSource.Manual => "Acceso manual",
+                                                TenantAccessBillingSource.PromotionalGrant => "Trial / promo",
+                                                TenantAccessBillingSource.Legacy => "Legacy",
+                                                _ => "Sin fuente"
+                                            })
+                                        </span>
+                                    }
+
+                                    @* Limite EFECTIVO: mismo valor que el enforcement y que /Billing/Suscripcion. *@
+                                    <div class="platform-table-meta @(tenant.ExceedsEmployeeLimit ? "text-danger-emphasis" : null)">
+                                        <i class="bi bi-people"></i>
+                                        Funcionarios: @tenant.ActiveFuncionarios /
+                                        @(tenant.EffectiveEmployeeLimit?.ToString() ?? (tenant.CanAccessApp ? "ilimitado" : "—"))
+                                        @if (tenant.ExceedsEmployeeLimit)
+                                        {
+                                            <span class="platform-badge platform-badge-danger ms-1">Excedido</span>
+                                        }
+                                    </div>
+
+                                    @if (!string.IsNullOrWhiteSpace(tenant.EffectivePlanCode))
+                                    {
+                                        <div class="platform-table-meta">@tenant.EffectivePlanCode</div>
+                                    }
+
+                                    @foreach (var warning in tenant.CommercialWarnings)
+                                    {
+                                        <div class="platform-table-meta text-warning-emphasis">
+                                            <i class="bi bi-exclamation-triangle"></i> @warning
+                                        </div>
+                                    }
+                                </div>
+                            </td>
+                            <td class="text-end">
+                                <div class="platform-table-actions justify-content-end">
+                                    <a class="btn btn-dark btn-sm platform-btn"
+                                       asp-controller="PlatformTenant" asp-action="Ficha"
+                                       asp-route-tenantId="@tenant.TenantId">
+                                        <i class="bi bi-person-lines-fill"></i>
+                                        Ver ficha
+                                    </a>
+                                    <a class="btn btn-outline-dark btn-sm platform-btn"
+                                       asp-controller="PlatformProviderSubscription" asp-action="Manage"
+                                       asp-route-tenantId="@tenant.TenantId">
+                                        <i class="bi bi-gear"></i>
+                                        Gestionar suscripción
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="platform-section-card mb-4">
+        <div class="platform-section-header">
+            <div>
+                <p class="platform-section-kicker">Mensajeria SaaS</p>
+                <h2 class="platform-section-title">WhatsApp por tenant</h2>
+                <p class="platform-section-copy">
+                    Activa clientes puntuales, controla su cuota diaria y revisa el ultimo motivo de omision o error sin exponer secretos tecnicos de Meta.
+                </p>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table platform-table align-middle">
+                <thead>
+                    <tr>
+                        <th>Cliente</th>
+                        <th>Plan actual</th>
+                        <th>WhatsApp</th>
+                        <th>Uso hoy</th>
+                        <th>Ultimo error</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var tenant in Model.Tenants)
+                    {
+                        <tr>
+                            <td>
+                                <div class="platform-table-title">@tenant.TenantName</div>
+                                <div class="platform-table-meta">@tenant.WhatsAppTimeZoneId</div>
+                            </td>
+                            <td>@(tenant.EffectivePlanName ?? "Sin acceso comercial")</td>
+                            <td>
+                                @{
+                                    var waBadge = tenant.WhatsAppAddonActive
+                                        ? (tenant.WhatsAppEnabled ? "platform-badge-success" : "platform-badge-warning")
+                                        : "platform-badge-dark";
+                                    var waIcon = tenant.WhatsAppAddonActive
+                                        ? (tenant.WhatsAppEnabled ? "bi-whatsapp" : "bi-pause-circle")
+                                        : "bi-slash-circle";
+                                    var waLabel = tenant.WhatsAppAddonActive
+                                        ? (tenant.WhatsAppEnabled ? "Activo" : "Disponible")
+                                        : "Sin add-on";
+                                }
+                                <span class="platform-badge @waBadge">
+                                    <i class="bi @waIcon"></i>
+                                    @waLabel
+                                </span>
+                            </td>
+                            <td>
+                                <div class="platform-table-title">@tenant.WhatsAppTodayUsage / @tenant.WhatsAppDailyMessageLimit</div>
+                                <div class="platform-table-meta">Mensajes outbound reservados o enviados</div>
+                            </td>
+                            <td>
+                                @if (tenant.WhatsAppLastErrorCode is null)
+                                {
+                                    <span class="platform-table-meta">Sin errores registrados</span>
+                                }
+                                else
+                                {
+                                    <div class="platform-table-title">@tenant.WhatsAppLastErrorCode</div>
+                                    <div class="platform-table-meta">@tenant.WhatsAppLastErrorMessage</div>
+                                    <div class="platform-table-meta">@tenant.WhatsAppLastErrorAtUtc?.ToString("yyyy-MM-dd HH:mm") UTC</div>
+                                }
+                            </td>
+                            <td>
+                                <div class="platform-table-actions">
+                                    <button type="button"
+                                            class="btn btn-outline-dark btn-sm platform-btn"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#whatsAppSettings-@tenant.TenantId">
+                                        <i class="bi bi-sliders"></i>
+                                        Configurar WhatsApp
+                                    </button>
+                                    <form asp-action="TestMetaWhatsAppConfiguration" method="post" target="_blank" class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="tenantId" value="@tenant.TenantId" />
+                                        <button type="submit" class="btn btn-outline-secondary btn-sm">
+                                            <i class="bi bi-bug"></i>
+                                            Diagnosticar Meta
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <div class="row g-4">
+        <div class="col-xl-6">
+            <section class="platform-section-card h-100">
+                <div class="platform-section-header">
+                    <div>
+                        <p class="platform-section-kicker">Actividad reciente</p>
+                        <h2 class="platform-section-title">Usuarios visibles</h2>
+                        <p class="platform-section-copy">Referencia rapida de los usuarios mas recientes dentro del espacio interno.</p>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table platform-table align-middle">
+                        <thead>
+                            <tr>
+                                <th>Email</th>
+                                <th>Nombre</th>
+                                <th>Tenant</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var user in Model.RecentUsers)
+                            {
+                                <tr>
+                                    <td>
+                                        <div class="platform-table-title">@user.Email</div>
+                                    </td>
+                                    <td>@(user.Name ?? "Sin nombre")</td>
+                                    <td>@(user.TenantName ?? "Sin tenant")</td>
+                                    <td>
+                                        @if (user.IsPlatformSuperAdmin)
+                                        {
+                                            <span class="platform-badge platform-badge-dark">
+                                                <i class="bi bi-shield-check"></i>
+                                                SuperAdmin
+                                            </span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+
+        <div class="col-xl-6">
+            <section class="platform-section-card h-100">
+                <div class="platform-section-header">
+                    <div>
+                        <p class="platform-section-kicker">Cobro y activacion</p>
+                        <h2 class="platform-section-title">Pagos recientes</h2>
+                        <p class="platform-section-copy">Vista resumida de movimientos ligados al flujo comercial existente.</p>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table platform-table align-middle">
+                        <thead>
+                            <tr>
+                                <th>Tenant</th>
+                                <th>Plan</th>
+                                <th>Monto</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var payment in Model.RecentPayments)
+                            {
+                                <tr>
+                                    <td>
+                                        <div class="platform-table-title">@payment.TenantName</div>
+                                        <div class="platform-table-meta">@payment.CreatedUtc.ToString("yyyy-MM-dd HH:mm") UTC</div>
+                                    </td>
+                                    <td>@payment.PlanName</td>
+                                    <td>@payment.Currency @payment.Amount</td>
+                                    <td>
+                                        <span class="platform-badge @(payment.Status == EstadoPagoProveedor.Confirmado ? "platform-badge-success" : payment.Status == EstadoPagoProveedor.Pendiente ? "platform-badge-warning" : "platform-badge-danger")">
+                                            @payment.Status
+                                        </span>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <div class="row g-4 mt-1">
+        <div class="col-12">
+            <section class="platform-section-card">
+                <div class="platform-section-header">
+                    <div>
+                        <p class="platform-section-kicker">Billing recurrente</p>
+                        <h2 class="platform-section-title">Checkouts pendientes</h2>
+                        <p class="platform-section-copy">Lectura interna de signups, cambios de plan y add-ons abiertos o en revision manual usando la evidencia guardada por LuxuryCloud.</p>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a class="btn btn-outline-secondary btn-sm" href="/Platform/RecurringCheckouts">Abrir conciliacion interna</a>
+                        <a class="btn btn-outline-secondary btn-sm" href="/Platform/BillingHealth">Diagnostico Billing</a>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table platform-table align-middle">
+                        <thead>
+                            <tr>
+                                <th>Tipo</th>
+                                <th>Tenant</th>
+                                <th>Plan</th>
+                                <th>Monto</th>
+                                <th>Estado</th>
+                                <th>Referencia</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var pending in Model.PendingRecurringCheckouts)
+                            {
+                                <tr>
+                                    <td>
+                                        <span class="platform-badge platform-badge-warning">@pending.CheckoutKind</span>
+                                    </td>
+                                    <td>
+                                        <div class="platform-table-title">@pending.TenantName</div>
+                                        <div class="platform-table-meta">@pending.OwnerEmail</div>
+                                    </td>
+                                    <td>
+                                        <div class="platform-table-title">@pending.PlanName</div>
+                                        <div class="platform-table-meta">@pending.PlanCode</div>
+                                    </td>
+                                    <td>@pending.Currency @pending.Amount</td>
+                                    <td>
+                                        <span class="platform-badge @(pending.Status == EstadoPagoProveedor.ManualReview ? "platform-badge-blue" : "platform-badge-warning")">@pending.Status</span>
+                                        @if (!string.IsNullOrWhiteSpace(pending.ProviderResultMessage))
+                                        {
+                                            <div class="platform-table-meta">@pending.ProviderResultMessage</div>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div class="platform-table-title">@(pending.CorrelationToken ?? "Sin referencia")</div>
+                                        <div class="platform-table-meta">@pending.CreatedUtc.ToString("yyyy-MM-dd HH:mm") UTC</div>
+                                        @if (!string.IsNullOrWhiteSpace(pending.ProviderTransactionId))
+                                        {
+                                            <div class="platform-table-meta">Tx: @pending.ProviderTransactionId</div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(pending.ProviderSubscriberId))
+                                        {
+                                            <div class="platform-table-meta">Subscriber: @pending.ProviderSubscriberId</div>
+                                        }
+                                    </td>
+                                    <td class="text-end">
+                                        <a class="btn btn-sm btn-outline-secondary" href="/Platform/RecurringCheckouts?paymentId=@pending.PaymentId">Revisar</a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <div class="row g-4 mt-1">
+        <div class="col-xl-6">
+            <section class="platform-section-card h-100">
+                <div class="platform-section-header">
+                    <div>
+                        <p class="platform-section-kicker">Webhooks y correlacion</p>
+                        <h2 class="platform-section-title">Eventos recientes</h2>
+                        <p class="platform-section-copy">Incluye eventos procesados, rechazados y casos en PendingManualReview para seguimiento interno.</p>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table platform-table align-middle">
+                        <thead>
+                            <tr>
+                                <th>Tenant</th>
+                                <th>Evento</th>
+                                <th>Estado</th>
+                                <th>Monto</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var billingEvent in Model.RecentBillingEvents)
+                            {
+                                var eventBadgeClass = billingEvent.ProcessingStatus == "Procesado"
+                                    ? "platform-badge-success"
+                                    : billingEvent.ProcessingStatus == "PendingManualReview"
+                                        ? "platform-badge-warning"
+                                        : billingEvent.ProcessingStatus == "Rechazado" || billingEvent.ProcessingStatus == "Error"
+                                            ? "platform-badge-danger"
+                                            : "platform-badge-blue";
+                                <tr>
+                                    <td>
+                                        <div class="platform-table-title">@billingEvent.TenantName</div>
+                                        <div class="platform-table-meta">@billingEvent.ReceivedUtc.ToString("yyyy-MM-dd HH:mm") UTC</div>
+                                    </td>
+                                    <td>
+                                        <div class="platform-table-title">@billingEvent.EventType</div>
+                                        <div class="platform-table-meta">Plan: @(billingEvent.PlanName ?? "Sin plan")</div>
+                                        <div class="platform-table-meta">RecurringPlanId: @(billingEvent.TilopayRecurringPlanId?.ToString() ?? "n/a")</div>
+                                    </td>
+                                    <td>
+                                        <span class="platform-badge @eventBadgeClass">@billingEvent.ProcessingStatus</span>
+                                        @if (!string.IsNullOrWhiteSpace(billingEvent.Error))
+                                        {
+                                            <div class="platform-table-meta">@billingEvent.Error</div>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div class="platform-table-title">@((billingEvent.Currency ?? "CRC")) @(billingEvent.Amount?.ToString() ?? "-")</div>
+                                        <div class="platform-table-meta">Corr: @(billingEvent.CorrelationId ?? "n/a")</div>
+                                        @if (!string.IsNullOrWhiteSpace(billingEvent.ProviderTransactionId))
+                                        {
+                                            <div class="platform-table-meta">Tx: @billingEvent.ProviderTransactionId</div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(billingEvent.ProviderSubscriberId))
+                                        {
+                                            <div class="platform-table-meta">Subscriber: @billingEvent.ProviderSubscriberId</div>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+
+        <div class="col-xl-6">
+            <section class="platform-section-card h-100">
+                <div class="platform-section-header">
+                    <div>
+                        <p class="platform-section-kicker">Suscripciones activas</p>
+                        <h2 class="platform-section-title">Base y add-ons</h2>
+                        <p class="platform-section-copy">Resumen interno de periodos mensuales, limites y renovaciones para auditoria de pruebas.</p>
+                    </div>
+                </div>
+
+                <div class="table-responsive mb-3">
+                    <table class="table platform-table align-middle">
+                        <thead>
+                            <tr>
+                                <th>Tenant</th>
+                                <th>Plan base</th>
+                                <th>Estado</th>
+                                <th>Vigencia</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var subscription in Model.ActiveRecurringSubscriptions)
+                            {
+                                <tr>
+                                    <td>
+                                        <div class="platform-table-title">@subscription.TenantName</div>
+                                        <div class="platform-table-meta">@subscription.PlanCode</div>
+                                    </td>
+                                    <td>
+                                        <div class="platform-table-title">@subscription.PlanName</div>
+                                        <div class="platform-table-meta">Max funcionarios: @(subscription.MaxFuncionarios?.ToString() ?? "Ilimitado")</div>
+                                    </td>
+                                    <td>
+                                        <span class="platform-badge @(subscription.Status == EstadoSuscripcion.Activa ? "platform-badge-success" : subscription.Status == EstadoSuscripcion.Morosa ? "platform-badge-warning" : "platform-badge-blue")">
+                                            @subscription.Status
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="platform-table-title">Fin: @(subscription.CurrentPeriodEndUtc?.ToString("yyyy-MM-dd") ?? "n/a")</div>
+                                        <div class="platform-table-meta">Proximo cobro: @(subscription.NextBillingDateUtc?.ToString("yyyy-MM-dd") ?? "n/a")</div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table platform-table align-middle">
+                        <thead>
+                            <tr>
+                                <th>Tenant</th>
+                                <th>Add-on</th>
+                                <th>Estado</th>
+                                <th>Renovacion</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var addon in Model.ActiveRecurringAddons)
+                            {
+                                <tr>
+                                    <td>
+                                        <div class="platform-table-title">@addon.TenantName</div>
+                                        <div class="platform-table-meta">@addon.PlanCode</div>
+                                    </td>
+                                    <td>
+                                        <div class="platform-table-title">@addon.PlanName</div>
+                                        <div class="platform-table-meta">Limite mensual: @(addon.MonthlyMessageLimit?.ToString() ?? "n/a")</div>
+                                    </td>
+                                    <td>
+                                        <span class="platform-badge @(addon.Status == EstadoSuscripcion.Activa ? "platform-badge-success" : addon.Status == EstadoSuscripcion.Morosa ? "platform-badge-warning" : "platform-badge-blue")">
+                                            @addon.Status
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="platform-table-title">Fin: @(addon.CurrentPeriodEndUtc?.ToString("yyyy-MM-dd") ?? "n/a")</div>
+                                        <div class="platform-table-meta">Proximo cobro: @(addon.NextBillingDateUtc?.ToString("yyyy-MM-dd") ?? "n/a")</div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    </div>
+</div>
+
+@foreach (var tenant in Model.Tenants)
+{
+    <div class="modal platform-whatsapp-modal"
+         id="whatsAppSettings-@tenant.TenantId"
+         tabindex="-1"
+         aria-labelledby="whatsAppSettingsLabel-@tenant.TenantId"
+         aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered platform-modal-dialog">
+            <div class="modal-content border-0 rounded-4 shadow platform-modal-content">
+                <form asp-action="UpdateTenantWhatsAppSettings" method="post" class="platform-form">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="tenantId" value="@tenant.TenantId" />
+                    <div class="modal-header border-0 px-4 pt-4">
+                        <div>
+                            <p class="platform-section-kicker mb-1">Control comercial WhatsApp</p>
+                            <h2 class="modal-title fs-5" id="whatsAppSettingsLabel-@tenant.TenantId">@tenant.TenantName</h2>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    </div>
+                    <div class="modal-body px-4">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <p class="platform-section-kicker mb-1">Configuración técnica (envíos)</p>
+                                <label class="platform-toggle-tile">
+                                    <input class="form-check-input" type="checkbox" name="whatsappSettings.IsEnabled" value="true" checked="@tenant.WhatsAppEnabled" />
+                                    <input type="hidden" name="whatsappSettings.IsEnabled" value="false" />
+                                    <span>Activar WhatsApp para este cliente</span>
+                                </label>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="platform-toggle-tile">
+                                    <input class="form-check-input" type="checkbox" name="whatsappSettings.SendConfirmationOnCreate" value="true" checked="@tenant.SendWhatsAppConfirmationOnCreate" />
+                                    <input type="hidden" name="whatsappSettings.SendConfirmationOnCreate" value="false" />
+                                    <span>Enviar confirmacion al crear cita</span>
+                                </label>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="platform-toggle-tile">
+                                    <input class="form-check-input" type="checkbox" name="whatsappSettings.SendReminderThreeHoursBefore" value="true" checked="@tenant.SendWhatsAppReminderThreeHoursBefore" />
+                                    <input type="hidden" name="whatsappSettings.SendReminderThreeHoursBefore" value="false" />
+                                    <span>Enviar recordatorio 3 horas antes</span>
+                                </label>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label platform-form-label" for="whatsAppLimit-@tenant.TenantId">Limite diario de mensajes</label>
+                                <input class="form-control"
+                                       id="whatsAppLimit-@tenant.TenantId"
+                                       name="whatsappSettings.DailyMessageLimit"
+                                       type="number"
+                                       min="0"
+                                       value="@tenant.WhatsAppDailyMessageLimit"
+                                       required />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label platform-form-label" for="whatsAppTimeZone-@tenant.TenantId">Zona horaria</label>
+                                <input class="form-control"
+                                       id="whatsAppTimeZone-@tenant.TenantId"
+                                       name="whatsappSettings.TimeZoneId"
+                                       value="@tenant.WhatsAppTimeZoneId"
+                                       maxlength="100"
+                                       required />
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label platform-form-label" for="whatsAppNotes-@tenant.TenantId">Notas internas</label>
+                                <textarea class="form-control"
+                                          id="whatsAppNotes-@tenant.TenantId"
+                                          name="whatsappSettings.Notes"
+                                          rows="3"
+                                          maxlength="2000">@tenant.WhatsAppNotes</textarea>
+                            </div>
+                            <div class="col-12">
+                                <hr class="my-1" />
+                                <p class="platform-section-kicker mb-2">Acceso comercial (paquete WhatsApp)</p>
+                                <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+                                    @if (!string.IsNullOrEmpty(tenant.WhatsAppAddonCode))
+                                    {
+                                        <span class="badge bg-success">@tenant.WhatsAppAddonCode</span>
+                                        @switch (tenant.WhatsAppAddonSource)
+                                        {
+                                            case LuxuryApp.Models.SaaS.WhatsAppAddonBillingSource.ProviderRecurring:
+                                                <span class="badge bg-primary">TiloPay recurrente</span>
+                                                @if (tenant.WhatsAppAddonProviderRisk)
+                                                {
+                                                    <span class="badge bg-danger">sin suscriptor — riesgo de dinero</span>
+                                                }
+                                                break;
+                                            case LuxuryApp.Models.SaaS.WhatsAppAddonBillingSource.ManualGrant:
+                                                <span class="badge bg-info text-dark">Manual / Canje</span>
+                                                @if (tenant.WhatsAppAddonManualIndefinite)
+                                                {
+                                                    <small class="text-muted">— vigencia: indefinido</small>
+                                                }
+                                                else if (tenant.WhatsAppAddonManualExpiresAtUtc.HasValue)
+                                                {
+                                                    <small class="text-muted">— vigente hasta @tenant.WhatsAppAddonManualExpiresAtUtc.Value.ToString("dd/MM/yyyy")</small>
+                                                }
+                                                break;
+                                            case LuxuryApp.Models.SaaS.WhatsAppAddonBillingSource.Legacy:
+                                                <span class="badge bg-secondary">Legacy</span>
+                                                break;
+                                        }
+                                        @if (tenant.WhatsAppAddonManualExpired)
+                                        {
+                                            <span class="badge bg-warning text-dark">acceso manual vencido</span>
+                                        }
+                                        @if (tenant.WhatsAppAddonMonthlyLimit.HasValue)
+                                        {
+                                            <small class="text-muted">— @tenant.WhatsAppAddonMonthlyLimit msgs/mes</small>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger">Sin acceso comercial vigente</span>
+                                    }
+                                </div>
+                                @if (tenant.WhatsAppHasActiveProviderAddon)
+                                {
+                                    <div class="alert alert-warning py-2 px-3 small mb-2">
+                                        Este cliente tiene un paquete <strong>pagado por TiloPay</strong>. Los cambios de paquete pagado
+                                        van por el flujo de <strong>billing/checkout</strong>. Otorgar acceso manual aquí es un
+                                        <strong>override</strong>: marca la confirmación abajo. TiloPay <strong>no</strong> se cancela
+                                        automáticamente (cancélalo desde billing si corresponde).
+                                    </div>
+                                }
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label platform-form-label" for="addonCodeSelect-@tenant.TenantId">Otorgar / cambiar acceso manual</label>
+                                <select class="form-select"
+                                        id="addonCodeSelect-@tenant.TenantId"
+                                        name="whatsappSettings.AddonCode">
+                                    <option value="">Sin cambio</option>
+                                    <option value="NONE">Revocar acceso manual actual</option>
+                                    <option value="WA400">WhatsApp 400 — 400 msgs/mes (manual)</option>
+                                    <option value="WA800">WhatsApp 800 — 800 msgs/mes (manual)</option>
+                                    <option value="WA1200">WhatsApp 1200 — 1200 msgs/mes (manual)</option>
+                                </select>
+                                <small class="text-muted">Un paquete pagado por TiloPay se gestiona desde billing, no aquí.</small>
+                            </div>
+                            <div class="col-12 platform-manual-grant" id="manualGrantBlock-@tenant.TenantId" style="display:none">
+                                <div class="row g-2">
+                                    <div class="col-md-6">
+                                        <label class="form-label platform-form-label">Tipo de acceso</label>
+                                        <select class="form-select" name="whatsappSettings.ManualGrantType">
+                                            <option value="Courtesy">Cortesía</option>
+                                            <option value="Barter">Canje</option>
+                                            <option value="Internal">Interno</option>
+                                            <option value="Trial">Prueba</option>
+                                            <option value="Other">Otro</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label platform-form-label">Vigencia</label>
+                                        <label class="platform-toggle-tile mb-1">
+                                            <input class="form-check-input manual-indefinite" type="checkbox"
+                                                   name="whatsappSettings.ManualGrantIndefinite" value="true" />
+                                            <input type="hidden" name="whatsappSettings.ManualGrantIndefinite" value="false" />
+                                            <span>Indefinido (permanente)</span>
+                                        </label>
+                                        <input class="form-control manual-expires" type="date"
+                                               name="whatsappSettings.ManualGrantExpiresOn" />
+                                    </div>
+                                    @if (tenant.WhatsAppHasActiveProviderAddon)
+                                    {
+                                        <div class="col-12">
+                                            <label class="platform-toggle-tile">
+                                                <input class="form-check-input" type="checkbox"
+                                                       name="whatsappSettings.ManualGrantAllowOverride" value="true" />
+                                                <input type="hidden" name="whatsappSettings.ManualGrantAllowOverride" value="false" />
+                                                <span>Confirmo override sobre el paquete TiloPay activo (no cancela TiloPay)</span>
+                                            </label>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                            <div class="col-12" id="observationBlock-@tenant.TenantId" style="display:none">
+                                <label class="form-label platform-form-label">
+                                    Motivo / nota <span class="text-danger">*</span>
+                                </label>
+                                <textarea class="form-control"
+                                          name="whatsappSettings.ManualAssignmentObservation"
+                                          rows="2"
+                                          maxlength="2000"
+                                          placeholder="Motivo del acceso manual (canje comercial, cortesía, etc.)..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0 px-4 pb-4">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-dark platform-btn">
+                            <i class="bi bi-floppy"></i>
+                            Guardar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script src="~/js/platform.js" asp-append-version="true"></script>
+    <script>
+        document.querySelectorAll('[id^="addonCodeSelect-"]').forEach(function (sel) {
+            var tenantId = sel.id.replace('addonCodeSelect-', '');
+            var obsBlock = document.getElementById('observationBlock-' + tenantId);
+            var grantBlock = document.getElementById('manualGrantBlock-' + tenantId);
+            var applyState = function () {
+                var value = sel.value;
+                var isGrant = value !== '' && value !== 'NONE';
+                var needsReason = value !== '';
+                if (obsBlock) {
+                    obsBlock.style.display = needsReason ? 'block' : 'none';
+                    var ta = obsBlock.querySelector('textarea');
+                    if (ta) ta.required = needsReason;
+                }
+                if (grantBlock) {
+                    grantBlock.style.display = isGrant ? 'block' : 'none';
+                }
+            };
+            sel.addEventListener('change', applyState);
+            applyState();
+        });
+        // La fecha de vencimiento se deshabilita cuando el acceso manual es indefinido.
+        document.querySelectorAll('.platform-manual-grant').forEach(function (block) {
+            var indefinite = block.querySelector('.manual-indefinite');
+            var expires = block.querySelector('.manual-expires');
+            if (!indefinite || !expires) return;
+            var sync = function () {
+                expires.disabled = indefinite.checked;
+                if (indefinite.checked) { expires.value = ''; }
+            };
+            indefinite.addEventListener('change', sync);
+            sync();
+        });
+    </script>
+}

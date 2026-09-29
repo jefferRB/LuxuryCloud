@@ -1,0 +1,60 @@
+@{
+    var pageTitle = ViewData["Title"] as string;
+    var fullTitle = ViewData["FullTitle"] as string;
+
+    if (string.IsNullOrWhiteSpace(fullTitle))
+    {
+        fullTitle = string.IsNullOrWhiteSpace(pageTitle)
+            ? "LuxuryCloud"
+            : pageTitle;
+    }
+
+    var metaDescription = ViewData["MetaDescription"] as string;
+    var canonicalUrl = ViewData["CanonicalUrl"] as string;
+    var robots = ViewData["Robots"] as string;
+    var ogTitle = ViewData["OgTitle"] as string ?? fullTitle;
+    var ogDescription = ViewData["OgDescription"] as string ?? metaDescription;
+    var ogImage = ViewData["OgImage"] as string;
+}
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@fullTitle</title>
+    @if (!string.IsNullOrWhiteSpace(metaDescription))
+    {
+        <meta name="description" content="@metaDescription" />
+    }
+    @if (!string.IsNullOrWhiteSpace(robots))
+    {
+        <meta name="robots" content="@robots" />
+    }
+    @if (!string.IsNullOrWhiteSpace(canonicalUrl))
+    {
+        <link rel="canonical" href="@canonicalUrl" />
+    }
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="@ogTitle" />
+    @if (!string.IsNullOrWhiteSpace(ogDescription))
+    {
+        <meta property="og:description" content="@ogDescription" />
+    }
+    @if (!string.IsNullOrWhiteSpace(canonicalUrl))
+    {
+        <meta property="og:url" content="@canonicalUrl" />
+    }
+    @if (!string.IsNullOrWhiteSpace(ogImage))
+    {
+        <meta property="og:image" content="@ogImage" />
+    }
+    <link rel="stylesheet" href="~/css/tenant-public-page.css" asp-append-version="true" />
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body class="tpp-body">
+    @RenderBody()
+    <script src="~/js/tenant-public-page.js" asp-append-version="true" defer></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

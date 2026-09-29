@@ -1,0 +1,814 @@
+/* Mismo ancho que el resto de módulos: el del .container del layout. */
+.tppa-shell {
+    padding: 4px 0 36px;
+    color: var(--private-page-text, #171717);
+}
+
+.tppa-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 18px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+
+.tppa-head-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.tppa-alert {
+    display: flex;
+    gap: 9px;
+    align-items: flex-start;
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 14px;
+    font-size: .9rem;
+}
+
+.tppa-alert:empty {
+    display: none;
+}
+
+.tppa-alert-ok {
+    background: var(--private-chart-success-soft, #dcfce7);
+    color: var(--private-chart-success, #15803d);
+}
+
+.tppa-alert-warn {
+    background: var(--private-chart-warning-soft, #fef3c7);
+    color: var(--private-chart-warning, #92600c);
+}
+
+.tppa-alert-error {
+    background: var(--private-chart-danger-soft, #fee2e2);
+    color: var(--private-chart-danger, #b91c1c);
+}
+
+.tppa-link-card,
+.tppa-card {
+    background: var(--private-surface-bg, #fff);
+    border: 1px solid var(--private-surface-border, #e5e5e5);
+    border-radius: 8px;
+    box-shadow: var(--private-card-shadow, 0 10px 26px rgba(23, 23, 23, .06));
+}
+
+.tppa-link-card {
+    display: grid;
+    gap: 5px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+}
+
+.tppa-link-card span,
+.tppa-link-card small {
+    color: var(--private-muted-text, #626262);
+}
+
+.tppa-link-card code {
+    color: var(--private-chart-accent, #047857);
+    word-break: break-all;
+}
+
+.tppa-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.tppa-card {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 20px;
+}
+
+.tppa-card h2 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 800;
+}
+
+.tppa-card-head,
+.tppa-gallery-head,
+.tppa-service-media-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.tppa-grid2 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 14px;
+}
+
+.tppa-metric-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+}
+
+.tppa-metric,
+.tppa-top-service-row {
+    border: 1px solid var(--private-surface-border, #e5e5e5);
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--private-surface-bg, #fff) 94%, var(--private-chart-accent, #047857) 6%);
+}
+
+.tppa-metric {
+    display: grid;
+    gap: 6px;
+    padding: 14px;
+}
+
+.tppa-metric span,
+.tppa-empty-state {
+    color: var(--private-muted-text, #626262);
+}
+
+.tppa-metric strong {
+    font-size: 1.45rem;
+    line-height: 1;
+}
+
+.tppa-top-services {
+    display: grid;
+    gap: 8px;
+}
+
+.tppa-top-services h3 {
+    margin: 0;
+    font-size: .98rem;
+    font-weight: 800;
+}
+
+.tppa-top-service-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 12px;
+}
+
+.tppa-top-service-row span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.tppa-empty-state {
+    margin: 0;
+}
+
+.tppa-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.tppa-field label {
+    font-size: .88rem;
+    font-weight: 700;
+}
+
+.tppa-input {
+    width: 100%;
+    padding: 11px 12px;
+    border: 1px solid var(--private-input-border, #d8d8d8);
+    border-radius: 8px;
+    background: var(--private-input-bg, #fff);
+    color: var(--private-input-text, #171717);
+    font: inherit;
+}
+
+.tppa-input:focus {
+    outline: 2px solid var(--private-focus-ring, #047857);
+    outline-offset: 1px;
+}
+
+.tppa-file {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px dashed var(--private-input-border, #d8d8d8);
+    border-radius: 8px;
+    background: var(--private-input-bg, #fff);
+    color: var(--private-input-text, #171717);
+    font: inherit;
+}
+
+.tppa-js .tppa-file {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.tppa-file-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 42px;
+    padding: 9px 14px;
+    border: 1px dashed var(--private-input-border, #d8d8d8);
+    border-radius: 8px;
+    background: var(--private-input-bg, #fff);
+    color: var(--private-input-text, #171717);
+    font-size: .9rem;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.tppa-js .tppa-fallback-submit {
+    display: none;
+}
+
+.tppa-ajax-status {
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: .88rem;
+    font-weight: 700;
+}
+
+.tppa-ajax-status-ok {
+    background: var(--private-chart-success-soft, #dcfce7);
+    color: var(--private-chart-success, #15803d);
+}
+
+.tppa-ajax-status-error {
+    background: var(--private-chart-danger-soft, #fee2e2);
+    color: var(--private-chart-danger, #b91c1c);
+}
+
+.tppa-media-grid,
+.tppa-service-media-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 14px;
+}
+
+.tppa-media-box,
+.tppa-service-media {
+    display: grid;
+    gap: 12px;
+    padding: 14px;
+    border: 1px solid var(--private-surface-border, #e5e5e5);
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--private-surface-bg, #fff) 92%, var(--private-chart-accent, #047857) 8%);
+}
+
+.tppa-media-box h3,
+.tppa-service-media h3,
+.tppa-service-media h4,
+.tppa-gallery-admin h3 {
+    margin: 0;
+    font-size: .98rem;
+    font-weight: 800;
+}
+
+.tppa-gallery-admin,
+.tppa-upload-form {
+    display: grid;
+    gap: 12px;
+}
+
+.tppa-service-media-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 14px;
+}
+
+.tppa-upload-inline {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+}
+
+.tppa-preview {
+    width: 100%;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid var(--private-surface-border, #e5e5e5);
+    background: var(--private-surface-bg, #fff);
+}
+
+.tppa-preview-logo {
+    max-width: 160px;
+    aspect-ratio: 1 / 1;
+}
+
+.tppa-preview-cover {
+    aspect-ratio: 16 / 9;
+}
+
+.tppa-preview-service-main {
+    /* Mismo marco que la tarjeta publica: lo que se ve aca es lo que se ve en la landing. */
+    aspect-ratio: 3 / 4;
+    max-width: 240px;
+}
+
+/* --- Color principal de marca --- */
+.tppa-color-field {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+}
+
+.tppa-color-swatch {
+    width: 56px;
+    height: 44px;
+    padding: 2px;
+    border: 1px solid var(--private-surface-border, #e5e5e5);
+    border-radius: 8px;
+    background: var(--private-surface-bg, #fff);
+    cursor: pointer;
+}
+
+.tppa-color-hex {
+    width: 140px;
+    text-transform: lowercase;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.tppa-color-preview {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 11px 20px;
+    border-radius: 8px;
+    color: #fff;
+    font-weight: 900;
+}
+
+@media (max-width: 560px) {
+    .tppa-color-field > * {
+        flex: 1 1 100%;
+    }
+
+    .tppa-color-hex,
+    .tppa-color-swatch {
+        width: 100%;
+    }
+
+    .tppa-color-preview {
+        justify-content: center;
+    }
+}
+
+.tppa-preview-empty {
+    display: grid;
+    place-items: center;
+    min-height: 120px;
+    color: var(--private-muted-text, #626262);
+    border-style: dashed;
+    font-weight: 700;
+}
+
+.tppa-thumb-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 10px;
+}
+
+.tppa-thumb {
+    display: grid;
+    gap: 6px;
+    padding: 8px;
+    border: 1px solid var(--private-surface-border, #e5e5e5);
+    border-radius: 8px;
+    background: var(--private-surface-bg, #fff);
+}
+
+.tppa-thumb img {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.tppa-thumb small,
+.tppa-media-box small,
+.tppa-gallery-head small,
+.tppa-service-media-title small {
+    color: var(--private-muted-text, #626262);
+}
+
+.tppa-link-button {
+    width: fit-content;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--private-chart-danger, #b91c1c);
+    font: inherit;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.tppa-usage {
+    display: grid;
+    gap: 6px;
+    min-width: min(280px, 100%);
+    color: var(--private-muted-text, #626262);
+    font-size: .85rem;
+    font-weight: 700;
+}
+
+.tppa-usage-bar {
+    height: 8px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--private-surface-border, #e5e5e5);
+}
+
+.tppa-usage-bar span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--private-chart-accent, #047857);
+}
+
+.tppa-switch-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 12px;
+}
+
+.tppa-switch {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    cursor: pointer;
+}
+
+.tppa-switch input {
+    width: 18px;
+    height: 18px;
+    margin-top: 2px;
+    accent-color: var(--private-chart-accent, #047857);
+}
+
+.tppa-switch span {
+    display: grid;
+    gap: 2px;
+}
+
+.tppa-switch small {
+    color: var(--private-muted-text, #626262);
+    font-size: .8rem;
+}
+
+.tppa-validation {
+    color: var(--private-chart-danger, #b91c1c);
+    font-size: .82rem;
+}
+
+.tppa-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.tppa-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-height: 42px;
+    padding: 9px 14px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    font-size: .9rem;
+    font-weight: 800;
+    text-decoration: none;
+}
+
+.tppa-btn-primary {
+    background: var(--private-chart-accent, #047857);
+    color: #fff;
+}
+
+.tppa-btn-soft {
+    background: var(--private-surface-bg, #fff);
+    color: var(--private-surface-text, #171717);
+    border-color: var(--private-surface-border, #d8d8d8);
+}
+
+.tppa-crop-open {
+    overflow: hidden;
+}
+
+.tppa-crop-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1050;
+    display: grid;
+    place-items: center;
+    padding: 18px;
+    background: rgba(15, 23, 42, .58);
+}
+
+.tppa-crop-modal[hidden] {
+    display: none;
+}
+
+.tppa-crop-dialog {
+    display: grid;
+    gap: 14px;
+    width: min(720px, 100%);
+    max-height: min(92vh, 820px);
+    overflow: auto;
+    padding: 18px;
+    border-radius: 8px;
+    background: var(--private-surface-bg, #fff);
+    color: var(--private-surface-text, #171717);
+    box-shadow: 0 24px 70px rgba(0, 0, 0, .25);
+}
+
+.tppa-crop-head,
+.tppa-crop-actions {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.tppa-crop-head h2 {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 800;
+}
+
+.tppa-crop-head p {
+    margin: 4px 0 0;
+    color: var(--private-muted-text, #626262);
+    font-size: .9rem;
+}
+
+.tppa-crop-close {
+    display: inline-grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--private-surface-border, #d8d8d8);
+    border-radius: 8px;
+    background: var(--private-surface-bg, #fff);
+    color: var(--private-surface-text, #171717);
+    font: inherit;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.tppa-crop-presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.tppa-crop-preset {
+    padding: 6px 10px;
+    border: 1px solid var(--private-surface-border, #d8d8d8);
+    border-radius: 999px;
+    background: var(--private-surface-bg, #fff);
+    color: var(--private-surface-text, #171717);
+    font: inherit;
+    font-size: .82rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.tppa-crop-preset.is-active {
+    border-color: var(--private-chart-accent, #047857);
+    background: color-mix(in srgb, var(--private-surface-bg, #fff) 84%, var(--private-chart-accent, #047857) 16%);
+    color: var(--private-chart-accent, #047857);
+}
+
+.tppa-crop-help {
+    margin: 2px 0 0;
+    color: var(--private-muted-text, #626262);
+    font-size: .8rem;
+}
+
+.tppa-crop-stage {
+    display: grid;
+    place-items: center;
+    border-radius: 8px;
+    background: #111827;
+    padding: 16px;
+}
+
+.tppa-crop-frame {
+    position: relative;
+    /* Alto disponible descontando el alto del resto del dialogo (encabezado, opciones, zoom y
+       botones), para que "Cancelar" y "Subir imagen" queden a la vista sin scroll interno.
+       El piso de 220px mantiene el recortador usable en pantallas muy bajas. */
+    --tppa-crop-max-height: max(220px, min(450px, calc(92vh - 372px)));
+    /* El ancho se limita TAMBIEN por el alto disponible, asi el marco conserva SIEMPRE su
+       proporcion. Con max-height a secas, un marco 3:4 se aplastaba en pantallas bajas y el
+       recorte exportado salia deformado. */
+    width: min(100%, 520px, calc(var(--tppa-crop-max-height) * var(--tppa-crop-ratio, 1)));
+    aspect-ratio: var(--tppa-crop-ratio, 1);
+    overflow: hidden;
+    border-radius: 8px;
+    background: #000;
+    box-shadow: 0 0 0 999px rgba(0, 0, 0, .22);
+    touch-action: none;
+    cursor: grab;
+}
+
+.tppa-crop-frame:active {
+    cursor: grabbing;
+}
+
+.tppa-crop-frame img {
+    position: absolute;
+    inset: 0 auto auto 0;
+    max-width: none;
+    user-select: none;
+    will-change: transform;
+}
+
+.tppa-crop-zoom {
+    display: grid;
+    gap: 8px;
+    /* Pegado al preview para que se lea como control de la imagen, no del formulario. */
+    margin-top: -6px;
+    font-size: .9rem;
+    font-weight: 800;
+}
+
+.tppa-crop-zoom input {
+    width: 100%;
+    accent-color: var(--private-chart-accent, #047857);
+}
+
+.tppa-crop-error {
+    border-radius: 8px;
+    padding: 10px 12px;
+    background: var(--private-chart-danger-soft, #fee2e2);
+    color: var(--private-chart-danger, #b91c1c);
+    font-size: .88rem;
+    font-weight: 700;
+}
+
+.tppa-crop-actions {
+    justify-content: flex-end;
+}
+
+/* Portatiles de pantalla baja (1366x700 y similares): se compacta el dialogo para que el
+   preview no quede diminuto y los botones sigan visibles sin scroll interno. */
+@media (max-height: 800px) {
+    .tppa-crop-dialog {
+        gap: 10px;
+        padding: 14px;
+    }
+
+    .tppa-crop-head p {
+        display: none;
+    }
+
+    .tppa-crop-stage {
+        padding: 10px;
+    }
+
+    .tppa-crop-frame {
+        --tppa-crop-max-height: max(220px, min(450px, calc(92vh - 300px)));
+    }
+}
+
+@media (max-width: 560px) {
+    .tppa-head-actions,
+    .tppa-actions {
+        width: 100%;
+    }
+
+    .tppa-head-actions .tppa-btn,
+    .tppa-actions .tppa-btn,
+    .tppa-upload-inline,
+    .tppa-crop-actions {
+        width: 100%;
+    }
+
+    .tppa-upload-inline {
+        grid-template-columns: 1fr;
+    }
+
+    .tppa-file-button,
+    .tppa-crop-actions .tppa-btn {
+        width: 100%;
+    }
+
+    .tppa-crop-actions {
+        flex-direction: column-reverse;
+    }
+
+    .tppa-crop-frame {
+        /* En movil se prioriza ver los botones sin scroll. */
+        --tppa-crop-max-height: 46vh;
+    }
+
+    .tppa-crop-stage {
+        padding: 10px;
+    }
+}
+
+/* Utilitarios de texto de ayuda */
+.tppa-card-sub {
+    margin: -4px 0 4px;
+    color: var(--private-muted-text, #626262);
+    font-size: .9rem;
+}
+
+.tppa-hint {
+    display: block;
+    color: var(--private-muted-text, #626262);
+    font-size: .8rem;
+}
+
+/* Editor estructurado de horario */
+.tppa-hours-editor {
+    display: grid;
+    gap: 8px;
+}
+
+.tppa-hours-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px 14px;
+    padding: 10px 12px;
+    border: 1px solid var(--private-surface-border, #e5e5e5);
+    border-radius: 8px;
+    background: var(--private-surface-bg, #fff);
+}
+
+.tppa-hours-row.is-closed {
+    background: color-mix(in srgb, var(--private-surface-bg, #fff) 92%, #9ca3af 8%);
+}
+
+.tppa-hours-dayname {
+    flex: 0 0 96px;
+    font-weight: 800;
+}
+
+.tppa-hours-closed {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: .86rem;
+    font-weight: 700;
+    color: var(--private-muted-text, #626262);
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.tppa-hours-closed input {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--private-chart-accent, #047857);
+}
+
+.tppa-hours-times {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-left: auto;
+}
+
+.tppa-time {
+    width: auto;
+    min-height: 38px;
+    padding: 6px 8px;
+}
+
+.tppa-hours-dash,
+.tppa-hours-plus {
+    color: var(--private-muted-text, #626262);
+    font-size: .82rem;
+    font-weight: 700;
+}
+
+.tppa-hours-plus {
+    margin: 0 2px;
+}
+
+.tppa-hours-row.is-closed .tppa-hours-times {
+    opacity: .45;
+}
+
+@media (max-width: 560px) {
+    .tppa-hours-times {
+        margin-left: 0;
+        width: 100%;
+    }
+
+    .tppa-hours-dayname {
+        flex-basis: auto;
+    }
+}

@@ -1,0 +1,267 @@
+@using LuxuryApp.Models.Inversionistas
+@model InvestorCalculationBreakdownViewModel
+
+@*
+    Desglose del corte. Se reutiliza en la vista previa y en el detalle del estado.
+
+    Regla de producto: nunca se muestra solo el número final. El dueño tiene que poder seguir la
+    cuenta de arriba abajo y, si duda, abrir los movimientos que la sostienen.
+
+    Todos los montos vienen YA calculados del ViewModel: acá no se hace aritmética de negocio,
+    solo se muestran las restas que el motor ya resolvió.
+*@
+
+@{
+    var desde = Model.PeriodoInicio.ToString("dd/MM/yyyy");
+    var hasta = Model.PeriodoFin.ToString("dd/MM/yyyy");
+    var nombre = string.IsNullOrWhiteSpace(Model.InvestorNombre) ? "el inversionista" : Model.InvestorNombre;
+
+    // Rutas de trazabilidad: reutilizan los filtros por rango que ya tienen Ingresos, Egresos y
+    // la liquidación del equipo. No se crean pantallas nuevas.
+    var rangoIngresos = $"/Cobros?VistaTiempo=fechas&FechaInicio={Model.RangoDesdeIso}&FechaFin={Model.RangoHastaIso}";
+    var rangoEgresos = $"/Egresos?VistaTiempo=fechas&FechaInicio={Model.RangoDesdeIso}&FechaFin={Model.RangoHastaIso}";
+    var rangoLiquidaciones = $"/Funcionarios/PagosSemana?periodo=personalizado&desde={Model.RangoDesdeIso}&hasta={Model.RangoHastaIso}";
+}
+
+<div class="inv-eq-grid">
+
+    @* ── INGRESOS ── *@
+    <div class="inv-eq">
+        <div class="inv-eq-head"><i class="bi bi-cash-coin"></i> Ingresos</div>
+
+        <div class="inv-eq-op">
+            <span class="inv-eq-sign"></span>
+            <span>Total realmente cobrado</span>
+            <b>₡ @Model.IngresosCobrados.ToString("N2")</b>
+        </div>
+        <div class="inv-eq-op">
+            <span class="inv-eq-sign">&minus;</span>
+            <span>IVA incluido</span>
+            <b class="inv-amount--muted">₡ @Model.IvaExcluido.ToString("N2")</b>
+        </div>
+        <div class="inv-eq-total">
+            <span class="inv-eq-sign">=</span>
+            <span>Ingresos cobrados sin IVA</span>
+            <strong class="inv-amount--income">₡ @Model.IngresosNetos.ToString("N2")</strong>
+        </div>
+
+        <a class="inv-eq-trace" href="@rangoIngresos">
+            Ver los cobros del período <i class="bi bi-arrow-right-short"></i>
+        </a>
+    </div>
+
+    @* ── COSTOS ── *@
+    <div class="inv-eq">
+        <div class="inv-eq-head"><i class="bi bi-receipt"></i> Costos del período</div>
+
+        <div class="inv-eq-op">
+            <span class="inv-eq-sign">&minus;</span>
+            <span>Gastos operativos</span>
+            <b class="inv-amount--expense">₡ @Model.GastosElegibles.ToString("N2")</b>
+        </div>
+        <div class="inv-eq-op">
+            <span class="inv-eq-sign">&minus;</span>
+            <span>Liquidaciones del equipo</span>
+            <b class="inv-amount--expense">₡ @Model.Liquidaciones.ToString("N2")</b>
+        </div>
+
+        @if (Model.AjustesPositivos > 0m)
+        {
+            <div class="inv-eq-op">
+                <span class="inv-eq-sign">+</span>
+                <span>Ajustes a favor</span>
+                <b class="inv-amount--income">₡ @Model.AjustesPositivos.ToString("N2")</b>
+            </div>
+        }
+        @if (Model.AjustesNegativos > 0m)
+        {
+            <div class="inv-eq-op">
+                <span class="inv-eq-sign">&minus;</span>
+                <span>Ajustes en contra</span>
+                <b class="inv-amount--expense">₡ @Model.AjustesNegativos.ToString("N2")</b>
+            </div>
+        }
+        @if (Model.PerdidaArrastrada > 0m)
+        {
+            <div class="inv-eq-op">
+                <span class="inv-eq-sign">&minus;</span>
+                <span>Pérdida de períodos anteriores</span>
+                <b class="inv-amount--expense">₡ @Model.PerdidaArrastrada.ToString("N2")</b>
+            </div>
+        }
+
+        <div class="inv-eq-total">
+            <span class="inv-eq-sign">=</span>
+            <span>Total que reduce la ganancia</span>
+            <strong class="inv-amount--expense">
+                ₡ @((Model.GastosElegibles + Model.Liquidaciones + Model.AjustesNegativos + Model.PerdidaArrastrada - Model.AjustesPositivos).ToString("N2"))
+            </strong>
+        </div>
+
+        <a class="inv-eq-trace" href="@rangoEgresos">
+            Ver los gastos del período <i class="bi bi-arrow-right-short"></i>
+        </a>
+        <br />
+        <a class="inv-eq-trace" href="@rangoLiquidaciones">
+            Ver la liquidación del equipo <i class="bi bi-arrow-right-short"></i>
+        </a>
+    </div>
+
+    @* ── RESULTADO ── *@
+    <div class="inv-eq inv-eq--resultado">
+        <div class="inv-eq-head"><i class="bi bi-graph-up-arrow"></i> Resultado</div>
+
+        <div class="inv-eq-op">
+            <span class="inv-eq-sign"></span>
+            <span>Ingresos sin IVA</span>
+            <b>₡ @Model.IngresosNetos.ToString("N2")</b>
+        </div>
+        <div class="inv-eq-op">
+            <span class="inv-eq-sign">&minus;</span>
+            <span>Costos del período</span>
+            <b class="inv-amount--expense">
+                ₡ @((Model.GastosElegibles + Model.Liquidaciones + Model.AjustesNegativos + Model.PerdidaArrastrada - Model.AjustesPositivos).ToString("N2"))
+            </b>
+        </div>
+        <div class="inv-eq-total">
+            <span class="inv-eq-sign">=</span>
+            <span>Ganancia distribuible</span>
+            <strong class="@(Model.GananciaDistribuible > 0m ? "inv-amount--income" : "inv-amount--expense")">
+                ₡ @Model.GananciaDistribuible.ToString("N2")
+            </strong>
+        </div>
+    </div>
+
+    @* ── PARTICIPACIÓN ── *@
+    <div class="inv-eq">
+        <div class="inv-eq-head"><i class="bi bi-pie-chart"></i> Participación</div>
+
+        <div class="inv-eq-op">
+            <span class="inv-eq-sign"></span>
+            <span>Ganancia distribuible</span>
+            <b>₡ @Model.GananciaDistribuible.ToString("N2")</b>
+        </div>
+        <div class="inv-eq-op">
+            <span class="inv-eq-sign">&times;</span>
+            <span>Porcentaje del inversionista</span>
+            <b>@Model.ParticipacionPorcentaje.ToString("0.##") %</b>
+        </div>
+        <div class="inv-eq-total">
+            <span class="inv-eq-sign">=</span>
+            <span>Monto correspondiente</span>
+            <strong class="inv-amount--income">₡ @Model.ParticipacionCalculada.ToString("N2")</strong>
+        </div>
+
+        @if (Model.MuestraPagos)
+        {
+            <div class="inv-eq-op" style="margin-top:.5rem;">
+                <span class="inv-eq-sign">&minus;</span>
+                <span>Pagado</span>
+                <b>₡ @Model.TotalPagado!.Value.ToString("N2")</b>
+            </div>
+            <div class="inv-eq-total">
+                <span class="inv-eq-sign">=</span>
+                <span>Pendiente</span>
+                <strong class="@(Model.SaldoPendiente > 0m ? "inv-amount--expense" : "inv-amount--income")">
+                    ₡ @Model.SaldoPendiente!.Value.ToString("N2")
+                </strong>
+            </div>
+        }
+    </div>
+
+</div>
+
+@* ── CÓMO SE CALCULÓ ──
+   La misma cuenta contada en palabras, con los montos reales del ViewModel. Es la explicación
+   principal para el dueño; la versión de la fórmula queda abajo como metadato técnico. *@
+<div class="inv-howto">
+    <span class="inv-howto-title"><i class="bi bi-lightbulb"></i> Cómo se calculó</span>
+
+    <p class="inv-howto-intro">
+        Los ingresos utilizados corresponden únicamente a cobros realmente recibidos entre el
+        <strong>@desde</strong> y el <strong>@hasta</strong>. Las citas agendadas no cuentan:
+        solo el dinero que entró.
+    </p>
+
+    <p class="inv-howto-step">
+        <span class="inv-howto-line">₡ @Model.IngresosCobrados.ToString("N2") cobrados</span>
+        <span class="inv-howto-line">&minus; ₡ @Model.IvaExcluido.ToString("N2") IVA</span>
+        <span class="inv-howto-result">= ₡ @Model.IngresosNetos.ToString("N2") ingresos sin IVA</span>
+    </p>
+
+    <p class="inv-howto-step">
+        <span class="inv-howto-line">₡ @Model.IngresosNetos.ToString("N2")</span>
+        <span class="inv-howto-line">&minus; ₡ @Model.GastosElegibles.ToString("N2") gastos operativos</span>
+        <span class="inv-howto-line">&minus; ₡ @Model.Liquidaciones.ToString("N2") liquidaciones</span>
+        @if (Model.AjustesPositivos > 0m)
+        {
+            <span class="inv-howto-line">+ ₡ @Model.AjustesPositivos.ToString("N2") ajustes a favor</span>
+        }
+        @if (Model.AjustesNegativos > 0m)
+        {
+            <span class="inv-howto-line">&minus; ₡ @Model.AjustesNegativos.ToString("N2") ajustes en contra</span>
+        }
+        @if (Model.PerdidaArrastrada > 0m)
+        {
+            <span class="inv-howto-line">&minus; ₡ @Model.PerdidaArrastrada.ToString("N2") pérdida anterior</span>
+        }
+        <span class="inv-howto-result">= ₡ @Model.GananciaDistribuible.ToString("N2") ganancia distribuible</span>
+    </p>
+
+    <p class="inv-howto-step">
+        <span class="inv-howto-line">@Model.ParticipacionPorcentaje.ToString("0.##") % × ₡ @Model.GananciaDistribuible.ToString("N2")</span>
+        <span class="inv-howto-result">= ₡ @Model.ParticipacionCalculada.ToString("N2") correspondientes a @nombre.</span>
+    </p>
+
+    @if (Model.PerdidaPendiente > 0m)
+    {
+        <p class="inv-howto-intro" style="margin-top:.75rem;margin-bottom:0;">
+            Queda una pérdida pendiente de <strong>₡ @Model.PerdidaPendiente.ToString("N2")</strong>
+            que se descontará de las ganancias de los próximos períodos.
+        </p>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(Model.PoliticaVersion))
+    {
+        <p class="inv-howto-meta">Fórmula aplicada: @Model.PoliticaVersion</p>
+    }
+</div>
+
+@if (Model.GastosPorCategoria.Any())
+{
+    <details class="finance-historial-section">
+        <summary>Ver gastos por categoría</summary>
+        <table class="finance-table">
+            <thead>
+                <tr>
+                    <th>Categoría</th>
+                    <th>Monto</th>
+                    <th>¿Reduce la ganancia?</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var linea in Model.GastosPorCategoria)
+                {
+                    <tr>
+                        <td>@linea.CategoriaNombre</td>
+                        <td>₡ @linea.Monto.ToString("N2")</td>
+                        <td>
+                            @if (linea.Incluido)
+                            {
+                                <span class="svc-status svc-status--active">
+                                    <span class="svc-dot svc-dot--green"></span> Sí
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="svc-sub" title="@linea.MotivoExclusion">
+                                    No — @linea.MotivoExclusion
+                                </span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </details>
+}

@@ -1,0 +1,80 @@
+@using LuxuryApp.Services.Layout
+@*
+    Motor de apariencia: catalogo + aplicacion temprana del tema.
+
+    Va en el <head>, ANTES de las hojas de estilo, para que el tema guardado se aplique al
+    <html> sin parpadeo. Publica window.luxuryAppearance (catalogo + default) para que site.js
+    y cualquier layout privado usen exactamente el mismo registro. El catalogo se serializa
+    desde AppearanceThemeCatalog: no hay lista de temas escrita a mano en JavaScript.
+
+    Los valores son constantes de compilacion (sin entrada de usuario); Html.Raw sobre el JSON
+    del catalogo es seguro y no introduce HTML dinamico.
+*@
+<script>
+    window.luxuryAppearance = {
+        presets: @Html.Raw(AppearanceThemeCatalog.PresetsJson),
+        defaultPreset: "@AppearanceThemeCatalog.DefaultThemeId",
+        storageKeys: {
+            preset: "luxury-appearance-preset",
+            background: "luxury-bg-theme",
+            surface: "luxury-surface-theme",
+            legacy: "luxury-theme"
+        }
+    };
+
+    (function () {
+        var config = window.luxuryAppearance;
+        var presets = config.presets;
+
+        function has(value) {
+            return typeof value === "string" && Object.prototype.hasOwnProperty.call(presets, value);
+        }
+
+        // Compatibilidad con navegadores que guardaron el tema antes de existir el preset.
+        function resolveLegacyPreset() {
+            var background = localStorage.getItem(config.storageKeys.background);
+            var surface = localStorage.getItem(config.storageKeys.surface);
+            var legacy = localStorage.getItem(config.storageKeys.legacy);
+            var match = null;
+
+            Object.keys(presets).forEach(function (id) {
+                if (match) { return; }
+                var preset = presets[id];
+                if (background === preset.background && surface === preset.surface) { match = id; }
+            });
+
+            if (match) { return match; }
+
+            Object.keys(presets).forEach(function (id) {
+                if (match) { return; }
+                if (legacy && legacy === presets[id].background) { match = id; }
+            });
+
+            return match || config.defaultPreset;
+        }
+
+        function resolvePreset() {
+            var stored = localStorage.getItem(config.storageKeys.preset);
+            return has(stored) ? stored : resolveLegacyPreset();
+        }
+
+        function apply(preset) {
+            var definition = presets[preset] || presets[config.defaultPreset];
+            var el = document.documentElement;
+
+            el.setAttribute("data-luxury-appearance-preset", preset);
+            el.setAttribute("data-luxury-bg-theme", definition.background);
+            el.setAttribute("data-luxury-surface-theme", definition.surface);
+            el.setAttribute("data-luxury-theme", definition.background);
+            el.classList.add("theme-bg-" + definition.background);
+            el.classList.add("theme-" + definition.background);
+            el.classList.add("surface-" + definition.surface);
+        }
+
+        try {
+            apply(resolvePreset());
+        } catch (error) {
+            apply(config.defaultPreset);
+        }
+    })();
+</script>

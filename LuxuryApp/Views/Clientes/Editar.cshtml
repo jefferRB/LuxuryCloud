@@ -1,0 +1,206 @@
+﻿@model LuxuryApp.Models.DataBase.ClientesModel
+
+@{
+    var tenantWhatsAppEnabled = ViewData["TenantWhatsAppEnabled"] as bool? == true;
+}
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+<link rel="stylesheet" href="~/css/crm-shared.css" asp-append-version="true">
+<link rel="stylesheet" href="~/css/clientes.css" asp-append-version="true">
+
+<div class="clt-shell">
+
+    <!-- ── CABECERA ── -->
+    <div class="clt-header-section">
+        <div class="clt-header-left module-heading">
+            <span class="module-eyebrow">GESTIÓN DE CLIENTES</span>
+            <h1 class="module-title"><i class="bi bi-person-fill module-title-icon" aria-hidden="true"></i>Editar Cliente</h1>
+            <p class="module-subtitle">Actualiza los datos de contacto y preferencias del cliente.</p>
+        </div>
+    </div>
+
+    <!-- ── FORMULARIO ── -->
+    <div class="clt-body-section">
+        <form asp-action="Editar" method="post">
+
+            @if (!ViewData.ModelState.IsValid && ViewData.ModelState.Values.Any(v => v.Errors.Count > 0))
+            {
+                <div class="clt-validation-summary" role="alert">
+                    <div asp-validation-summary="All"></div>
+                </div>
+            }
+
+            <input type="hidden" asp-for="Id" />
+
+            <div class="clt-form-grid">
+
+                <!-- Nombre -->
+                <div class="clt-field">
+                    <label asp-for="Nombre" class="clt-label">
+                        Nombre <span class="clt-required">*</span>
+                    </label>
+                    <div class="clt-input-wrap">
+                        <span class="clt-input-icon"><i class="bi bi-person"></i></span>
+                        <input asp-for="Nombre" class="clt-input" placeholder="Nombre del cliente" autocomplete="off" />
+                    </div>
+                    <span asp-validation-for="Nombre" class="clt-field-error"></span>
+                </div>
+
+                <!-- Teléfono -->
+                <div class="clt-field">
+                    <label asp-for="NumeroTelefono" class="clt-label">
+                        Número de Teléfono <span class="clt-required">*</span>
+                    </label>
+                    <div class="clt-input-wrap">
+                        <span class="clt-input-icon"><i class="bi bi-telephone"></i></span>
+                        <input asp-for="NumeroTelefono" class="clt-input" placeholder="Ejemplo: 88889999" inputmode="tel" />
+                    </div>
+                    <span asp-validation-for="NumeroTelefono" class="clt-field-error"></span>
+                </div>
+
+                <!-- Correo -->
+                <div class="clt-field">
+                    <label asp-for="CorreoElectronico" class="clt-label">Correo Electrónico (opcional)</label>
+                    <div class="clt-input-wrap">
+                        <span class="clt-input-icon"><i class="bi bi-envelope"></i></span>
+                        <input asp-for="CorreoElectronico" class="clt-input" placeholder="cliente@correo.com" type="email" autocomplete="off" />
+                    </div>
+                    <span asp-validation-for="CorreoElectronico" class="clt-field-error"></span>
+                </div>
+
+                <!-- Cumpleaños -->
+                <div class="clt-field">
+                    <label asp-for="FechaCumpleaños" class="clt-label">Fecha de Cumpleaños (opcional)</label>
+                    <div class="clt-input-wrap">
+                        <span class="clt-input-icon"><i class="bi bi-gift"></i></span>
+                        <input asp-for="FechaCumpleaños" class="clt-input" type="date" />
+                    </div>
+                    <span asp-validation-for="FechaCumpleaños" class="clt-field-error"></span>
+                </div>
+
+                @*
+                    Frecuencia efectiva: la misma que muestra el perfil. No es editable ni viaja
+                    en el POST; la inicial se elige al crear el cliente.
+                *@
+                @{
+                    var frecuenciaEfectiva = ViewData["FrecuenciaCalculadaDias"] as int?;
+                    var textoFrecuencia = frecuenciaEfectiva switch
+                    {
+                        null => "—",
+                        1 => "1 día",
+                        var dias => $"{dias} días"
+                    };
+                }
+                <div class="clt-field">
+                    <label class="clt-label">Frecuencia de visita</label>
+                    <div style="position:relative;">
+                        <span class="clt-visit-display-icon"><i class="bi bi-arrow-repeat"></i></span>
+                        <div class="clt-visit-display">@textoFrecuencia</div>
+                    </div>
+                    <small style="font-size:0.75rem;color:var(--private-muted-text,#64748b);margin-top:0.3rem;display:block;">
+                        <i class="bi bi-info-circle"></i>
+                        Se ajusta automáticamente según el historial de citas.
+                    </small>
+                </div>
+
+                @if (tenantWhatsAppEnabled)
+                {
+                    <!-- WhatsApp Consent -->
+                    <div class="clt-field clt-form-full">
+                        <div style="display:flex;align-items:flex-start;gap:0.75rem;padding:0.9rem 1rem;border-radius:0.75rem;border:1px solid rgba(var(--private-accent-rgb), 0.2);background:var(--private-row-bg,rgba(15,23,42,0.03));">
+                            <input asp-for="AceptaMensajesWhatsApp" class="form-check-input flex-shrink-0" style="margin-top:0.15rem;" />
+                            <label asp-for="AceptaMensajesWhatsApp" style="font-size:0.82rem;color:var(--private-muted-text,#64748b);line-height:1.5;cursor:pointer;">
+                                El cliente autorizó recibir mensajes de WhatsApp enviados por LuxuryCloud en nombre de este negocio para confirmaciones, cancelaciones y recordatorios de citas. No se usará para promociones.
+                            </label>
+                        </div>
+                    </div>
+                }
+
+            </div>
+
+            <!-- Acciones -->
+            <div class="clt-actions" style="margin-top:1.5rem;">
+                <button type="submit" class="crm-btn crm-btn--primary">
+                    <i class="bi bi-floppy2-fill"></i>
+                    Guardar Cambios
+                </button>
+                <a asp-action="Buscar"
+                   asp-route-criterio="@Model.NumeroTelefono"
+                   class="crm-btn crm-btn--outline">
+                    <i class="bi bi-arrow-left"></i>
+                    Volver
+                </a>
+            </div>
+
+        </form>
+
+        <!-- Zona de peligro -->
+        <div class="clt-danger-zone">
+            <div>
+                <p class="clt-danger-label">Zona de peligro</p>
+                <p style="font-size:0.8rem;color:var(--private-muted-text,#64748b);margin:0;">Eliminar al cliente de forma permanente.</p>
+            </div>
+            <button type="button"
+                    class="clt-btn--danger"
+                    data-id="@Model.Id"
+                    data-nombre="@Model.Nombre"
+                    onclick="abrirEliminarCliente(this)">
+                <i class="bi bi-trash3"></i> Eliminar Cliente
+            </button>
+        </div>
+
+    </div>
+
+</div>
+
+<!-- Formulario oculto para eliminar -->
+<form id="formEliminarCliente" asp-action="Eliminar" method="post" style="display:none;">
+    @Html.AntiForgeryToken()
+    <input type="hidden" id="eliminarClienteId" name="id" value="" />
+</form>
+
+<!-- Modal premium: Eliminar Cliente -->
+<div class="modal fade clt-modal" id="modalEliminarCliente" tabindex="-1" aria-labelledby="modalEliminarClienteLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title clt-modal-title clt-modal-title--danger" id="modalEliminarClienteLabel">
+                    <i class="bi bi-trash3-fill"></i> Eliminar Cliente
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <div class="clt-modal-person">
+                    <div class="clt-modal-person-name" id="eliminarClienteNombre"></div>
+                    <div class="clt-modal-person-sub">Cliente</div>
+                </div>
+                <div class="clt-modal-warning-box clt-modal-warning-box--amber">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <span>Esta acción es permanente. Se eliminarán todos los datos del cliente y no se puede deshacer.</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="clt-modal-btn--ghost" data-bs-dismiss="modal">
+                    <i class="bi bi-x-lg"></i> Cancelar
+                </button>
+                <button type="button" class="clt-modal-btn--danger" onclick="document.getElementById('formEliminarCliente').submit()">
+                    <i class="bi bi-trash3-fill"></i> Eliminar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+    function abrirEliminarCliente(btn) {
+        var id = btn.getAttribute("data-id");
+        var nombre = btn.getAttribute("data-nombre");
+        document.getElementById("eliminarClienteId").value = id;
+        document.getElementById("eliminarClienteNombre").textContent = nombre;
+        var modal = new bootstrap.Modal(document.getElementById("modalEliminarCliente"));
+        modal.show();
+    }
+    </script>
+}

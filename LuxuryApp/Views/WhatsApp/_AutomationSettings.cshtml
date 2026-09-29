@@ -1,0 +1,189 @@
+@model LuxuryApp.Models.SaaS.BillingSubscriptionSummaryViewModel
+
+@* Formulario de automatizaciones WhatsApp (confirmaciones, recordatorios, horas de silencio).
+   Mismos nombres de campo que Models.WhatsApp.WhatsAppAutomationRequest. Postea AJAX a WhatsApp/UpdateAutomation.
+   La logica JS vive en Views/WhatsApp/Index.cshtml (@section Scripts). *@
+
+@{
+    var confHours = Model.ConfirmationHoursBefore;
+    var remHours = Model.ReminderHoursBefore;
+    var confHourOptions = new[] { 1, 2, 3, 6, 12, 24, 48 };
+    var remHourOptions = new[] { 1, 2, 3, 6, 12, 24 };
+    var confIsBatch = Model.ConfirmationIsBatch;
+    var remIsBatch = Model.ReminderIsBatch;
+    var confBatchTime = (Model.ConfirmationBatchTime ?? new TimeOnly(19, 0)).ToString("HH:mm");
+    var remBatchTime = (Model.ReminderBatchTime ?? new TimeOnly(7, 0)).ToString("HH:mm");
+    var confTarget = Model.ConfirmationBatchTarget;
+    var remTarget = Model.ReminderBatchTarget;
+    var morningStart = (Model.ConfirmationMorningStart ?? new TimeOnly(4, 0)).ToString("HH:mm");
+    var morningEnd = (Model.ConfirmationMorningEnd ?? new TimeOnly(12, 0)).ToString("HH:mm");
+    var quietEnabled = Model.QuietHoursEnabled;
+    var quietStart = (Model.QuietHoursStart ?? new TimeOnly(21, 0)).ToString("HH:mm");
+    var quietEnd = (Model.QuietHoursEnd ?? new TimeOnly(7, 0)).ToString("HH:mm");
+}
+
+<form id="waAutomationForm" asp-controller="WhatsApp" asp-action="UpdateAutomation" method="post" class="wa-settings-form">
+    @Html.AntiForgeryToken()
+
+    <div class="wa-grid">
+        @* ── Confirmaciones ── *@
+        <div class="wa-panel">
+            <div class="wa-panel-head">
+                <div>
+                    <h4>Confirmaciones automáticas</h4>
+                    <p>Pedí al cliente confirmar su cita con anticipación.</p>
+                </div>
+                <label class="wa-switch">
+                    <input class="wa-master-toggle" type="checkbox"
+                           id="confirmationsEnabled" name="ConfirmationsEnabled" value="true"
+                           data-target="confirmationAdvanced"
+                           @(Model.SendAppointmentConfirmations ? "checked" : null) />
+                    <input type="hidden" name="ConfirmationsEnabled" value="false" />
+                    <span class="wa-switch-track"></span>
+                </label>
+            </div>
+
+            <div class="wa-advanced @(Model.SendAppointmentConfirmations ? "" : "wa-advanced--disabled")" id="confirmationAdvanced">
+                <label class="wa-field-label" for="ConfirmationMode">¿Cuándo enviar confirmaciones?</label>
+                <select class="wa-field wa-mode-select" id="ConfirmationMode" name="ConfirmationMode" data-prefix="conf">
+                    <option value="relative" selected="@(!confIsBatch)">Antes de la cita (horas configurables)</option>
+                    <option value="batch" selected="@confIsBatch">Todos los días a una hora fija</option>
+                </select>
+
+                <div class="wa-mode-panel @(confIsBatch ? "d-none" : "")" data-mode="conf-relative">
+                    <label class="wa-field-label" for="ConfirmationHoursBefore">Anticipación</label>
+                    <select class="wa-field" id="ConfirmationHoursBefore" name="ConfirmationHoursBefore">
+                        @foreach (var h in confHourOptions)
+                        {
+                            <option value="@h" selected="@(h == confHours)">@h horas antes de la cita@(h == 24 ? " (recomendado)" : "")</option>
+                        }
+                    </select>
+                    <label class="wa-check">
+                        <input type="checkbox"
+                               id="SendConfirmationImmediatelyIfInsideWindow" name="SendConfirmationImmediatelyIfInsideWindow" value="true"
+                               @(Model.SendConfirmationImmediatelyIfInsideWindow ? "checked" : null) />
+                        <input type="hidden" name="SendConfirmationImmediatelyIfInsideWindow" value="false" />
+                        <span>Enviar inmediatamente si la cita ya está dentro del rango</span>
+                    </label>
+                </div>
+
+                <div class="wa-mode-panel @(confIsBatch ? "" : "d-none")" data-mode="conf-batch">
+                    <label class="wa-field-label" for="ConfirmationBatchTime">Hora de envío</label>
+                    <input type="time" class="wa-field" id="ConfirmationBatchTime" name="ConfirmationBatchTime" value="@confBatchTime" />
+                    <label class="wa-field-label" for="ConfirmationBatchTarget">¿Para cuáles citas?</label>
+                    <select class="wa-field wa-target-select" id="ConfirmationBatchTarget" name="ConfirmationBatchTarget" data-prefix="conf">
+                        <option value="TomorrowAllDay" selected="@(confTarget == "TomorrowAllDay")">Citas de mañana</option>
+                        <option value="TomorrowMorning" selected="@(confTarget == "TomorrowMorning")">Solo citas de la mañana siguiente</option>
+                        <option value="SameDayRemaining" selected="@(confTarget == "SameDayRemaining")">Citas restantes de hoy</option>
+                        <option value="Next24Hours" selected="@(confTarget == "Next24Hours")">Próximas 24 horas</option>
+                    </select>
+                    <div class="wa-morning-window @(confTarget == "TomorrowMorning" ? "" : "d-none")" data-prefix="conf">
+                        <div class="wa-row-2">
+                            <div>
+                                <label class="wa-field-label" for="ConfirmationMorningStart">Desde</label>
+                                <input type="time" class="wa-field" id="ConfirmationMorningStart" name="ConfirmationMorningStart" value="@morningStart" />
+                            </div>
+                            <div>
+                                <label class="wa-field-label" for="ConfirmationMorningEnd">Hasta</label>
+                                <input type="time" class="wa-field" id="ConfirmationMorningEnd" name="ConfirmationMorningEnd" value="@morningEnd" />
+                            </div>
+                        </div>
+                    </div>
+                    <p class="wa-help-text">Útil si querés confirmar por la noche las citas del día siguiente.</p>
+                </div>
+            </div>
+        </div>
+
+        @* ── Recordatorios ── *@
+        <div class="wa-panel">
+            <div class="wa-panel-head">
+                <div>
+                    <h4>Recordatorios automáticos</h4>
+                    <p>Avisá al cliente cerca de su cita.</p>
+                </div>
+                <label class="wa-switch">
+                    <input class="wa-master-toggle" type="checkbox"
+                           id="remindersEnabled" name="RemindersEnabled" value="true"
+                           data-target="reminderAdvanced"
+                           @(Model.SendAppointmentReminders ? "checked" : null) />
+                    <input type="hidden" name="RemindersEnabled" value="false" />
+                    <span class="wa-switch-track"></span>
+                </label>
+            </div>
+
+            <div class="wa-advanced @(Model.SendAppointmentReminders ? "" : "wa-advanced--disabled")" id="reminderAdvanced">
+                <label class="wa-field-label" for="ReminderMode">¿Cuándo enviar recordatorios?</label>
+                <select class="wa-field wa-mode-select" id="ReminderMode" name="ReminderMode" data-prefix="rem">
+                    <option value="relative" selected="@(!remIsBatch)">Antes de la cita (horas configurables)</option>
+                    <option value="batch" selected="@remIsBatch">A una hora fija el mismo día</option>
+                </select>
+
+                <div class="wa-mode-panel @(remIsBatch ? "d-none" : "")" data-mode="rem-relative">
+                    <label class="wa-field-label" for="ReminderHoursBefore">Anticipación</label>
+                    <select class="wa-field" id="ReminderHoursBefore" name="ReminderHoursBefore">
+                        @foreach (var h in remHourOptions)
+                        {
+                            <option value="@h" selected="@(h == remHours)">@h horas antes de la cita@(h == 3 ? " (recomendado)" : "")</option>
+                        }
+                    </select>
+                    <label class="wa-check">
+                        <input type="checkbox"
+                               id="SendReminderImmediatelyIfInsideWindow" name="SendReminderImmediatelyIfInsideWindow" value="true"
+                               @(Model.SendReminderImmediatelyIfInsideWindow ? "checked" : null) />
+                        <input type="hidden" name="SendReminderImmediatelyIfInsideWindow" value="false" />
+                        <span>Enviar inmediatamente si la cita ya está dentro del rango</span>
+                    </label>
+                </div>
+
+                <div class="wa-mode-panel @(remIsBatch ? "" : "d-none")" data-mode="rem-batch">
+                    <label class="wa-field-label" for="ReminderBatchTime">Hora de envío</label>
+                    <input type="time" class="wa-field" id="ReminderBatchTime" name="ReminderBatchTime" value="@remBatchTime" />
+                    <label class="wa-field-label" for="ReminderBatchTarget">¿Para cuáles citas?</label>
+                    <select class="wa-field" id="ReminderBatchTarget" name="ReminderBatchTarget">
+                        <option value="SameDayRemaining" selected="@(remTarget == "SameDayRemaining")">Citas restantes de hoy</option>
+                        <option value="NextAppointmentsToday" selected="@(remTarget == "NextAppointmentsToday")">Próximas citas de hoy</option>
+                        <option value="NextXHours" selected="@(remTarget == "NextXHours")">Próximas horas</option>
+                    </select>
+                    <p class="wa-help-text">Los recordatorios se usan para avisar al cliente cerca de su cita.</p>
+                </div>
+            </div>
+        </div>
+
+        @* ── Horas de silencio ── *@
+        <div class="wa-panel wa-panel--full">
+            <div class="wa-panel-head">
+                <div>
+                    <h4>Horas de silencio</h4>
+                    <p>No se enviarán mensajes en este rango; quedan en espera y salen al terminar.</p>
+                </div>
+                <label class="wa-switch">
+                    <input class="wa-master-toggle" type="checkbox"
+                           id="quietHoursEnabled" name="QuietHoursEnabled" value="true"
+                           data-target="quietAdvanced"
+                           @(quietEnabled ? "checked" : null) />
+                    <input type="hidden" name="QuietHoursEnabled" value="false" />
+                    <span class="wa-switch-track"></span>
+                </label>
+            </div>
+
+            <div class="wa-advanced @(quietEnabled ? "" : "wa-advanced--disabled")" id="quietAdvanced">
+                <div class="wa-row-2 wa-row-2--narrow">
+                    <div>
+                        <label class="wa-field-label" for="QuietHoursStart">Desde</label>
+                        <input type="time" class="wa-field" id="QuietHoursStart" name="QuietHoursStart" value="@quietStart" />
+                    </div>
+                    <div>
+                        <label class="wa-field-label" for="QuietHoursEnd">Hasta</label>
+                        <input type="time" class="wa-field" id="QuietHoursEnd" name="QuietHoursEnd" value="@quietEnd" />
+                    </div>
+                </div>
+                <p class="wa-help-text">Ejemplo: de 9:00 p. m. a 7:00 a. m. para no escribir de noche.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="wa-form-actions">
+        <span class="wa-automation-status" id="waAutomationStatus" role="status" aria-live="polite"></span>
+        <button type="submit" class="wa-save-btn" id="waAutomationSave">Guardar automatizaciones</button>
+    </div>
+</form>

@@ -1,0 +1,212 @@
+@model LuxuryApp.Models.Platform.PlatformMonthlyReportOverview
+
+@{
+    ViewData["Title"] = "Resumen mensual - Plataforma";
+
+    (string cls, string icon, string text) StatusChip(string? status) => status switch
+    {
+        "Sent" => ("platform-badge-success", "bi-check-circle", "Enviado"),
+        "Failed" => ("platform-badge-danger", "bi-x-circle", "Falló"),
+        "Skipped" => ("platform-badge-dark", "bi-dash-circle", "Omitido"),
+        "Pending" => ("platform-badge-warning", "bi-hourglass-split", "Pendiente"),
+        _ => ("platform-badge-dark", "bi-dash", "Sin envíos")
+    };
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/platform.css" asp-append-version="true" />
+}
+
+<div class="platform-shell">
+    <div class="platform-hero">
+        <div>
+            <span class="platform-eyebrow">
+                <i class="bi bi-envelope-paper"></i>
+                Resumen Ejecutivo Mensual
+            </span>
+            <h1 class="platform-title">Resumen Ejecutivo Mensual</h1>
+            <p class="platform-subtitle">
+                Control interno de reportes mensuales enviados a dueños de negocio.
+            </p>
+        </div>
+        <div class="platform-toolbar">
+            <a class="btn btn-outline-dark platform-btn" asp-controller="Platform" asp-action="Index">
+                <i class="bi bi-arrow-left"></i>
+                Volver a Plataforma
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["PlatformError"] is string platformError)
+    {
+        <div class="platform-alert-stack">
+            <div class="alert alert-danger platform-alert mb-0">@platformError</div>
+        </div>
+    }
+    @if (TempData["PlatformSuccess"] is string platformSuccess)
+    {
+        <div class="platform-alert-stack">
+            <div class="alert alert-success platform-alert mb-0">@platformSuccess</div>
+        </div>
+    }
+
+    <div class="row g-4 mb-4">
+        <div class="col-md-6 col-xl-3">
+            <article class="platform-stat-card">
+                <div class="platform-stat-top">
+                    <div>
+                        <p class="platform-stat-label">Con reporte activo</p>
+                        <p class="platform-stat-value">@Model.TenantsConReporteActivo</p>
+                    </div>
+                    <span class="platform-stat-icon is-green"><i class="bi bi-toggle-on"></i></span>
+                </div>
+                <p class="platform-stat-note">Negocios con el envío mensual activado.</p>
+            </article>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <article class="platform-stat-card">
+                <div class="platform-stat-top">
+                    <div>
+                        <p class="platform-stat-label">Enviados este mes</p>
+                        <p class="platform-stat-value">@Model.EnviadosEsteMes</p>
+                    </div>
+                    <span class="platform-stat-icon is-blue"><i class="bi bi-send-check"></i></span>
+                </div>
+                <p class="platform-stat-note">Reportes reales enviados en el mes calendario actual.</p>
+            </article>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <article class="platform-stat-card">
+                <div class="platform-stat-top">
+                    <div>
+                        <p class="platform-stat-label">Fallidos este mes</p>
+                        <p class="platform-stat-value">@Model.FallidosEsteMes</p>
+                    </div>
+                    <span class="platform-stat-icon is-slate"><i class="bi bi-exclamation-octagon"></i></span>
+                </div>
+                <p class="platform-stat-note">Intentos que terminaron en error este mes.</p>
+            </article>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <article class="platform-stat-card">
+                <div class="platform-stat-top">
+                    <div>
+                        <p class="platform-stat-label">Scheduler global</p>
+                        <p class="platform-stat-value">@(Model.SchedulerEnabled ? "Activo" : "Inactivo")</p>
+                    </div>
+                    <span class="platform-stat-icon is-gold"><i class="bi bi-robot"></i></span>
+                </div>
+                <p class="platform-stat-note">
+                    Flag <code>MonthlyReports:SchedulerEnabled</code>.
+                    Periodo sugerido: @($"{Model.DefaultMonth:00}/{Model.DefaultYear}").
+                </p>
+            </article>
+        </div>
+    </div>
+
+    <section class="platform-section-card">
+        <div class="platform-section-header">
+            <div>
+                <p class="platform-section-kicker">Negocios</p>
+                <h2 class="platform-section-title">Reportes por tenant</h2>
+                <p class="platform-section-copy">
+                    Entrá al detalle de cada negocio para configurar destinatarios, contenido y disparar envíos.
+                </p>
+            </div>
+        </div>
+
+        @if (Model.Rows.Count == 0)
+        {
+            <div class="platform-empty-state">
+                <i class="bi bi-inbox"></i>
+                <p class="mb-0">No hay negocios registrados.</p>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table platform-table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Negocio</th>
+                            <th>Estado</th>
+                            <th>Día/Hora</th>
+                            <th>Destinatarios</th>
+                            <th>Último envío</th>
+                            <th>Último estado</th>
+                            <th class="text-end">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in Model.Rows)
+                        {
+                            var chip = StatusChip(row.LastStatus);
+                            <tr>
+                                <td>
+                                    <div class="platform-table-title">@row.BusinessName</div>
+                                    <div class="platform-table-meta">
+                                        @(row.TenantActivo ? "Negocio activo" : "Negocio suspendido")
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="platform-badge @(row.IsEnabled ? "platform-badge-success" : "platform-badge-dark")">
+                                        <i class="bi @(row.IsEnabled ? "bi-check-circle" : "bi-slash-circle")"></i>
+                                        @(row.IsEnabled ? "Activo" : "Inactivo")
+                                    </span>
+                                </td>
+                                <td>
+                                    @if (row.HasSettings)
+                                    {
+                                        <span class="platform-table-meta">Día @row.SendDayOfMonth · @($"{row.SendHour:00}:00")</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="platform-table-meta">Sin configurar</span>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="platform-badge-row">
+                                        <span class="platform-badge platform-badge-blue">@row.RecipientCount incluidos</span>
+                                        @if (row.ExcludedCount > 0)
+                                        {
+                                            <span class="platform-badge platform-badge-warning">@row.ExcludedCount excluidos</span>
+                                        }
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="platform-table-meta">
+                                        @(row.LastSendAt?.ToString("dd/MM/yyyy HH:mm") ?? "—")
+                                    </span>
+                                    @if (row.LastWasTest == true)
+                                    {
+                                        <div><span class="platform-badge platform-badge-dark">Prueba</span></div>
+                                    }
+                                </td>
+                                <td>
+                                    <span class="platform-badge @chip.cls" title="@row.LastError">
+                                        <i class="bi @chip.icon"></i> @chip.text
+                                    </span>
+                                    @if (!string.IsNullOrWhiteSpace(row.LastAutomaticError))
+                                    {
+                                        <div class="platform-table-meta text-truncate" style="max-width: 220px;" title="@row.LastAutomaticError">
+                                            <i class="bi bi-exclamation-triangle"></i> auto: @row.LastAutomaticError
+                                        </div>
+                                    }
+                                </td>
+                                <td class="text-end">
+                                    <div class="platform-table-actions justify-content-end">
+                                        <a class="btn btn-dark btn-sm platform-btn"
+                                           asp-controller="PlatformMonthlyReports" asp-action="Detalle" asp-route-tenantId="@row.TenantId">
+                                            <i class="bi bi-gear"></i>
+                                            Administrar
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+</div>

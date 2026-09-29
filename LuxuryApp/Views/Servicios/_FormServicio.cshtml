@@ -1,0 +1,101 @@
+﻿@model LuxuryApp.Models.Finanzas.Servicio
+
+<form id="formServicio">
+
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="Id" />
+
+    <div style="margin-bottom:1rem;">
+        <label asp-for="Nombre" class="finance-form-label">
+            Nombre del servicio <span class="finance-required">*</span>
+        </label>
+        <div class="finance-input-wrap" style="margin-top:0.35rem;">
+            <span class="finance-input-icon"><i class="bi bi-scissors"></i></span>
+            <input asp-for="Nombre"
+                   class="finance-form-control"
+                   placeholder="Ej. Corte con máquina, Tinte..." />
+        </div>
+        <span asp-validation-for="Nombre" class="finance-field-error"></span>
+    </div>
+
+    <div style="margin-bottom:1rem;">
+        <label asp-for="Precio" class="finance-form-label">
+            Precio <span class="finance-required">*</span>
+        </label>
+        <div class="finance-input-wrap" style="margin-top:0.35rem;">
+            <span class="finance-input-icon" style="font-weight:700;font-size:1rem;">₡</span>
+            <input asp-for="Precio"
+                   class="finance-form-control money-input"
+                   type="text"
+                   inputmode="numeric"
+                   autocomplete="off"
+                   placeholder="0" />
+        </div>
+        <span asp-validation-for="Precio" class="finance-field-error"></span>
+    </div>
+
+    <div style="margin-bottom:1rem;">
+        <label asp-for="DuracionMinutos" class="finance-form-label">
+            Duración (minutos, opcional)
+        </label>
+        <div class="finance-input-wrap" style="margin-top:0.35rem;">
+            <span class="finance-input-icon"><i class="bi bi-clock"></i></span>
+            <input asp-for="DuracionMinutos"
+                   class="finance-form-control"
+                   type="number"
+                   min="1"
+                   placeholder="Ej: 45" />
+        </div>
+        <span asp-validation-for="DuracionMinutos" class="finance-field-error"></span>
+    </div>
+
+    <div style="margin-bottom:0.75rem;">
+        <label class="finance-form-label">Configuración fiscal (IVA)</label>
+        <div class="form-check form-switch" style="margin-top:0.4rem;">
+            <input asp-for="AplicaIva" class="form-check-input" type="checkbox" role="switch" id="svc-aplica-iva" />
+            <label class="form-check-label" for="svc-aplica-iva">Este servicio aplica IVA</label>
+        </div>
+    </div>
+
+    <div style="display:flex;gap:0.75rem;margin-bottom:1rem;flex-wrap:wrap;">
+        <div style="flex:1 1 8rem;">
+            <label asp-for="TarifaIva" class="finance-form-label">Tarifa IVA (%)</label>
+            <input asp-for="TarifaIva"
+                   class="finance-form-control"
+                   type="number" step="0.01" min="0" max="100"
+                   placeholder="Hereda del negocio (13)"
+                   style="margin-top:0.35rem;" />
+        </div>
+        <div style="flex:1 1 10rem;">
+            <label asp-for="PrecioIncluyeIva" class="finance-form-label">¿El precio incluye IVA?</label>
+            <select asp-for="PrecioIncluyeIva" class="finance-form-control" style="margin-top:0.35rem;">
+                <option value="">Heredar del negocio</option>
+                <option value="true">Sí, incluye IVA</option>
+                <option value="false">No, se suma encima</option>
+            </select>
+        </div>
+    </div>
+
+    @{ var avisoHistorico = ViewData[LuxuryApp.Models.Fiscal.AvisoImpactoHistorico.CampoConfirmacion] as string; }
+    @if (!string.IsNullOrEmpty(avisoHistorico))
+    {
+        @await Html.PartialAsync("_AvisoImpactoHistorico", avisoHistorico)
+    }
+
+    <div style="display:flex;gap:0.65rem;justify-content:flex-end;margin-top:0.75rem;">
+        <button type="button"
+                class="finance-btn-back"
+                style="font-size:0.875rem;padding:0.55rem 1rem;"
+                onclick="cerrarFormServicio()">
+            Cancelar
+        </button>
+        <button type="button"
+                class="finance-btn-save"
+                style="font-size:0.875rem;padding:0.55rem 1.2rem;"
+                onclick="guardarServicio()">
+            <i class="bi bi-floppy2-fill"></i>
+            @(Model.Id > 0 ? "Guardar Cambios" : "Guardar Servicio")
+        </button>
+    </div>
+
+</form>

@@ -1,0 +1,65 @@
+@model LuxuryApp.Models.Funcionarios.PortalCitaItem
+@using System.Globalization
+@{
+    var cr = new CultureInfo("es-CR");
+    var puedeCobrar = (ViewData["PuedeRegistrarCobros"] as bool?) ?? false;
+    var puedeEditar = (ViewData["PuedeEditarCitas"] as bool?) ?? false;
+    var puedeCancelar = (ViewData["PuedeCancelarCitas"] as bool?) ?? false;
+    var calFecha = ViewData["CalFecha"] as string ?? "";
+    var nombre = string.IsNullOrWhiteSpace(Model.Cliente) ? "Cliente" : Model.Cliente;
+    var partes = nombre.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+    var iniciales = partes.Length >= 2
+        ? $"{partes[0][0]}{partes[1][0]}".ToUpperInvariant()
+        : nombre.Substring(0, Math.Min(2, nombre.Length)).ToUpperInvariant();
+}
+<li class="whatsapp-thread-card">
+    <div class="whatsapp-thread-top">
+        <div class="whatsapp-avatar">@iniciales</div>
+        <div class="whatsapp-thread-main">
+            <div class="whatsapp-thread-name">@nombre</div>
+            <div class="whatsapp-thread-meta">
+                @Model.FechaHora.ToString("hh:mm tt", cr) • @Model.Servicio • @Model.DuracionEfectiva min
+            </div>
+            @if (!string.IsNullOrWhiteSpace(Model.Telefono))
+            {
+                <div class="whatsapp-thread-sub"><i class="bi bi-telephone"></i> @Model.Telefono</div>
+            }
+        </div>
+    </div>
+    <div class="whatsapp-thread-actions">
+        @if (Model.YaCobrada)
+        {
+            <span class="cita-badge-cobrada"><i class="bi bi-check2-circle"></i> Cobrada</span>
+        }
+        else if (puedeCobrar && Model.EsCobrable)
+        {
+            <button type="button" class="action-icon-button js-cobrar-btn"
+                    data-cita-id="@Model.Id" data-cliente="@Model.Cliente" data-servicio="@Model.Servicio"
+                    data-precio="@(Model.PrecioServicio?.ToString("0.##", CultureInfo.InvariantCulture) ?? "")">
+                <i class="bi bi-cash-coin"></i><span>Cobrar</span>
+            </button>
+        }
+        @if (puedeEditar)
+        {
+            <button type="button" class="action-icon-button js-editar-cita"
+                    data-cita-id="@Model.Id" data-fecha="@Model.FechaHoraInput"
+                    data-nombre="@(Model.NombreClienteRaw ?? Model.Cliente)" data-telefono="@(Model.Telefono ?? "")"
+                    data-cliente-id="@(Model.ClienteId?.ToString() ?? "")" data-servicio-id="@(Model.ServicioId?.ToString() ?? "")"
+                    data-servicio-personalizado="@(Model.ServicioPersonalizado ?? "")" data-duracion="@(Model.DuracionMinutos?.ToString() ?? "")">
+                <i class="bi bi-pencil"></i><span>Editar</span>
+            </button>
+        }
+        @if (puedeCancelar)
+        {
+            <form method="post" action="/MiPortal/Calendario/CancelarCita" class="m-0 d-inline"
+                  onsubmit="return confirm('¿Cancelar esta cita? Esta acción no se puede deshacer.');">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="citaId" value="@Model.Id" />
+                <input type="hidden" name="fecha" value="@calFecha" />
+                <button type="submit" class="action-icon-button action-icon-button-danger">
+                    <i class="bi bi-x-circle"></i><span>Cancelar</span>
+                </button>
+            </form>
+        }
+    </div>
+</li>

@@ -1,0 +1,183 @@
+@using LuxuryApp.Models.Funcionarios
+@model List<Puesto>
+
+<div class="d-none" id="puestosTokenContainer">
+    @Html.AntiForgeryToken()
+</div>
+
+<div id="puestosMessageContainer"></div>
+
+<!-- ── BARRA DE ACCIONES ── -->
+<div class="staff-pos-action-bar">
+    <button type="button" class="func-btn func-btn--primary" onclick="mostrarFormularioPuesto()">
+        <i class="bi bi-plus-lg"></i>
+        Nuevo Puesto
+    </button>
+    @if (Model.Any())
+    {
+        <span class="staff-pos-count">
+            @Model.Count puesto@(Model.Count != 1 ? "s" : "") registrado@(Model.Count != 1 ? "s" : "")
+        </span>
+    }
+</div>
+
+<!-- ── FORMULARIO (visible al crear/editar) ── -->
+<div id="formPuestoContainer" class="staff-pos-form-container" style="display:none;"></div>
+
+@if (Model.Any())
+{
+    <!-- Desktop: tabla premium -->
+    <div class="d-none d-md-block">
+        <div class="staff-pos-table-wrap">
+            <table class="func-table staff-pos-table">
+                <thead>
+                    <tr>
+                        <th>Puesto</th>
+                        <th>Detalle</th>
+                        <th style="text-align:center;width:7rem;">Estado</th>
+                        <th style="text-align:right;width:18rem;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>
+                                <span class="func-name">@item.NombrePuesto</span>
+                            </td>
+                            <td class="staff-pos-detalle">
+                                @(string.IsNullOrWhiteSpace(item.Detalle) ? "—" : item.Detalle)
+                            </td>
+                            <td style="text-align:center;">
+                                @if (item.Activo)
+                                {
+                                    <span class="func-status func-status--active">
+                                        <span class="func-dot func-dot--green"></span>
+                                        Activo
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="func-status func-status--inactive">
+                                        <span class="func-dot func-dot--gray"></span>
+                                        Inactivo
+                                    </span>
+                                }
+                            </td>
+                            <td>
+                                <div class="staff-pos-actions">
+                                    <button type="button"
+                                            class="func-btn func-btn--ghost staff-pos-act-btn"
+                                            onclick="mostrarFormularioPuesto(@item.IdPuesto)"
+                                            aria-label="Editar @item.NombrePuesto">
+                                        <i class="bi bi-pencil"></i>
+                                        Editar
+                                    </button>
+                                    @if (item.Activo)
+                                    {
+                                        <button type="button"
+                                                class="func-btn func-btn--warning staff-pos-act-btn"
+                                                onclick="togglePuesto(@item.IdPuesto)"
+                                                aria-label="Desactivar @item.NombrePuesto">
+                                            <i class="bi bi-toggle-on"></i>
+                                            Desactivar
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <button type="button"
+                                                class="func-btn func-btn--success staff-pos-act-btn"
+                                                onclick="togglePuesto(@item.IdPuesto)"
+                                                aria-label="Activar @item.NombrePuesto">
+                                            <i class="bi bi-toggle-off"></i>
+                                            Activar
+                                        </button>
+                                    }
+                                    <button type="button"
+                                            class="func-btn func-btn--danger staff-pos-act-btn"
+                                            onclick="confirmarEliminarPuesto(@item.IdPuesto, '@Html.Raw(item.NombrePuesto.Replace("'", "\\'"))')"
+                                            aria-label="Eliminar @item.NombrePuesto">
+                                        <i class="bi bi-trash3"></i>
+                                        Eliminar
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Mobile: cards -->
+    <div class="d-md-none staff-pos-card-list">
+        @foreach (var item in Model)
+        {
+            <div class="staff-pos-card">
+                <div class="staff-pos-card-top">
+                    <div style="flex:1;min-width:0;">
+                        <span class="staff-pos-card-name">@item.NombrePuesto</span>
+                        @if (!string.IsNullOrWhiteSpace(item.Detalle))
+                        {
+                            <p class="staff-pos-card-detalle">@item.Detalle</p>
+                        }
+                    </div>
+                    <div class="staff-pos-card-status">
+                        @if (item.Activo)
+                        {
+                            <span class="func-status func-status--active">
+                                <span class="func-dot func-dot--green"></span>
+                                Activo
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="func-status func-status--inactive">
+                                <span class="func-dot func-dot--gray"></span>
+                                Inactivo
+                            </span>
+                        }
+                    </div>
+                </div>
+                <div class="staff-pos-card-actions">
+                    <button type="button"
+                            class="func-btn func-btn--ghost staff-pos-act-btn"
+                            onclick="mostrarFormularioPuesto(@item.IdPuesto)">
+                        <i class="bi bi-pencil"></i> Editar
+                    </button>
+                    @if (item.Activo)
+                    {
+                        <button type="button"
+                                class="func-btn func-btn--warning staff-pos-act-btn"
+                                onclick="togglePuesto(@item.IdPuesto)">
+                            <i class="bi bi-toggle-on"></i> Desactivar
+                        </button>
+                    }
+                    else
+                    {
+                        <button type="button"
+                                class="func-btn func-btn--success staff-pos-act-btn"
+                                onclick="togglePuesto(@item.IdPuesto)">
+                            <i class="bi bi-toggle-off"></i> Activar
+                        </button>
+                    }
+                    <button type="button"
+                            class="func-btn func-btn--danger staff-pos-act-btn"
+                            onclick="confirmarEliminarPuesto(@item.IdPuesto, '@Html.Raw(item.NombrePuesto.Replace("'", "\\'"))')">
+                        <i class="bi bi-trash3"></i> Eliminar
+                    </button>
+                </div>
+            </div>
+        }
+    </div>
+}
+else
+{
+    <div class="func-empty">
+        <i class="bi bi-tags func-empty-icon"></i>
+        <span class="func-empty-text">No hay puestos registrados</span>
+        <span style="font-size:0.82rem;color:var(--private-muted-text,#64748b);line-height:1.5;max-width:22rem;margin-top:0.25rem;">
+            Agrega puestos para clasificar a tus funcionarios.
+        </span>
+    </div>
+}

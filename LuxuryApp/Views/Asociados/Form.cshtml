@@ -1,0 +1,264 @@
+@using LuxuryApp.Models.Asociados
+@using LuxuryApp.Models.Inversionistas
+@model AssociateFormViewModel
+
+@{
+    ViewData["Title"] = "Nuevo asociado";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/finance-modules.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/associates.css" asp-append-version="true" />
+}
+
+<div class="finance-page-shell">
+
+    <div class="finance-hero">
+        <div class="finance-hero-left module-heading">
+            <span class="module-eyebrow">Asociados del negocio</span>
+            <h1 class="module-title"><i class="bi bi-person-plus module-title-icon" aria-hidden="true"></i>Nuevo asociado</h1>
+            <p class="module-subtitle">
+                Registrá a la persona, indicá qué relación tiene con el negocio y decidí si
+                necesita entrar al sistema.
+            </p>
+        </div>
+    </div>
+
+    <form asp-action="Crear" method="post" id="assocForm">
+        @Html.AntiForgeryToken()
+
+        <div asp-validation-summary="ModelOnly" class="finance-validation-summary"></div>
+
+        @* ── SECCIÓN 1: INFORMACIÓN DEL ASOCIADO ── *@
+        <div class="assoc-block">
+            <div class="assoc-block-head">
+                <i class="bi bi-person-vcard"></i>
+                <h3 class="assoc-block-title">Información del asociado</h3>
+            </div>
+            <p class="assoc-block-sub">
+                Datos de contacto de la persona. El correo es obligatorio si le vas a dar acceso
+                o si va a recibir estados de cuenta como inversionista.
+            </p>
+
+            <div class="finance-form-grid">
+                <div class="finance-form-field">
+                    <label asp-for="Nombre" class="finance-form-label">
+                        Nombre <span class="finance-required">*</span>
+                    </label>
+                    <div class="finance-input-wrap">
+                        <span class="finance-input-icon"><i class="bi bi-person"></i></span>
+                        <input asp-for="Nombre" class="finance-form-control" autocomplete="off" />
+                    </div>
+                    <span asp-validation-for="Nombre" class="finance-field-error"></span>
+                </div>
+
+                <div class="finance-form-field">
+                    <label asp-for="Puesto" class="finance-form-label">Puesto</label>
+                    <div class="finance-input-wrap">
+                        <span class="finance-input-icon"><i class="bi bi-briefcase"></i></span>
+                        <input asp-for="Puesto" class="finance-form-control" placeholder="Social Media Manager, Socio…" autocomplete="off" />
+                    </div>
+                    <span asp-validation-for="Puesto" class="finance-field-error"></span>
+                </div>
+
+                <div class="finance-form-field">
+                    <label asp-for="Email" class="finance-form-label">Correo electrónico</label>
+                    <div class="finance-input-wrap">
+                        <span class="finance-input-icon"><i class="bi bi-envelope"></i></span>
+                        <input asp-for="Email" class="finance-form-control" type="email" autocomplete="off" />
+                    </div>
+                    <span asp-validation-for="Email" class="finance-field-error"></span>
+                </div>
+
+                <div class="finance-form-field">
+                    <label asp-for="Telefono" class="finance-form-label">Teléfono</label>
+                    <div class="finance-input-wrap">
+                        <span class="finance-input-icon"><i class="bi bi-telephone"></i></span>
+                        <input asp-for="Telefono" class="finance-form-control" autocomplete="off" />
+                    </div>
+                    <span asp-validation-for="Telefono" class="finance-field-error"></span>
+                </div>
+
+                <div class="finance-form-field finance-form-full">
+                    <label class="finance-form-label">
+                        Relación con el negocio <span class="finance-required">*</span>
+                    </label>
+                    <div class="assoc-types">
+                        @foreach (var tipo in AssociateTypeTexts.Todos)
+                        {
+                            <label class="assoc-type-chip">
+                                <input type="checkbox"
+                                       name="Tipos"
+                                       value="@((int)tipo)"
+                                       data-assoc-tipo="@((int)tipo)"
+                                       checked="@Model.Tipos.Contains(tipo)" />
+                                <span>@AssociateTypeTexts.Describe(tipo)</span>
+                            </label>
+                        }
+                    </div>
+                    <span class="assoc-note">
+                        Una persona puede tener más de una (por ejemplo, Inversionista y Socio).
+                        El tipo describe la relación; <strong>no</strong> otorga permisos.
+                    </span>
+                </div>
+
+                <div class="finance-form-field finance-form-full">
+                    <label asp-for="NotasInternas" class="finance-form-label">Notas internas</label>
+                    <textarea asp-for="NotasInternas" class="finance-form-control finance-form-control--no-icon" rows="2"></textarea>
+                    <span class="assoc-note">Solo las ve tu equipo. Nunca salen en un correo al asociado.</span>
+                </div>
+            </div>
+        </div>
+
+        @* ── SECCIÓN 2: PARTICIPACIÓN (solo inversionista) ── *@
+        <div class="assoc-block" id="assocParticipacion" style="display:none;">
+            <div class="assoc-block-head">
+                <i class="bi bi-pie-chart"></i>
+                <h3 class="assoc-block-title">Participación en la ganancia</h3>
+            </div>
+            <p class="assoc-block-sub">
+                Qué porcentaje de la ganancia distribuible le corresponde y cada cuánto recibe su
+                estado de cuenta. Actualmente hay
+                <strong>@Model.ParticipacionOtros.ToString("0.##") %</strong> asignado a otros asociados.
+            </p>
+
+            <div class="finance-form-grid">
+                <div class="finance-form-field">
+                    <label asp-for="ParticipacionPorcentaje" class="finance-form-label">Porcentaje de participación</label>
+                    <div class="finance-input-wrap">
+                        <span class="finance-input-icon"><i class="bi bi-percent"></i></span>
+                        <input asp-for="ParticipacionPorcentaje" class="finance-form-control" type="number" step="0.01" min="0.01" max="100" />
+                    </div>
+                    <span asp-validation-for="ParticipacionPorcentaje" class="finance-field-error"></span>
+                </div>
+
+                <div class="finance-form-field">
+                    <label asp-for="Frecuencia" class="finance-form-label">Frecuencia de liquidación</label>
+                    <select asp-for="Frecuencia" class="finance-form-control finance-form-control--no-icon"
+                            data-assoc-frecuencia
+                            asp-items="Html.GetEnumSelectList<InvestorPayoutFrequency>()"></select>
+                </div>
+
+                @* El día de corte solo aplica a acuerdos mensuales. *@
+                <div class="finance-form-field" data-assoc-corte-field>
+                    <label asp-for="DiaCorte" class="finance-form-label">Día de corte</label>
+                    <div class="finance-input-wrap">
+                        <span class="finance-input-icon"><i class="bi bi-calendar-event"></i></span>
+                        <input asp-for="DiaCorte" class="finance-form-control" type="number"
+                               min="1" max="31" placeholder="Fin de mes" />
+                    </div>
+                    <span class="assoc-cutoff-hint">
+                        <i class="bi bi-info-circle"></i>
+                        <span>
+                            Con corte el día 20, cada período va del 21 del mes anterior al 20 del mes
+                            actual, y el día 20 pertenece al período que cierra. Dejalo vacío para usar
+                            el mes calendario completo.
+                        </span>
+                    </span>
+                    <span asp-validation-for="DiaCorte" class="finance-field-error"></span>
+                </div>
+
+                <div class="finance-form-field">
+                    <label asp-for="EffectiveFrom" class="finance-form-label">Vigente desde</label>
+                    <div class="finance-input-wrap">
+                        <span class="finance-input-icon"><i class="bi bi-calendar3"></i></span>
+                        <input asp-for="EffectiveFrom" class="finance-form-control" type="date" />
+                    </div>
+                    <span class="assoc-note">
+                        Debe ser el primer día de un período. Con la frecuencia y el corte elegidos,
+                        el sistema valida la fecha al guardar y te dice cuál usar si no coincide.
+                    </span>
+                </div>
+
+                <div class="finance-form-field">
+                    <label asp-for="TratamientoPerdidas" class="finance-form-label">Si el periodo cierra en pérdida</label>
+                    <select asp-for="TratamientoPerdidas" class="finance-form-control finance-form-control--no-icon">
+                        <option value="@((int)InvestorLossTreatment.NoDistribution)">No se arrastra</option>
+                        <option value="@((int)InvestorLossTreatment.CarryForward)">Se descuenta de ganancias futuras</option>
+                    </select>
+                </div>
+
+                <div class="finance-form-field finance-form-full">
+                    <label class="assoc-toggle">
+                        <input asp-for="EnvioAutomatico" type="checkbox" />
+                        <span class="assoc-toggle-text">
+                            <span class="assoc-toggle-title">Enviar su estado de cuenta automáticamente</span>
+                            <span class="assoc-toggle-sub">Al cerrar cada periodo, según la configuración del negocio.</span>
+                        </span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        @* ── SECCIÓN 3: ACCESO AL SISTEMA ── *@
+        <div class="assoc-block">
+            <div class="assoc-block-head">
+                <i class="bi bi-shield-lock-fill"></i>
+                <h3 class="assoc-block-title">Acceso al sistema</h3>
+            </div>
+            <p class="assoc-block-sub">
+                Un asociado puede existir sin credenciales. Un inversionista, por ejemplo, participa
+                de la ganancia y recibe su estado de cuenta sin entrar nunca a LuxuryCloud.
+            </p>
+
+            <label class="assoc-toggle">
+                <input asp-for="DarAcceso" type="checkbox" id="assocDarAcceso" />
+                <span class="assoc-toggle-text">
+                    <span class="assoc-toggle-title">Dar acceso al sistema</span>
+                    <span class="assoc-toggle-sub">Creará una cuenta propia para esta persona. Nunca se comparten credenciales.</span>
+                </span>
+            </label>
+
+            <div id="assocAccesoConfig" style="display:none;margin-top:1.1rem;">
+                <label class="finance-form-label">Método de activación</label>
+                <div class="assoc-access-modes">
+                    <label>
+                        <input type="radio" name="ModoCredencial" value="@((int)AssociateCredentialMode.Invitacion)" checked />
+                        Enviar invitación por correo para que defina su contraseña (recomendado)
+                    </label>
+                    <label>
+                        <input type="radio" name="ModoCredencial" value="@((int)AssociateCredentialMode.ContrasenaTemporal)" />
+                        Definir una contraseña temporal
+                    </label>
+                </div>
+
+                <div class="finance-form-field" id="assocTempPwd" style="display:none;max-width:420px;">
+                    <label asp-for="ContrasenaTemporal" class="finance-form-label">Contraseña temporal</label>
+                    <div class="finance-input-wrap">
+                        <span class="finance-input-icon"><i class="bi bi-key"></i></span>
+                        <input asp-for="ContrasenaTemporal" class="finance-form-control" type="text"
+                               placeholder="Mínimo 8 caracteres, con una mayúscula" autocomplete="off" />
+                    </div>
+                    <span class="assoc-note">Compartila de forma segura. La persona podrá cambiarla después.</span>
+                </div>
+
+                <div class="assoc-block-head" style="margin-top:1.35rem;">
+                    <i class="bi bi-sliders"></i>
+                    <h3 class="assoc-block-title">Permisos</h3>
+                </div>
+                <p class="assoc-block-sub">
+                    Decidí exactamente qué puede ver y hacer. Los presets son solo un atajo:
+                    después podés marcar y desmarcar lo que quieras.
+                </p>
+
+                <partial name="_PermisosMatriz" model="@(new AssociatePermissionsMatrixViewModel { Concedidos = Model.Permisos })" />
+            </div>
+        </div>
+
+        <div class="finance-form-footer">
+            <div class="finance-form-footer-left">
+                <a asp-action="Index" class="finance-btn-back">
+                    <i class="bi bi-arrow-left"></i> Cancelar
+                </a>
+            </div>
+            <button type="submit" class="finance-btn-save">
+                <i class="bi bi-check2-circle"></i> Crear asociado
+            </button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/asociados.js" asp-append-version="true"></script>
+}

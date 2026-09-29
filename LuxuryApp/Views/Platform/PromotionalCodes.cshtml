@@ -1,0 +1,351 @@
+@model LuxuryApp.Models.Platform.PlatformPromotionalCodesPageViewModel
+
+@{
+    ViewData["Title"] = "Codigos promocionales";
+
+    var totalCodes = Model.Codes.Count;
+    var activeCodes = Model.Codes.Count(code => code.Activo);
+    var currentlyAvailableCodes = Model.Codes.Count(code =>
+        code.Activo &&
+        (!code.MaxUsos.HasValue || code.UsosActuales < code.MaxUsos.Value) &&
+        (!code.FechaExpiracionUtc.HasValue || code.FechaExpiracionUtc > DateTime.UtcNow));
+    var totalUses = Model.Codes.Sum(code => code.UsosActuales);
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/platform.css" asp-append-version="true" />
+}
+
+<div class="platform-shell">
+    <div class="platform-hero">
+        <div>
+            <span class="platform-eyebrow">
+                <i class="bi bi-ticket-perforated"></i>
+                Acceso promocional administrado
+            </span>
+            <h1 class="platform-title">Codigos promocionales</h1>
+            <p class="platform-subtitle">
+                Emite acceso temporal sin tarjeta con trazabilidad, limites de uso y plan efectivo controlado desde plataforma.
+            </p>
+        </div>
+        <div class="platform-toolbar">
+            <a class="btn btn-outline-dark platform-btn" asp-action="Index">
+                <i class="bi bi-arrow-left"></i>
+                Volver a plataforma
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["PlatformError"] is string platformError)
+    {
+        <div class="platform-alert-stack">
+            <div class="alert alert-danger platform-alert mb-0">@platformError</div>
+        </div>
+    }
+
+    @if (TempData["PlatformSuccess"] is string platformSuccess)
+    {
+        <div class="platform-alert-stack">
+            <div class="alert alert-success platform-alert mb-0">@platformSuccess</div>
+        </div>
+    }
+
+    <div class="row g-4 mb-4">
+        <div class="col-md-6 col-xl-3">
+            <article class="platform-stat-card">
+                <div class="platform-stat-top">
+                    <div>
+                        <p class="platform-stat-label">Total emitidos</p>
+                        <p class="platform-stat-value">@totalCodes</p>
+                    </div>
+                    <span class="platform-stat-icon is-slate">
+                        <i class="bi bi-upc-scan"></i>
+                    </span>
+                </div>
+                <p class="platform-stat-note">Codigos historicos disponibles en la consola.</p>
+            </article>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <article class="platform-stat-card">
+                <div class="platform-stat-top">
+                    <div>
+                        <p class="platform-stat-label">Activos</p>
+                        <p class="platform-stat-value">@activeCodes</p>
+                    </div>
+                    <span class="platform-stat-icon is-green">
+                        <i class="bi bi-check2-circle"></i>
+                    </span>
+                </div>
+                <p class="platform-stat-note">Codigos habilitados para emision o consumo.</p>
+            </article>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <article class="platform-stat-card">
+                <div class="platform-stat-top">
+                    <div>
+                        <p class="platform-stat-label">Disponibles hoy</p>
+                        <p class="platform-stat-value">@currentlyAvailableCodes</p>
+                    </div>
+                    <span class="platform-stat-icon is-blue">
+                        <i class="bi bi-lightning-charge"></i>
+                    </span>
+                </div>
+                <p class="platform-stat-note">No expirados y con capacidad de uso restante.</p>
+            </article>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <article class="platform-stat-card">
+                <div class="platform-stat-top">
+                    <div>
+                        <p class="platform-stat-label">Consumos registrados</p>
+                        <p class="platform-stat-value">@totalUses</p>
+                    </div>
+                    <span class="platform-stat-icon is-gold">
+                        <i class="bi bi-graph-up"></i>
+                    </span>
+                </div>
+                <p class="platform-stat-note">Auditoria consolidada del uso promocional.</p>
+            </article>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-xl-7">
+            <section class="platform-section-card h-100">
+                <div class="platform-section-header">
+                    <div>
+                        <p class="platform-section-kicker">Alta controlada</p>
+                        <h2 class="platform-section-title">Crear codigo promocional</h2>
+                        <p class="platform-section-copy">
+                            Define el plan efectivo, la ventana de acceso y las restricciones necesarias sin tocar el flujo de checkout.
+                        </p>
+                    </div>
+                </div>
+
+                <form asp-action="CreatePromotionalCode" method="post" class="row g-3 platform-form">
+                    @Html.AntiForgeryToken()
+                    <div asp-validation-summary="All" class="alert alert-danger platform-alert mb-0"></div>
+
+                    <div class="col-md-6">
+                        <label asp-for="CreateForm.Codigo" class="form-label platform-form-label"></label>
+                        <input asp-for="CreateForm.Codigo" class="form-control platform-uppercase-input" autocomplete="off" />
+                        <span asp-validation-for="CreateForm.Codigo" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="CreateForm.PlanId" class="form-label platform-form-label"></label>
+                        <select asp-for="CreateForm.PlanId" class="form-select">
+                            <option value="">Selecciona un plan activo</option>
+                            @foreach (var plan in Model.AvailablePlans)
+                            {
+                                <option value="@plan.Id">@plan.Nombre</option>
+                            }
+                        </select>
+                        <span asp-validation-for="CreateForm.PlanId" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="CreateForm.DiasGratis" class="form-label platform-form-label"></label>
+                        <input asp-for="CreateForm.DiasGratis" class="form-control" />
+                        <span asp-validation-for="CreateForm.DiasGratis" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="CreateForm.MaxUsos" class="form-label platform-form-label"></label>
+                        <input asp-for="CreateForm.MaxUsos" class="form-control" />
+                        <span asp-validation-for="CreateForm.MaxUsos" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="CreateForm.FechaExpiracionUtc" class="form-label platform-form-label"></label>
+                        <input asp-for="CreateForm.FechaExpiracionUtc" asp-format="{0:yyyy-MM-ddTHH:mm}" type="datetime-local" class="form-control" />
+                        <span asp-validation-for="CreateForm.FechaExpiracionUtc" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="CreateForm.EmailObjetivo" class="form-label platform-form-label"></label>
+                        <input asp-for="CreateForm.EmailObjetivo" class="form-control" autocomplete="off" />
+                        <span asp-validation-for="CreateForm.EmailObjetivo" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="CreateForm.NotasInternas" class="form-label platform-form-label"></label>
+                        <textarea asp-for="CreateForm.NotasInternas" class="form-control" rows="3"></textarea>
+                        <span asp-validation-for="CreateForm.NotasInternas" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="platform-toggle-tile">
+                            <input asp-for="CreateForm.SoloPrimerRegistro" class="form-check-input" />
+                            <label asp-for="CreateForm.SoloPrimerRegistro" class="form-check-label"></label>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="platform-toggle-tile">
+                            <input asp-for="CreateForm.Activo" class="form-check-input" />
+                            <label asp-for="CreateForm.Activo" class="form-check-label"></label>
+                        </div>
+                    </div>
+
+                    <div class="col-12 d-flex flex-wrap gap-2">
+                        <button type="submit" class="btn btn-dark platform-btn">
+                            <i class="bi bi-plus-circle"></i>
+                            Crear codigo
+                        </button>
+                        <span class="platform-form-copy">El alta queda protegida con antiforgery y validacion de plan activo.</span>
+                    </div>
+                </form>
+            </section>
+        </div>
+
+        <div class="col-xl-5">
+            <aside class="platform-note-card">
+                <h3>Guia operativa</h3>
+                <p>Usa este modulo para captacion controlada, convenios o activaciones sin tarjeta manteniendo trazabilidad y fecha de vencimiento.</p>
+                <div class="platform-note-list">
+                    <div class="platform-note-item">
+                        <span class="platform-note-icon"><i class="bi bi-shield-check"></i></span>
+                        <div>
+                            <strong>Un solo origen de verdad</strong>
+                            <span>El codigo solo habilita acceso comercial. No concede privilegios globales ni salta el aislamiento multitenant.</span>
+                        </div>
+                    </div>
+                    <div class="platform-note-item">
+                        <span class="platform-note-icon"><i class="bi bi-hourglass-split"></i></span>
+                        <div>
+                            <strong>Acceso temporal</strong>
+                            <span>Cuando el grant vence, el tenant vuelve al flujo normal de suscripcion y checkout existente.</span>
+                        </div>
+                    </div>
+                    <div class="platform-note-item">
+                        <span class="platform-note-icon"><i class="bi bi-person-check"></i></span>
+                        <div>
+                            <strong>Restricciones opcionales</strong>
+                            <span>Puedes limitar por email, por primer registro o por numero de usos para evitar reutilizacion indebida.</span>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <section class="platform-section-card mt-4">
+        <div class="platform-section-header">
+            <div>
+                <p class="platform-section-kicker">Seguimiento y control</p>
+                <h2 class="platform-section-title">Catalogo de codigos</h2>
+                <p class="platform-section-copy">
+                    Estado, restricciones y consumo historico en una sola vista operativa.
+                </p>
+            </div>
+        </div>
+
+        @if (!Model.Codes.Any())
+        {
+            <div class="platform-empty-state">
+                Todavia no hay codigos promocionales registrados.
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table platform-table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Codigo</th>
+                            <th>Beneficio</th>
+                            <th>Vigencia</th>
+                            <th>Restricciones</th>
+                            <th>Estado</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var code in Model.Codes)
+                        {
+                            var usageText = code.MaxUsos.HasValue
+                                ? $"{code.UsosActuales} / {code.MaxUsos}"
+                                : $"{code.UsosActuales} / Ilimitado";
+
+                            <tr>
+                                <td>
+                                    <div class="platform-stack">
+                                        <span class="platform-code-pill">
+                                            <i class="bi bi-ticket-detailed"></i>
+                                            @code.Codigo
+                                        </span>
+                                        <div class="platform-table-meta">@usageText usos registrados</div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="platform-stack">
+                                        <div class="platform-table-title">@code.PlanName</div>
+                                        <div class="platform-table-meta">@code.DiasGratis dias de acceso</div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="platform-stack">
+                                        <div class="platform-table-title">@(code.FechaExpiracionUtc?.ToString("yyyy-MM-dd HH:mm") ?? "Sin expiracion")</div>
+                                        <div class="platform-table-meta">UTC</div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="platform-badge-row">
+                                        @if (code.SoloPrimerRegistro)
+                                        {
+                                            <span class="platform-badge platform-badge-dark">
+                                                <i class="bi bi-person-plus"></i>
+                                                Primer registro
+                                            </span>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(code.EmailObjetivo))
+                                        {
+                                            <span class="platform-badge platform-badge-blue">
+                                                <i class="bi bi-envelope"></i>
+                                                @code.EmailObjetivo
+                                            </span>
+                                        }
+                                        @if (!code.MaxUsos.HasValue)
+                                        {
+                                            <span class="platform-badge platform-badge-warning">
+                                                <i class="bi bi-infinity"></i>
+                                                Uso abierto
+                                            </span>
+                                        }
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="platform-badge-row">
+                                        <span class="platform-badge @(code.Activo ? "platform-badge-success" : "platform-badge-danger")">
+                                            <i class="bi @(code.Activo ? "bi-check-circle" : "bi-x-circle")"></i>
+                                            @(code.Activo ? "Activo" : "Inactivo")
+                                        </span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="platform-table-actions">
+                                        <a class="btn btn-outline-secondary btn-sm platform-link-btn" asp-action="PromotionalCode" asp-route-id="@code.Id">Ver detalle</a>
+                                        <form asp-action="TogglePromotionalCode" method="post">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@code.Id" />
+                                            <button type="submit" class="btn btn-outline-dark btn-sm platform-link-btn">
+                                                @(code.Activo ? "Desactivar" : "Activar")
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

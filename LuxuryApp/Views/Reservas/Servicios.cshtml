@@ -1,0 +1,347 @@
+@model LuxuryApp.Models.Reservas.BookingCatalogViewModel
+@{
+    ViewData["Title"] = "Servicios publicados";
+
+    // Con muchos profesionales los chips se vuelven un muro: a partir de este umbral la lista
+    // se colapsa detrás de un desplegable con buscador.
+    const int UmbralBuscadorProfesionales = 8;
+    var muchosProfesionales = Model.Funcionarios.Count > UmbralBuscadorProfesionales;
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/finance-modules.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/reservas-admin.css" asp-append-version="true" />
+}
+
+<div class="finance-page-shell reservas-panel-shell">
+
+    <div class="finance-hero reservas-hero">
+        <div class="finance-hero-left module-heading">
+            <span class="module-eyebrow">Gestión de reservas</span>
+            <h1 class="module-title"><i class="bi bi-calendar-check module-title-icon" aria-hidden="true"></i>Servicios publicados</h1>
+            <p class="module-subtitle">
+                Elegí qué servicios ven tus clientes y qué profesionales atienden cada uno.
+                El nombre y el precio salen del servicio real.
+            </p>
+        </div>
+
+        <div class="reservas-hero-actions">
+            <a asp-controller="Reservas" asp-action="Configuracion" class="finance-btn-secondary">
+                <i class="bi bi-arrow-left"></i> Volver a configuración
+            </a>
+        </div>
+    </div>
+
+    @if (Model.UsandoCompatibilidad && Model.Servicios.Count > 0)
+    {
+        <div class="rsv-band">
+            <div class="reservas-alert reservas-alert-info">
+                <i class="bi bi-info-circle"></i>
+                <span>
+                    Todavía no configuraste tus servicios: por ahora se muestran <strong>todos</strong> en tu enlace.
+                    En cuanto guardes esta lista, solo se publicarán los que marques como visibles.
+                </span>
+            </div>
+        </div>
+    }
+
+    @if (Model.Servicios.Count == 0)
+    {
+        <div class="reservas-empty">
+            <div class="reservas-empty-icon"><i class="bi bi-scissors"></i></div>
+            <p class="reservas-empty-title">No tenés servicios activos.</p>
+            <p class="reservas-empty-sub">Creá servicios en el módulo de Servicios para poder publicarlos.</p>
+        </div>
+    }
+    else
+    {
+        <div class="rsv-catalog-toolbar">
+            <div class="rsv-catalog-count">
+                <span class="finance-filter-label"><i class="bi bi-list-ul"></i> Servicios</span>
+                <strong id="catalogCount">@Model.Servicios.Count</strong>
+                <span class="rsv-dim">@(Model.Servicios.Count == 1 ? "servicio" : "servicios")</span>
+            </div>
+
+            <div class="rsv-catalog-search">
+                <label class="visually-hidden" for="catalogBuscar">Buscar servicio</label>
+                <i class="bi bi-search" aria-hidden="true"></i>
+                <input type="search" id="catalogBuscar" class="rsv-input" placeholder="Buscar servicio…"
+                       autocomplete="off" />
+            </div>
+
+            <div class="reservas-tabs" role="group" aria-label="Filtrar servicios por visibilidad">
+                <button type="button" class="rsv-tab active" data-filtro="todos" aria-pressed="true">Todos</button>
+                <button type="button" class="rsv-tab" data-filtro="visibles" aria-pressed="false">Visibles</button>
+                <button type="button" class="rsv-tab" data-filtro="ocultos" aria-pressed="false">Ocultos</button>
+            </div>
+        </div>
+
+        <div class="rsv-catalog" id="catalogList">
+            @foreach (var servicio in Model.Servicios)
+            {
+                var idBase = $"svc-{servicio.ServicioId}";
+                <article class="rsv-service @(servicio.IsVisibleOnline ? null : "is-hidden-online")"
+                         data-servicio-id="@servicio.ServicioId"
+                         data-nombre="@servicio.NombreServicio.ToLowerInvariant()"
+                         data-visible="@(servicio.IsVisibleOnline ? "1" : "0")">
+
+                    <div class="rsv-service-main">
+                        <div class="rsv-service-ident">
+                            <span class="rsv-service-name">@servicio.NombreServicio</span>
+                            <span class="rsv-dim">@servicio.DuracionMinutos min · ₡@servicio.Precio.ToString("N0")</span>
+                        </div>
+
+                        <div class="rsv-service-switches">
+                            <label class="rsv-inline-switch" for="@(idBase)-visible">
+                                <input type="checkbox" id="@(idBase)-visible" class="js-visible" role="switch"
+                                       @(servicio.IsVisibleOnline ? "checked" : null) />
+                                <span class="rsv-bigswitch-track rsv-bigswitch-sm" aria-hidden="true"><span class="rsv-bigswitch-thumb"></span></span>
+                                <span>Visible online</span>
+                            </label>
+
+                            <label class="rsv-inline-switch" for="@(idBase)-precio">
+                                <input type="checkbox" id="@(idBase)-precio" class="js-show-price" role="switch"
+                                       @(servicio.ShowPrice ? "checked" : null) />
+                                <span class="rsv-bigswitch-track rsv-bigswitch-sm" aria-hidden="true"><span class="rsv-bigswitch-thumb"></span></span>
+                                <span>Mostrar precio</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="rsv-service-pros">
+                        <span class="rsv-service-pros-label" id="@(idBase)-pros-label">Profesionales</span>
+
+                        @if (Model.Funcionarios.Count == 0)
+                        {
+                            <span class="rsv-field-hint">No hay profesionales activos.</span>
+                        }
+                        else if (muchosProfesionales)
+                        {
+                            <details class="rsv-pros-details">
+                                <summary>
+                                    <span class="js-pros-resumen">
+                                        @(servicio.AtiendenTodos
+                                            ? "Todos los profesionales"
+                                            : $"{servicio.FuncionarioIds.Count} seleccionados")
+                                    </span>
+                                </summary>
+                                <div class="rsv-pros-panel">
+                                    <label class="visually-hidden" for="@(idBase)-pros-buscar">Buscar profesional</label>
+                                    <input type="search" id="@(idBase)-pros-buscar" class="rsv-input rsv-pros-buscar"
+                                           placeholder="Buscar profesional…" autocomplete="off" />
+                                    <div class="rsv-chips" role="group" aria-labelledby="@(idBase)-pros-label">
+                                        @foreach (var funcionario in Model.Funcionarios)
+                                        {
+                                            <label class="rsv-chip" data-pro-nombre="@funcionario.Nombre.ToLowerInvariant()">
+                                                <input type="checkbox" class="js-func" value="@funcionario.Id"
+                                                       @(servicio.FuncionarioIds.Contains(funcionario.Id) ? "checked" : null) />
+                                                <span>@funcionario.Nombre</span>
+                                            </label>
+                                        }
+                                    </div>
+                                </div>
+                            </details>
+                        }
+                        else
+                        {
+                            <div class="rsv-chips" role="group" aria-labelledby="@(idBase)-pros-label">
+                                @foreach (var funcionario in Model.Funcionarios)
+                                {
+                                    <label class="rsv-chip" data-pro-nombre="@funcionario.Nombre.ToLowerInvariant()">
+                                        <input type="checkbox" class="js-func" value="@funcionario.Id"
+                                               @(servicio.FuncionarioIds.Contains(funcionario.Id) ? "checked" : null) />
+                                        <span>@funcionario.Nombre</span>
+                                    </label>
+                                }
+                            </div>
+                        }
+
+                        @if (Model.Funcionarios.Count > 0)
+                        {
+                            <span class="rsv-field-hint">
+                                Si no marcás ninguno, lo atienden <strong>todos</strong> los profesionales activos.
+                            </span>
+                        }
+                    </div>
+
+                    <details class="rsv-service-extra">
+                        <summary>Detalles opcionales</summary>
+                        <div class="rsv-field">
+                            <label for="@(idBase)-desc">Descripción pública</label>
+                            <textarea id="@(idBase)-desc" class="rsv-input js-public-desc" rows="2" maxlength="300"
+                                      placeholder="Breve descripción para el cliente.">@servicio.PublicDescription</textarea>
+                        </div>
+                    </details>
+                </article>
+            }
+        </div>
+
+        <p class="rsv-empty-inline" id="catalogSinResultados" hidden>
+            <i class="bi bi-search"></i> Ningún servicio coincide con ese filtro.
+        </p>
+
+        <div class="rsv-config-actions">
+            <button type="button" class="finance-btn-primary" id="btnGuardarCatalogo">
+                <i class="bi bi-save"></i> Guardar cambios
+            </button>
+        </div>
+    }
+
+    @Html.AntiForgeryToken()
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            const lista = document.getElementById('catalogList');
+            if (!lista) return;
+
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+
+            function mostrarToast(mensaje, esAdvertencia) {
+                const toast = document.createElement('div');
+                toast.className = 'rsv-toast ' + (esAdvertencia ? 'rsv-toast-warn' : 'rsv-toast-ok');
+                toast.setAttribute('role', 'status');
+                toast.setAttribute('aria-live', 'polite');
+
+                const icono = document.createElement('i');
+                icono.className = esAdvertencia ? 'bi bi-exclamation-triangle-fill' : 'bi bi-check-circle-fill';
+                const texto = document.createElement('span');
+                texto.textContent = mensaje;
+
+                toast.appendChild(icono);
+                toast.appendChild(texto);
+                document.body.appendChild(toast);
+
+                requestAnimationFrame(function () { toast.classList.add('is-visible'); });
+                setTimeout(function () { toast.classList.remove('is-visible'); }, 3500);
+                setTimeout(function () { toast.remove(); }, 3900);
+            }
+
+            // ── Buscador + filtro de visibilidad ──
+            const buscador = document.getElementById('catalogBuscar');
+            const contador = document.getElementById('catalogCount');
+            const sinResultados = document.getElementById('catalogSinResultados');
+            let filtro = 'todos';
+
+            function aplicarFiltros() {
+                const texto = (buscador?.value || '').trim().toLowerCase();
+                let visibles = 0;
+
+                lista.querySelectorAll('.rsv-service').forEach(function (tarjeta) {
+                    const coincideTexto = !texto || tarjeta.dataset.nombre.includes(texto);
+                    const esVisible = tarjeta.querySelector('.js-visible').checked;
+                    const coincideFiltro =
+                        filtro === 'todos' ||
+                        (filtro === 'visibles' && esVisible) ||
+                        (filtro === 'ocultos' && !esVisible);
+
+                    const mostrar = coincideTexto && coincideFiltro;
+                    tarjeta.hidden = !mostrar;
+                    if (mostrar) visibles++;
+                });
+
+                if (contador) contador.textContent = visibles;
+                if (sinResultados) sinResultados.hidden = visibles > 0;
+            }
+
+            buscador?.addEventListener('input', aplicarFiltros);
+
+            document.querySelectorAll('[data-filtro]').forEach(function (boton) {
+                boton.addEventListener('click', function () {
+                    filtro = boton.dataset.filtro;
+                    document.querySelectorAll('[data-filtro]').forEach(function (otro) {
+                        const activo = otro === boton;
+                        otro.classList.toggle('active', activo);
+                        otro.setAttribute('aria-pressed', activo ? 'true' : 'false');
+                    });
+                    aplicarFiltros();
+                });
+            });
+
+            // ── Estado visual de la tarjeta + resumen de profesionales ──
+            lista.addEventListener('change', function (evento) {
+                const tarjeta = evento.target.closest('.rsv-service');
+                if (!tarjeta) return;
+
+                if (evento.target.classList.contains('js-visible')) {
+                    tarjeta.classList.toggle('is-hidden-online', !evento.target.checked);
+                    if (filtro !== 'todos') aplicarFiltros();
+                }
+
+                if (evento.target.classList.contains('js-func')) {
+                    const resumen = tarjeta.querySelector('.js-pros-resumen');
+                    if (resumen) {
+                        const marcados = tarjeta.querySelectorAll('.js-func:checked').length;
+                        resumen.textContent = marcados === 0
+                            ? 'Todos los profesionales'
+                            : marcados + ' seleccionados';
+                    }
+                }
+            });
+
+            // ── Buscador dentro del desplegable de profesionales ──
+            lista.addEventListener('input', function (evento) {
+                if (!evento.target.classList.contains('rsv-pros-buscar')) return;
+
+                const texto = evento.target.value.trim().toLowerCase();
+                evento.target.closest('.rsv-pros-panel')
+                    .querySelectorAll('.rsv-chip')
+                    .forEach(function (chip) {
+                        chip.hidden = texto.length > 0 && !chip.dataset.proNombre.includes(texto);
+                    });
+            });
+
+            // ── Guardado ──
+            const btn = document.getElementById('btnGuardarCatalogo');
+
+            function recolectar() {
+                const servicios = [];
+                lista.querySelectorAll('.rsv-service').forEach(function (tarjeta) {
+                    const funcionarioIds = [];
+                    tarjeta.querySelectorAll('.js-func:checked').forEach(function (entrada) {
+                        funcionarioIds.push(parseInt(entrada.value, 10));
+                    });
+
+                    servicios.push({
+                        servicioId: parseInt(tarjeta.dataset.servicioId, 10),
+                        isVisibleOnline: tarjeta.querySelector('.js-visible').checked,
+                        publicDescription: tarjeta.querySelector('.js-public-desc').value.trim() || null,
+                        showPrice: tarjeta.querySelector('.js-show-price').checked,
+                        funcionarioIds: funcionarioIds
+                    });
+                });
+                return { servicios: servicios };
+            }
+
+            btn?.addEventListener('click', async function () {
+                btn.disabled = true;
+                const original = btn.innerHTML;
+                btn.innerHTML = '<i class="bi bi-arrow-repeat"></i> Guardando…';
+                try {
+                    const respuesta = await fetch('@Url.Action("GuardarServicios", "Reservas")', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'RequestVerificationToken': token
+                        },
+                        body: JSON.stringify(recolectar())
+                    });
+                    let datos = {};
+                    try { datos = await respuesta.json(); } catch { }
+
+                    if (respuesta.ok && datos.success) {
+                        mostrarToast(datos.message || 'Servicios publicados actualizados.', false);
+                    } else {
+                        mostrarToast(datos.message || 'No se pudo guardar.', true);
+                    }
+                } catch {
+                    mostrarToast('No se pudo guardar. Revisá tu conexión.', true);
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = original;
+                }
+            });
+        })();
+    </script>
+}

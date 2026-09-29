@@ -1,0 +1,134 @@
+@model LuxuryApp.Models.Identity.AccountSecurityViewModel
+@*
+    Sección "Seguridad" de Mi cuenta: contraseña, verificación en dos pasos y sesiones activas.
+
+    IMPORTANTE: acá NO se reimplementa nada. Los tres formularios apuntan a los endpoints que ya
+    existían (Accounts/EnviarEnlaceCambioPassword, Seguridad/Deshabilitar,
+    Seguridad/CerrarSesionEnTodosLosDispositivos) y el alta de 2FA sigue siendo /Seguridad/Enrolar,
+    que es además la pantalla a la que el portal de funcionarios y el enrolamiento obligatorio de
+    superadmin mandan directo. El secreto TOTP y el QR NO pasan por esta pantalla.
+*@
+
+<section class="finance-section" id="@LuxuryApp.Models.Identity.AccountSettingsSections.Seguridad">
+    <div class="finance-section-head">
+        <h2 class="finance-section-title"><i class="bi bi-shield-lock-fill"></i> Seguridad de la cuenta</h2>
+        <p class="finance-section-sub">
+            Controlá cómo entrás a LuxuryCloud: contraseña, verificación en dos pasos y sesiones abiertas.
+        </p>
+    </div>
+
+    @* ── Verificación en dos pasos ── *@
+    <div class="account-security-item">
+        <div class="account-security-item-main">
+            <p class="account-security-item-title">
+                <i class="bi bi-phone" aria-hidden="true"></i> Verificación en dos pasos
+            </p>
+
+            @* El estado se dice con TEXTO, no sólo con color. *@
+            @if (Model.TwoFactorEnabled)
+            {
+                <span class="finance-status-pill finance-status-pill--ok">
+                    <i class="bi bi-shield-check" aria-hidden="true"></i> Protegida
+                </span>
+                <p class="account-security-item-desc">
+                    Tu cuenta utiliza verificación en dos pasos. Al iniciar sesión se te pedirá el
+                    código de tu aplicación de autenticación.
+                </p>
+            }
+            else
+            {
+                <span class="finance-status-pill">
+                    <i class="bi bi-shield-exclamation" aria-hidden="true"></i> No activada
+                </span>
+                <p class="account-security-item-desc">
+                    Agregá una capa adicional de seguridad a tu cuenta: además de la contraseña, se
+                    pedirá un código de un solo uso.
+                </p>
+            }
+        </div>
+
+        <div class="account-security-item-action">
+            @if (!Model.TwoFactorEnabled)
+            {
+                <a asp-controller="Seguridad" asp-action="Enrolar" class="finance-btn-primary">
+                    <i class="bi bi-shield-plus"></i> Activar verificación en dos pasos
+                </a>
+            }
+            else if (Model.PuedeDeshabilitarTwoFactor)
+            {
+                <form asp-controller="Seguridad"
+                      asp-action="Deshabilitar"
+                      method="post"
+                      onsubmit="return confirm('¿Deshabilitar la verificación en dos pasos? Tu cuenta quedará protegida solo por contraseña.');">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="volverACuenta" value="true" />
+                    <button type="submit" class="finance-btn-secondary account-btn-danger">
+                        <i class="bi bi-shield-slash"></i> Desactivar
+                    </button>
+                </form>
+            }
+            else
+            {
+                <p class="account-security-item-desc account-security-item-desc--muted">
+                    <i class="bi bi-info-circle" aria-hidden="true"></i>
+                    Es obligatoria para cuentas de plataforma y no puede deshabilitarse.
+                </p>
+            }
+        </div>
+    </div>
+
+    @* ── Contraseña ── *@
+    <div class="account-security-item">
+        <div class="account-security-item-main">
+            <p class="account-security-item-title">
+                <i class="bi bi-key-fill" aria-hidden="true"></i> Contraseña
+            </p>
+            <p class="account-security-item-desc">
+                Te enviamos un enlace a <strong>@Model.Email</strong> para que establezcas una
+                contraseña nueva. El enlace vence y sólo sirve una vez.
+            </p>
+        </div>
+
+        <div class="account-security-item-action">
+            <form asp-controller="Accounts" asp-action="EnviarEnlaceCambioPassword" method="post" id="formEnlace">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="finance-btn-secondary" id="btnEnviarEnlace">
+                    <i class="bi bi-envelope-fill"></i> Enviar enlace de restablecimiento
+                </button>
+            </form>
+        </div>
+    </div>
+
+    @* ── Sesiones activas ── *@
+    <div class="account-security-item">
+        <div class="account-security-item-main">
+            <p class="account-security-item-title">
+                <i class="bi bi-laptop" aria-hidden="true"></i> Sesiones activas
+            </p>
+            <p class="account-security-item-desc">
+                Si iniciaste sesión en un equipo que ya no controlás, cerrá la sesión en todos los
+                dispositivos. Tendrás que volver a iniciar sesión en cada uno, incluido este.
+            </p>
+        </div>
+
+        <div class="account-security-item-action">
+            <form asp-controller="Seguridad"
+                  asp-action="CerrarSesionEnTodosLosDispositivos"
+                  method="post"
+                  onsubmit="return confirm('¿Cerrar la sesión en todos los dispositivos? Deberás iniciar sesión de nuevo.');">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="finance-btn-secondary account-btn-danger">
+                    <i class="bi bi-box-arrow-right"></i> Cerrar sesión en todos los dispositivos
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="finance-callout">
+        <i class="bi bi-shield-fill-exclamation" aria-hidden="true"></i>
+        <span>
+            <strong>Recomendación:</strong> usá una contraseña larga que combine mayúsculas,
+            minúsculas, números y símbolos, y no la repitas en otros servicios.
+        </span>
+    </div>
+</section>

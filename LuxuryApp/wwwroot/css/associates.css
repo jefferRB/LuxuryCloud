@@ -1,0 +1,331 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Módulo Asociados.
+
+   Solo estilos propios del módulo: la base visual (contenedores, cards, tablas,
+   botones, badges y comportamiento responsive) viene de finance-modules.css, que
+   ya usan Inversionistas, Ingresos y Egresos. Acá viven únicamente la matriz de
+   permisos, los bloques del detalle y el historial de participación.
+
+   Todos los colores salen de las variables --private-* del tema privado, así el
+   módulo respeta claro y oscuro sin reglas duplicadas.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* ── Bloques del detalle ─────────────────────────────────────────────────── */
+.assoc-block {
+    border-radius: 1.15rem;
+    border: 1px solid var(--private-surface-border, rgba(15, 23, 42, 0.1));
+    background: var(--private-surface-bg, rgba(255, 255, 255, 0.55));
+    padding: 1.35rem 1.5rem 1.5rem;
+    margin-bottom: 1.25rem;
+}
+
+.assoc-block-head {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    margin-bottom: 0.35rem;
+}
+
+.assoc-block-head i {
+    font-size: 1.05rem;
+    color: var(--private-chart-accent, var(--private-accent));
+}
+
+.assoc-block-title {
+    font-size: 1.02rem;
+    font-weight: 800;
+    margin: 0;
+    color: var(--private-surface-text, #111827);
+}
+
+.assoc-block-sub {
+    font-size: 0.82rem;
+    color: var(--private-muted-text, #64748b);
+    margin: 0 0 1.1rem;
+    line-height: 1.55;
+}
+
+/* ── Estado del acceso ───────────────────────────────────────────────────── */
+.assoc-access-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.28rem 0.7rem;
+    border-radius: 999px;
+    font-size: 0.76rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+.assoc-access-status--none {
+    background: rgba(100, 116, 139, 0.14);
+    color: var(--private-muted-text, #64748b);
+}
+
+.assoc-access-status--active {
+    background: rgba(22, 163, 74, 0.14);
+    color: var(--private-chart-success, #16a34a);
+}
+
+.assoc-access-status--blocked {
+    background: rgba(220, 38, 38, 0.12);
+    color: var(--private-chart-danger, #dc2626);
+}
+
+.assoc-access-modes {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    margin: 0.65rem 0 1rem;
+    font-size: 0.86rem;
+}
+
+.assoc-access-modes label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+
+.assoc-access-row {
+    display: flex;
+    gap: 0.6rem;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
+.assoc-access-row .finance-form-field { flex: 1 1 240px; margin-bottom: 0; }
+
+.assoc-access-actions {
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+}
+
+.assoc-note {
+    font-size: 0.78rem;
+    color: var(--private-muted-text, #64748b);
+    line-height: 1.55;
+    margin: 0.75rem 0 0;
+}
+
+/* ── Toggle "dar acceso" ─────────────────────────────────────────────────── */
+.assoc-toggle {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+    padding: 0.9rem 1rem;
+    border-radius: 0.85rem;
+    border: 1px solid var(--private-surface-border, rgba(15, 23, 42, 0.1));
+    background: rgba(148, 163, 184, 0.06);
+    cursor: pointer;
+}
+
+.assoc-toggle input {
+    margin-top: 0.15rem;
+    width: 1.1rem;
+    height: 1.1rem;
+    flex-shrink: 0;
+}
+
+.assoc-toggle-text { display: flex; flex-direction: column; gap: 0.15rem; }
+.assoc-toggle-title { font-weight: 700; font-size: 0.9rem; }
+.assoc-toggle-sub { font-size: 0.78rem; color: var(--private-muted-text, #64748b); }
+
+/* ── Tipos de asociado ───────────────────────────────────────────────────── */
+.assoc-types {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.assoc-type-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.75rem;
+    border-radius: 999px;
+    border: 1px solid var(--private-surface-border, rgba(15, 23, 42, 0.12));
+    background: rgba(148, 163, 184, 0.06);
+    font-size: 0.82rem;
+    cursor: pointer;
+}
+
+.assoc-type-chip input { width: 0.95rem; height: 0.95rem; }
+
+/* ── Matriz de permisos ──────────────────────────────────────────────────── */
+.assoc-presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.assoc-preset-btn {
+    padding: 0.35rem 0.8rem;
+    border-radius: 999px;
+    border: 1px solid var(--private-surface-border, rgba(15, 23, 42, 0.12));
+    background: transparent;
+    color: var(--private-surface-text, #111827);
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.assoc-preset-btn:hover {
+    border-color: var(--private-chart-accent, var(--private-accent));
+    color: var(--private-chart-accent, var(--private-accent));
+}
+
+.assoc-perm-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 1rem;
+}
+
+.assoc-perm-block {
+    border: 1px solid var(--private-surface-border, rgba(15, 23, 42, 0.1));
+    border-radius: 0.85rem;
+    padding: 0.9rem 1rem;
+    background: rgba(148, 163, 184, 0.05);
+}
+
+.assoc-perm-block h4 {
+    font-size: 0.88rem;
+    font-weight: 800;
+    margin: 0 0 0.55rem;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    color: var(--private-surface-text, #111827);
+}
+
+.assoc-perm-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.3rem 0;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.assoc-perm-item input {
+    margin-top: 0.15rem;
+    width: 1.05rem;
+    height: 1.05rem;
+    flex-shrink: 0;
+}
+
+.assoc-perm-readonly { opacity: 0.75; }
+
+/* ── Historial de participación ──────────────────────────────────────────── */
+.assoc-history {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 0.75rem;
+    font-size: 0.84rem;
+}
+
+.assoc-history th {
+    text-align: left;
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--private-muted-text, #64748b);
+    padding: 0.4rem 0.5rem;
+    border-bottom: 1px solid var(--private-surface-border, rgba(15, 23, 42, 0.1));
+}
+
+.assoc-history td {
+    padding: 0.5rem;
+    border-bottom: 1px solid var(--private-surface-border, rgba(15, 23, 42, 0.06));
+    color: var(--private-surface-text, #111827);
+}
+
+.assoc-history-current {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.08rem 0.45rem;
+    border-radius: 999px;
+    background: rgba(22, 163, 74, 0.14);
+    color: var(--private-chart-success, #16a34a);
+    font-size: 0.68rem;
+    font-weight: 700;
+}
+
+@media (max-width: 575.98px) {
+    .assoc-block { padding: 1.1rem 1rem 1.25rem; }
+    .assoc-history { display: block; overflow-x: auto; }
+    .assoc-access-actions .finance-btn-primary,
+    .assoc-access-actions .finance-btn-secondary { width: 100%; justify-content: center; }
+}
+
+/* ── Celda de participación en el listado ────────────────────────────────── */
+.assoc-cell-sub {
+    display: block;
+    margin-top: 0.2rem;
+    font-size: 0.72rem;
+    color: var(--private-muted-text, #64748b);
+}
+
+/* ── Resumen del corte (detalle y alta) ──────────────────────────────────────
+   Tres datos que responden "¿cuándo cobro?": porcentaje + corte, período en
+   curso y próxima fecha. Todo sale del resolver de períodos.                 */
+.assoc-cutoff-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 0.85rem;
+    margin: 0.9rem 0 1.1rem;
+}
+
+.assoc-cutoff-card {
+    border: 1px solid var(--private-surface-border, rgba(15, 23, 42, 0.1));
+    border-radius: 0.85rem;
+    padding: 0.8rem 0.95rem;
+    background: rgba(148, 163, 184, 0.05);
+}
+
+.assoc-cutoff-label {
+    display: block;
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--private-muted-text, #64748b);
+    margin-bottom: 0.3rem;
+}
+
+.assoc-cutoff-value {
+    display: block;
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--private-surface-text, #111827);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.25;
+}
+
+.assoc-cutoff-sub {
+    display: block;
+    margin-top: 0.15rem;
+    font-size: 0.75rem;
+    color: var(--private-muted-text, #64748b);
+}
+
+/* Explicación del corte, calculada con el día realmente configurado. */
+.assoc-cutoff-hint {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.45rem;
+    margin: 0.4rem 0 0;
+    font-size: 0.78rem;
+    line-height: 1.5;
+    color: var(--private-muted-text, #64748b);
+}
+
+.assoc-cutoff-hint i {
+    color: var(--private-chart-accent, var(--private-accent));
+    margin-top: 0.1rem;
+    flex-shrink: 0;
+}

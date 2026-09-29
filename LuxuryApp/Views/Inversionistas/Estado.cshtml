@@ -1,0 +1,443 @@
+﻿@using LuxuryApp.Models.Inversionistas
+@model InvestorStatementDetailViewModel
+
+@{
+    ViewData["Title"] = $"Estado de cuenta — {Model.InvestorNombre}";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/finance-modules.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/investor-settlement.css" asp-append-version="true" />
+}
+
+<div class="finance-page-shell">
+
+    <div class="finance-hero">
+        <div class="finance-hero-left module-heading">
+            <span class="module-eyebrow">Estado de cuenta</span>
+            <h1 class="module-title"><i class="bi bi-file-earmark-text module-title-icon" aria-hidden="true"></i>Corte @Model.FechaCorte.ToString("dd/MM/yyyy")</h1>
+            <p class="module-subtitle">
+                @Model.InvestorNombre ·
+                @Model.PeriodoInicio.ToString("dd/MM/yyyy") &rarr; @Model.PeriodoFin.ToString("dd/MM/yyyy")
+                <span class="inv-badge inv-badge--@InvestorVisuals.CssModifier(Model.Tono)">
+                    @Model.EstadoCorto
+                </span>
+            </p>
+        </div>
+
+        <div class="finance-kpi-grid">
+            <div class="finance-kpi-card">
+                <div class="finance-kpi-icon finance-kpi-icon-green">
+                    <i class="bi bi-cash-coin"></i>
+                </div>
+                <div>
+                    <span class="finance-kpi-label">Participación</span>
+                    <span class="finance-kpi-value finance-kpi-value-green">
+                        ₡ @Model.Desglose.ParticipacionCalculada.ToString("N2")
+                    </span>
+                </div>
+            </div>
+
+            <div class="finance-kpi-card">
+                <div class="finance-kpi-icon finance-kpi-icon-orange">
+                    <i class="bi bi-wallet2"></i>
+                </div>
+                <div>
+                    <span class="finance-kpi-label">Saldo pendiente</span>
+                    <span class="finance-kpi-value finance-kpi-value-orange">
+                        ₡ @Model.SaldoPendiente.ToString("N2")
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (TempData["Mensaje"] is string mensaje)
+    {
+        <div class="svc-alert svc-alert--success" role="status">@mensaje</div>
+    }
+
+    @if (TempData["Error"] is string error)
+    {
+        <div class="svc-alert svc-alert--danger" role="alert">@error</div>
+    }
+
+    @if (Model.EstaAnulado)
+    {
+        <div class="svc-alert svc-alert--danger" role="status">
+            Estado anulado. Motivo: @Model.MotivoAnulacion
+        </div>
+    }
+    else if (Model.EsEditable)
+    {
+        <div class="finance-form-info-box">
+            <i class="bi bi-info-circle-fill"></i>
+            Este es un <strong>borrador</strong>: se puede recalcular y admite ajustes.
+            Al finalizarlo, sus valores quedan congelados y editar cobros o gastos ya no lo cambia.
+        </div>
+    }
+
+    @* ── Navegación por cortes reales (no por fechas escritas a mano) ── *@
+    <div class="inv-nav">
+        @if (Model.Navegacion.AnteriorId.HasValue)
+        {
+            <a asp-action="Estado" asp-route-id="@Model.Navegacion.AnteriorId.Value" class="finance-btn-secondary">
+                <i class="bi bi-arrow-left-short"></i>
+                Corte anterior (@Model.Navegacion.AnteriorCorte!.Value.ToString("dd/MM/yyyy"))
+            </a>
+        }
+
+        <span class="inv-nav-spacer"></span>
+
+        <a asp-action="CicloActual" asp-route-id="@Model.InvestorId" class="finance-btn-secondary">
+            <i class="bi bi-hourglass-split"></i> Ciclo en curso
+        </a>
+
+        @if (Model.Navegacion.SiguienteId.HasValue)
+        {
+            <a asp-action="Estado" asp-route-id="@Model.Navegacion.SiguienteId.Value" class="finance-btn-secondary">
+                Corte siguiente (@Model.Navegacion.SiguienteCorte!.Value.ToString("dd/MM/yyyy"))
+                <i class="bi bi-arrow-right-short"></i>
+            </a>
+        }
+    </div>
+
+    @* Todos los montos de abajo salen del SNAPSHOT congelado: nunca se recalculan con el motor. *@
+    <partial name="_DesgloseCalculo" model="Model.Desglose" />
+
+    @* ── Acciones principales ── *@
+    <div class="finance-actions">
+        <a asp-action="Estados" asp-route-inversionistaId="@Model.InvestorId" class="finance-btn-back">
+            <i class="bi bi-arrow-left"></i> Historial de cortes
+        </a>
+
+        @if (Model.EsEditable)
+        {
+            <form asp-action="Recalcular" asp-route-id="@Model.Id" method="post">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="finance-btn-secondary">
+                    <i class="bi bi-arrow-clockwise"></i> Recalcular
+                </button>
+            </form>
+
+            <form asp-action="Finalizar" asp-route-id="@Model.Id" method="post"
+                  onsubmit="return confirm('Al finalizar, los montos de este estado quedan CONGELADOS. Editar cobros o gastos después ya no los cambiará. ¿Continuar?');">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="finance-btn-primary">
+                    <i class="bi bi-lock"></i> Finalizar
+                </button>
+            </form>
+        }
+
+        @if (!Model.EsEditable && !Model.EstaAnulado)
+        {
+            <a asp-action="DescargarPdf" asp-route-id="@Model.Id" class="finance-btn-secondary">
+                <i class="bi bi-file-earmark-pdf"></i> Descargar PDF
+            </a>
+
+            <form asp-action="Enviar" asp-route-id="@Model.Id" method="post">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="finance-btn-primary">
+                    <i class="bi bi-send"></i> Enviar
+                </button>
+            </form>
+
+            <form asp-action="Reenviar" asp-route-id="@Model.Id" method="post"
+                  onsubmit="return confirm('¿Reenviar este estado de cuenta al inversionista?');">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="finance-btn-secondary">
+                    <i class="bi bi-arrow-repeat"></i> Reenviar
+                </button>
+            </form>
+        }
+    </div>
+
+    @* ── Prueba de correo ── *@
+    @if (!Model.EsEditable && !Model.EstaAnulado)
+    {
+        <div class="finance-form-body">
+            <h2 class="finance-subtitle">Enviar una prueba</h2>
+            <form asp-action="EnviarPrueba" asp-route-id="@Model.Id" method="post" class="finance-filters-grid">
+                @Html.AntiForgeryToken()
+                <div class="finance-filter-group">
+                    <label class="finance-filter-label">Correo de prueba</label>
+                    <input type="email" name="correo" class="finance-filter-input" required />
+                </div>
+                <div class="finance-filter-group">
+                    <button type="submit" class="finance-btn-secondary">
+                        <i class="bi bi-envelope-check"></i> Enviar prueba
+                    </button>
+                </div>
+            </form>
+        </div>
+    }
+
+    @* ── Ajustes ── *@
+    <div class="finance-form-body">
+        <h2 class="finance-subtitle">Ajustes autorizados</h2>
+
+        @if (Model.Ajustes.Any())
+        {
+            <table class="finance-table">
+                <thead>
+                    <tr>
+                        <th>Monto</th>
+                        <th>Descripción</th>
+                        <th>Registrado por</th>
+                        <th>Fecha</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var ajuste in Model.Ajustes)
+                    {
+                        <tr>
+                            <td class="@(ajuste.Monto < 0 ? "finance-monto-expense" : "finance-monto-income")">
+                                ₡ @ajuste.Monto.ToString("N2")
+                            </td>
+                            <td>@ajuste.Descripcion</td>
+                            <td>@(ajuste.CreadoPorEmail ?? "—")</td>
+                            <td>@ajuste.CreatedAtUtc.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td>
+                                @if (Model.EsEditable)
+                                {
+                                    <form asp-action="QuitarAjuste" asp-route-id="@ajuste.Id" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="statementId" value="@Model.Id" />
+                                        <button type="submit" class="finance-btn-row-delete">
+                                            <i class="bi bi-trash"></i> Quitar
+                                        </button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <p class="svc-sub">Sin ajustes registrados.</p>
+        }
+
+        @if (Model.EsEditable)
+        {
+            <form asp-action="AgregarAjuste" method="post" class="finance-form-grid">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="StatementId" value="@Model.Id" />
+
+                <div class="finance-form-field">
+                    <label class="finance-form-label">
+                        Monto <span class="finance-required">*</span>
+                    </label>
+                    <input type="number" name="Monto" step="0.01" class="finance-form-control finance-form-control--no-icon" required />
+                    <span class="finance-historial-help">
+                        Positivo suma a la ganancia; negativo la reduce.
+                    </span>
+                </div>
+
+                <div class="finance-form-field">
+                    <label class="finance-form-label">
+                        Descripción <span class="finance-required">*</span>
+                    </label>
+                    <input type="text" name="Descripcion" maxlength="300" class="finance-form-control finance-form-control--no-icon" required />
+                </div>
+
+                <div class="finance-form-field">
+                    <button type="submit" class="finance-btn-secondary">
+                        <i class="bi bi-plus-circle"></i> Agregar ajuste
+                    </button>
+                </div>
+            </form>
+        }
+    </div>
+
+    @* ── Pagos ── *@
+    <div class="finance-form-body">
+        <h2 class="finance-subtitle">Pagos al inversionista</h2>
+
+        <div class="finance-form-info-box">
+            <i class="bi bi-info-circle-fill"></i>
+            Registrar un pago acá <strong>no</strong> crea un egreso ni reduce la ganancia distribuible.
+            Total pagado: ₡ @Model.TotalPagado.ToString("N2") · Saldo pendiente: ₡ @Model.SaldoPendiente.ToString("N2")
+        </div>
+
+        @if (Model.Pagos.Any())
+        {
+            <table class="finance-table">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Monto</th>
+                        <th>Método</th>
+                        <th>Referencia</th>
+                        <th>Registrado por</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var pago in Model.Pagos)
+                    {
+                        <tr>
+                            <td>@pago.Fecha.ToString("dd/MM/yyyy")</td>
+                            <td class="@(pago.Monto < 0 ? "finance-monto-expense" : "finance-monto-income")">
+                                ₡ @pago.Monto.ToString("N2")
+                            </td>
+                            <td><span class="finance-method-badge">@pago.MetodoPago</span></td>
+                            <td>
+                                @pago.Referencia
+                                @if (pago.EsReversion)
+                                {
+                                    <span class="svc-sub">(corrección: @pago.Motivo)</span>
+                                }
+                            </td>
+                            <td>@(pago.RegistradoPorEmail ?? "—")</td>
+                            <td>
+                                @if (!pago.EsReversion && !Model.EstaAnulado)
+                                {
+                                    <form asp-action="RevertirPago" asp-route-id="@pago.Id" method="post"
+                                          onsubmit="return confirm('Se creará un movimiento compensatorio auditado. ¿Continuar?');">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="statementId" value="@Model.Id" />
+                                        <input type="text" name="motivo" placeholder="Motivo de la corrección" maxlength="300" required />
+                                        <button type="submit" class="finance-btn-row-delete">
+                                            <i class="bi bi-arrow-counterclockwise"></i> Corregir
+                                        </button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <p class="svc-sub">Sin pagos registrados.</p>
+        }
+
+        @if (Model.AdmitePagos && !Model.EstaAnulado && Model.SaldoPendiente > 0m)
+        {
+            <form asp-action="RegistrarPago" method="post" class="finance-form-grid">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="StatementId" value="@Model.Id" />
+
+                <div class="finance-form-field">
+                    <label class="finance-form-label">Fecha <span class="finance-required">*</span></label>
+                    <input type="date" name="Fecha" value="@DateTime.Today.ToString("yyyy-MM-dd")"
+                           class="finance-form-control finance-form-control--no-icon" required />
+                </div>
+
+                <div class="finance-form-field">
+                    <label class="finance-form-label">Monto <span class="finance-required">*</span></label>
+                    <input type="number" name="Monto" step="0.01" min="0.01"
+                           max="@Model.SaldoPendiente.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                           class="finance-form-control finance-form-control--no-icon" required />
+                </div>
+
+                <div class="finance-form-field">
+                    <label class="finance-form-label">Método de pago</label>
+                    <select name="MetodoPago" class="finance-form-control">
+                        @foreach (var metodo in InvestorDefaults.MetodosPagoPermitidos)
+                        {
+                            <option value="@metodo">@metodo</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="finance-form-field">
+                    <label class="finance-form-label">Referencia</label>
+                    <input type="text" name="Referencia" maxlength="120"
+                           class="finance-form-control finance-form-control--no-icon" />
+                </div>
+
+                <div class="finance-form-full">
+                    <label class="finance-form-label">Notas</label>
+                    <input type="text" name="Notas" maxlength="500"
+                           class="finance-form-control finance-form-control--no-icon" />
+                </div>
+
+                <div class="finance-form-field">
+                    <button type="submit" class="finance-btn-primary">
+                        <i class="bi bi-cash"></i> Registrar pago
+                    </button>
+                </div>
+            </form>
+        }
+    </div>
+
+    @* ── Historial de envíos ── *@
+    <div class="finance-form-body">
+        <h2 class="finance-subtitle">Historial de envíos</h2>
+
+        @if (Model.Envios.Any())
+        {
+            <table class="finance-table">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Destinatario</th>
+                        <th>Estado</th>
+                        <th>Tipo</th>
+                        <th>Detalle</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var envio in Model.Envios)
+                    {
+                        <tr>
+                            <td>@((envio.SentAtUtc ?? envio.CreatedAtUtc).ToString("dd/MM/yyyy HH:mm"))</td>
+                            <td>@envio.RecipientEmail</td>
+                            <td>@envio.StatusTexto</td>
+                            <td>@(envio.IsTest ? "Prueba" : "Real")</td>
+                            <td>@envio.ErrorMessage</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <p class="svc-sub">Todavía no se ha enviado este estado de cuenta.</p>
+        }
+    </div>
+
+    @* ── Anular / reabrir ── *@
+    @if (!Model.EsEditable && !Model.EstaAnulado)
+    {
+        <div class="finance-form-body">
+            <h2 class="finance-subtitle">Correcciones</h2>
+            <p class="svc-sub">
+                Un estado finalizado no cambia solo. Para corregirlo, reabrilo como borrador
+                (queda auditado) o anulalo y generá uno nuevo.
+            </p>
+
+            <form asp-action="Reabrir" asp-route-id="@Model.Id" method="post" class="finance-filters-grid">
+                @Html.AntiForgeryToken()
+                <div class="finance-filter-group">
+                    <label class="finance-filter-label">Motivo de la reapertura</label>
+                    <input type="text" name="motivo" maxlength="500" class="finance-filter-input" required />
+                </div>
+                <div class="finance-filter-group">
+                    <button type="submit" class="finance-btn-secondary">
+                        <i class="bi bi-unlock"></i> Reabrir
+                    </button>
+                </div>
+            </form>
+
+            <form asp-action="Anular" asp-route-id="@Model.Id" method="post" class="finance-filters-grid"
+                  onsubmit="return confirm('¿Anular este estado de cuenta?');">
+                @Html.AntiForgeryToken()
+                <div class="finance-filter-group">
+                    <label class="finance-filter-label">Motivo de la anulación</label>
+                    <input type="text" name="motivo" maxlength="500" class="finance-filter-input" required />
+                </div>
+                <div class="finance-filter-group">
+                    <button type="submit" class="finance-btn-row-delete">
+                        <i class="bi bi-x-octagon"></i> Anular
+                    </button>
+                </div>
+            </form>
+        </div>
+    }
+</div>

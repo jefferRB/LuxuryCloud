@@ -1,0 +1,46 @@
+@*
+    Centro de Notificaciones (burbuja flotante abajo-derecha).
+    Se incluye en el layout privado antes de cerrar el body. Solo para el dueño del negocio.
+    El token antiforgery se renderiza aquí y lo usa notification-center.js para los POST.
+*@
+@{
+    var notifSummaryUrl = Url.Action("Resumen", "Notificaciones");
+    var notifMarkAllUrl = Url.Action("MarcarLeidas", "Notificaciones");
+}
+
+<div id="luxNotif"
+     class="lux-notif"
+     data-summary-url="@notifSummaryUrl"
+     data-mark-all-url="@notifMarkAllUrl">
+
+    @Html.AntiForgeryToken()
+
+    <div class="lux-notif__panel" role="dialog" aria-label="Centro de notificaciones">
+        <div class="lux-notif__header">
+            <p class="lux-notif__title">
+                <i class="bi bi-bell" aria-hidden="true"></i>
+                Notificaciones
+            </p>
+            <p class="lux-notif__subtitle">Eventos recientes del negocio</p>
+        </div>
+
+        <ul class="lux-notif__list" hidden></ul>
+
+        <div class="lux-notif__empty">
+            <i class="bi bi-check2-circle" aria-hidden="true"></i>
+            <p>
+                <strong>Todo al día</strong>
+                No hay notificaciones nuevas.
+            </p>
+        </div>
+    </div>
+
+    <button type="button"
+            class="lux-notif__bubble"
+            aria-haspopup="dialog"
+            aria-expanded="false"
+            aria-label="Notificaciones">
+        <i class="bi bi-bell" aria-hidden="true"></i>
+        <span class="lux-notif__badge" hidden>0</span>
+    </button>
+</div>

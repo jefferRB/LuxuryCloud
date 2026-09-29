@@ -1,0 +1,103 @@
+@model LuxuryApp.Models.Productos.ProductoViewModel
+
+<div class="prod-form-grid">
+
+    <!-- Nombre -->
+    <div class="prod-field">
+        <label asp-for="Producto.NombreProducto" class="prod-label">
+            Nombre <span class="prod-required">*</span>
+        </label>
+        <div class="prod-input-wrap">
+            <span class="prod-input-icon"><i class="bi bi-tag"></i></span>
+            <input asp-for="Producto.NombreProducto" class="prod-input"
+                   placeholder="Ej. Cera Pelo Liso" autocomplete="off" />
+        </div>
+        <span asp-validation-for="Producto.NombreProducto" class="prod-field-error"></span>
+    </div>
+
+    <!-- Precio -->
+    <div class="prod-field">
+        <label asp-for="Producto.PrecioProducto" class="prod-label">
+            Precio <span class="prod-required">*</span>
+        </label>
+        <div class="prod-input-wrap">
+            <span class="prod-input-icon"><i class="bi bi-currency-dollar"></i></span>
+            <input asp-for="Producto.PrecioProducto" class="prod-input"
+                   placeholder="Ej. 3500" type="number" step="0.01" min="0" inputmode="decimal" />
+        </div>
+        <span asp-validation-for="Producto.PrecioProducto" class="prod-field-error"></span>
+    </div>
+
+    <!-- Descripción (opcional, full width) -->
+    <div class="prod-field prod-form-full">
+        <label asp-for="Producto.DetalleProducto" class="prod-label">
+            Descripción (opcional)
+        </label>
+        <div class="prod-input-wrap">
+            <span class="prod-input-icon prod-input-icon--top"><i class="bi bi-file-text"></i></span>
+            <textarea asp-for="Producto.DetalleProducto" class="prod-textarea"
+                      placeholder="Describe el producto brevemente..."></textarea>
+        </div>
+        <span asp-validation-for="Producto.DetalleProducto" class="prod-field-error"></span>
+    </div>
+
+    <!-- Cantidad en Inventario -->
+    <div class="prod-field">
+        <label asp-for="Producto.CantidadProducto" class="prod-label">
+            Cantidad en Inventario <span class="prod-required">*</span>
+        </label>
+        <div class="prod-input-wrap">
+            <span class="prod-input-icon"><i class="bi bi-box-seam"></i></span>
+            <input asp-for="Producto.CantidadProducto" class="prod-input"
+                   placeholder="Ej. 10" type="number" min="0" inputmode="numeric" />
+        </div>
+        <span asp-validation-for="Producto.CantidadProducto" class="prod-field-error"></span>
+    </div>
+
+    <!-- Stock Mínimo -->
+    <div class="prod-field">
+        <label asp-for="Producto.StockMinimo" class="prod-label">
+            Stock Mínimo <span class="prod-required">*</span>
+        </label>
+        <div class="prod-input-wrap">
+            <span class="prod-input-icon"><i class="bi bi-shield-exclamation"></i></span>
+            <input asp-for="Producto.StockMinimo" class="prod-input"
+                   placeholder="Ej. 5" type="number" min="0" inputmode="numeric" />
+        </div>
+        <span asp-validation-for="Producto.StockMinimo" class="prod-field-error"></span>
+    </div>
+
+    <!-- Configuración fiscal (IVA) -->
+    <div class="prod-field prod-form-full">
+        <label class="prod-label">Configuración fiscal (IVA)</label>
+        <div class="form-check form-switch" style="margin:0.3rem 0 0.6rem;">
+            <input asp-for="Producto.AplicaIva" class="form-check-input" type="checkbox" role="switch" id="prod-aplica-iva" />
+            <label class="form-check-label" for="prod-aplica-iva">Este producto aplica IVA</label>
+        </div>
+    </div>
+
+    <!-- Tarifa IVA -->
+    <div class="prod-field">
+        <label asp-for="Producto.TarifaIva" class="prod-label">Tarifa IVA (%)</label>
+        <div class="prod-input-wrap">
+            <span class="prod-input-icon"><i class="bi bi-percent"></i></span>
+            <input asp-for="Producto.TarifaIva" class="prod-input"
+                   type="number" step="0.01" min="0" max="100"
+                   placeholder="Hereda del negocio (13)" inputmode="decimal" />
+        </div>
+    </div>
+
+    <!-- ¿Precio incluye IVA? -->
+    <div class="prod-field">
+        <label asp-for="Producto.PrecioIncluyeIva" class="prod-label">¿El precio incluye IVA?</label>
+        <div class="prod-input-wrap">
+            <span class="prod-input-icon"><i class="bi bi-receipt"></i></span>
+            <select asp-for="Producto.PrecioIncluyeIva" class="prod-input">
+                <option value="">Heredar del negocio</option>
+                <option value="true">Sí, incluye IVA</option>
+                <option value="false">No, se suma encima</option>
+            </select>
+        </div>
+    </div>
+
+</div>

@@ -1,0 +1,16 @@
+@model LuxuryApp.Models.Platform.MissionControl.MissionControlSignalViewModel
+
+<article class="mc-signal" data-state="@Model.State">
+    <div class="mc-signal-top">
+        <span class="mc-signal-label">@Model.Label</span>
+        <span class="platform-badge @Model.BadgeClass">
+            <i class="bi @Model.Icon"></i>
+            @Model.StateLabel
+        </span>
+    </div>
+    <p class="mc-signal-evidence">@Model.Evidence</p>
+    @if (Model.LinkUrl is not null)
+    {
+        <a class="mc-signal-link" href="@Model.LinkUrl">Ver detalle</a>
+    }
+</article>

@@ -1,0 +1,682 @@
+@using LuxuryApp.Models.Calendar
+@model CalendarIndexViewModel
+
+@{
+    ViewData["Title"] = "Calendario";
+    var tenantWhatsAppEnabled = Model.TenantWhatsAppEnabled;
+    var hasWhatsAppAddon = Model.HasWhatsAppAddon;
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/calendar-module.css" asp-append-version="true" />
+    @* Estilos del modal compartido de cobro (.cc-*) y de la accion/estado en el evento. *@
+    <link rel="stylesheet" href="~/css/control-cobros.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/calendar-cobro.css" asp-append-version="true" />
+}
+
+<div id="calendar-antiforgery" class="d-none">
+    @Html.AntiForgeryToken()
+</div>
+
+<div class="calendar-page-shell">
+
+    @* ── HERO ───────────────────────────────────────────── *@
+    <div class="calendar-hero">
+        <div class="calendar-hero-left module-heading">
+            <span class="module-eyebrow">Gestión de Calendario</span>
+            <h1 class="module-title"><i class="bi bi-calendar-week module-title-icon" aria-hidden="true"></i>Calendario</h1>
+            <p class="module-subtitle">
+                @if (hasWhatsAppAddon)
+                {
+                    @:Administra tus citas, agenda y seguimiento por WhatsApp.
+                }
+                else
+                {
+                    @:Administra tus citas y agenda del negocio.
+                }
+            </p>
+        </div>
+
+        <div class="calendar-kpi-grid">
+            <div class="calendar-kpi-card">
+                <div class="calendar-kpi-icon calendar-kpi-icon-violet">
+                    <i class="bi bi-calendar-check"></i>
+                </div>
+                <div class="calendar-kpi-body">
+                    <span class="calendar-kpi-label">Citas hoy</span>
+                    <span class="calendar-kpi-value calendar-kpi-value-violet">@Model.Stats.CitasHoy</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* ── WORKSPACE ──────────────────────────────────────── *@
+    <div class="calendar-workspace">
+
+        @* LEFT: controls + calendar grid *@
+        <div class="calendar-panel calendar-panel-left">
+
+            <div class="calendar-controls">
+                <div class="calendar-controls-row">
+                    <div class="calendar-view-toggle" role="group">
+                        <button id="viewMonthBtn" class="btn btn-dark btn-sm active">
+                            <i class="bi bi-calendar3"></i> Mensual
+                        </button>
+                        <button id="viewDayBtn" class="btn btn-outline-dark btn-sm">
+                            <i class="bi bi-calendar-day"></i> Diario
+                        </button>
+                    </div>
+
+                    <input type="date" id="dayPicker" class="form-control form-control-sm w-auto d-none">
+                </div>
+
+                <div class="calendar-controls-row">
+                    <div class="calendar-control-group">
+                        <label class="calendar-control-label" for="horaInicio">Inicio</label>
+                        <input type="number" id="horaInicio" class="form-control form-control-sm" style="width:70px" min="0" max="23">
+                    </div>
+
+                    <div class="calendar-control-group">
+                        <label class="calendar-control-label" for="horaFin">Fin</label>
+                        <input type="number" id="horaFin" class="form-control form-control-sm" style="width:70px" min="0" max="23">
+                    </div>
+
+                    <div class="calendar-control-group">
+                        <label class="calendar-control-label" for="intervaloCitas">Intervalo</label>
+                        <select id="intervaloCitas" class="form-select form-select-sm" style="width:95px">
+                            <option value="5">5 min</option>
+                            <option value="10">10 min</option>
+                            <option value="15">15 min</option>
+                            <option value="30">30 min</option>
+                        </select>
+                    </div>
+
+                    <div class="calendar-control-group">
+                        <label class="calendar-control-label">&nbsp;</label>
+                        <button id="aplicarHorario" class="btn btn-dark btn-sm">Aplicar</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="calendar" class="calendar-container">
+                @* El calendario se renderiza con JS *@
+            </div>
+
+        </div>
+
+        @* RIGHT: Citas de hoy (mismo panel para todos los tenants) *@
+        <div class="calendar-panel calendar-panel-right">
+            @await Html.PartialAsync("_TodayAppointmentsPanel", Model)
+        </div>
+
+    </div>
+
+    @* ── CENTRO DE CONFIRMACIONES WHATSAPP — solo tenants con add-on ── *@
+    @if (hasWhatsAppAddon)
+    {
+        @await Html.PartialAsync("_WhatsAppFollowUpPanel", Model)
+    }
+</div>
+
+
+@* ─────────────────────────── MODALES ─────────────────────────── *@
+
+@* MODAL HORAS *@
+<div class="modal fade cal-day-modal" id="dayModal" tabindex="-1" aria-modal="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header cal-day-modal-header">
+                <div class="cal-day-modal-title-wrap">
+                    <div class="cal-day-nav" role="group" aria-label="Navegación de día">
+                        <button type="button" id="dayModalPrev" class="cal-day-nav-btn" aria-label="Día anterior" title="Día anterior">
+                            <i class="bi bi-chevron-left"></i>
+                        </button>
+                        <button type="button" id="dayModalToday" class="cal-day-nav-today d-none" title="Ir a hoy">
+                            <i class="bi bi-dot"></i> Hoy
+                        </button>
+                        <button type="button" id="dayModalNext" class="cal-day-nav-btn" aria-label="Día siguiente" title="Día siguiente">
+                            <i class="bi bi-chevron-right"></i>
+                        </button>
+                    </div>
+                    <h5 class="modal-title cal-day-modal-title" id="modalTitle"></h5>
+                </div>
+                <select id="dayModalFuncionarioFiltro" class="cal-day-modal-filter">
+                    <option value="">Todos los funcionarios</option>
+                </select>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body cal-day-modal-body">
+                <div id="hoursContainer"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* MODAL CREAR CITA *@
+<div class="modal fade" id="createCitaModal" tabindex="-1" aria-modal="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content cal-modal-content">
+            <div class="modal-header cal-modal-header">
+                <div class="d-flex align-items-center gap-3 flex-grow-1">
+                    <div class="cal-modal-icon">
+                        <i class="bi bi-calendar-plus"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title cal-modal-title">Nueva cita</h5>
+                        <p class="cal-modal-subtitle">Agenda una nueva cita en el calendario</p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+
+            <div class="modal-body">
+
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="esDescanso">
+                    <label class="form-check-label fw-bold">
+                        Registrar descanso
+                    </label>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Fecha y hora</label>
+                    <input type="datetime-local" id="appointmentDate" class="form-control">
+                </div>
+
+                <div id="duracionDescansoContainer" class="mb-3 d-none">
+                    <label class="form-label" for="duracionDescanso">Duración del descanso (minutos)</label>
+                    <input type="number" id="duracionDescanso" class="form-control" value="30" min="5" max="180">
+                </div>
+
+                @* Un descanso se puede aplicar a varios colaboradores a la vez. Cada uno genera su
+                   propia entrada de agenda: el modelo es el mismo de siempre, una fila por persona. *@
+                <div id="descansoConfig" class="d-none">
+
+                    <div class="mb-3">
+                        <span class="form-label d-block" id="descansoFuncionariosLabel">Funcionarios</span>
+                        <div id="descansoFuncionarios"
+                             class="cal-multiselect"
+                             role="group"
+                             aria-labelledby="descansoFuncionariosLabel"></div>
+                        <p id="descansoFuncionariosResumen" class="cal-multiselect-resumen" aria-live="polite"></p>
+                    </div>
+
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="repetirDescanso">
+                        <label class="form-check-label" for="repetirDescanso">
+                            Repetir descanso en otras fechas
+                        </label>
+                    </div>
+
+                    <div id="repetirDescansoConfig" class="d-none mb-2">
+                        <label class="form-label" for="fechasDescanso">Seleccione los días</label>
+                        <input type="text" id="fechasDescanso" class="form-control" placeholder="Seleccione fechas">
+                        <p class="cal-descanso-ayuda">
+                            Los días sin espacio para todos los funcionarios seleccionados aparecen
+                            deshabilitados. El motivo se muestra abajo y al pasar el cursor.
+                        </p>
+                    </div>
+
+                    @* Conflictos de la fecha base y de las fechas repetidas. Vacío = sin conflictos. *@
+                    <div id="descansoConflictos"
+                         class="cal-descanso-conflictos d-none"
+                         role="status"
+                         aria-live="polite"></div>
+                </div>
+
+                <input type="hidden" id="duracionMinutos" value="30" />
+
+                <div id="camposCita">
+
+                    <div class="mb-2">
+                        <label class="form-label">Nombre del cliente</label>
+                        <div class="cliente-autocomplete-wrapper">
+                            <input id="nombreCliente"
+                                   class="form-control cliente-autocomplete-input"
+                                   autocomplete="off"
+                                   aria-autocomplete="list"
+                                   aria-expanded="false"
+                                   aria-controls="sugerenciasClientes">
+                            <input type="hidden" id="nombreClienteClienteId">
+                            <div id="sugerenciasClientes"
+                                 class="cliente-autocomplete-dropdown d-none"
+                                 role="listbox"></div>
+                        </div>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label">Teléfono</label>
+                        <input id="telefonoCliente" class="form-control">
+                    </div>
+
+                    @* Estado del cliente: solo se ve una de estas líneas a la vez. La decisión la
+                       calcula el servidor (/Clientes/ResolverIdentidad); acá solo se presenta. *@
+                    <div id="clienteEstado" class="cal-cliente-estado is-empty" aria-live="polite">
+                        <span id="clienteEstadoRegistrado" class="cal-cliente-estado-registrado d-none">
+                            <i class="bi bi-check-circle-fill cal-cliente-estado-icon"></i>
+                            Este cliente ya está registrado
+                        </span>
+                        <span id="clienteEstadoSinTelefono" class="cal-cliente-estado-hint d-none">
+                            Si deseas registrar este cliente, agrega también el teléfono.
+                        </span>
+                        <span id="clienteEstadoAmbiguo" class="cal-cliente-estado-aviso d-none">
+                            <i class="bi bi-exclamation-triangle-fill cal-cliente-estado-icon"></i>
+                            Hay varios clientes con este teléfono. Elegí el correcto en las sugerencias del nombre o guardá la cita sin vincular.
+                        </span>
+                        <div id="clienteEstadoRegistrarContainer" class="form-check d-none">
+                            <input class="form-check-input" type="checkbox" id="registrarCliente" checked>
+                            <label class="form-check-label" for="registrarCliente">Registrar cliente</label>
+                        </div>
+                    </div>
+
+                    <div id="clienteConsentInfo" class="small border rounded p-2 mb-2 d-none"></div>
+
+                    <div id="manualConsentContainer" class="form-check mb-3 d-none">
+                        <input class="form-check-input" type="checkbox" id="whatsAppConsentAtCreation">
+                        <input type="hidden" id="whatsAppConsentCapturedAtUtc">
+                        <label class="form-check-label" for="whatsAppConsentAtCreation">
+                            El cliente autorizó recibir mensajes de WhatsApp enviados por LuxuryCloud en nombre de este negocio para confirmaciones, cancelaciones y recordatorios de esta cita. No se usará para promociones.
+                        </label>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Servicio</label>
+
+                        <div class="cal-servicio-toggle" role="group" aria-label="Tipo de servicio">
+                            <button type="button" class="cal-servicio-toggle-btn active" id="servicioModoCatalogo" data-modo="catalogo" aria-pressed="true">
+                                <i class="bi bi-list-check"></i> Servicio
+                            </button>
+                            <button type="button" class="cal-servicio-toggle-btn" id="servicioModoPersonalizado" data-modo="personalizado" aria-pressed="false">
+                                <i class="bi bi-pencil-square"></i> Personalizado
+                            </button>
+                        </div>
+
+                        <div id="servicioCatalogoContainer" class="mt-2">
+                            <select id="servicio" class="form-select"></select>
+                        </div>
+
+                        <div id="servicioPersonalizadoContainer" class="mt-2 d-none">
+                            <input type="text"
+                                   id="servicioNombrePersonalizado"
+                                   class="form-control mb-2"
+                                   maxlength="100"
+                                   placeholder="Nombre del servicio (ej. Tratamiento especial)">
+                            <label class="form-label cal-servicio-dur-label">Duración (minutos)</label>
+                            <input type="number"
+                                   id="servicioDuracionPersonalizada"
+                                   class="form-control"
+                                   value="30" min="5" max="480" step="5">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Funcionario</label>
+                        <select id="funcionarioId" class="form-select">
+                            <option value="">Seleccione un funcionario</option>
+                        </select>
+                    </div>
+
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="duplicarCita">
+                        <label class="form-check-label">
+                            Repetir cita en otras fechas
+                        </label>
+                    </div>
+
+                    <div id="duplicarConfig" class="d-none">
+                        <label class="form-label">Seleccione los días</label>
+                        <input type="text" id="fechasDuplicadas" class="form-control" placeholder="Seleccione fechas">
+                    </div>
+                </div>
+
+                <button type="button" id="btnGuardarCita" class="cal-btn-save w-100 mt-1" onclick="guardarCita()">
+                    <i class="bi bi-calendar-check" id="btnGuardarCitaIcono"></i>
+                    <span id="btnGuardarCitaTexto">Guardar cita</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* MODAL EDITAR *@
+<div class="modal fade" id="editCitaModal" tabindex="-1" aria-modal="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content cal-modal-content">
+
+            <div class="modal-header cal-modal-header">
+                <div class="d-flex align-items-center gap-3 flex-grow-1">
+                    <div class="cal-modal-icon cal-modal-icon-edit">
+                        <i class="bi bi-pencil-fill"></i>
+                    </div>
+                    <h5 class="modal-title cal-modal-title" id="editModalTitle">Editar cita</h5>
+                </div>
+                <button class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+
+            <div class="modal-body">
+
+                <input type="hidden" id="editCitaId" />
+                <input type="hidden" id="editTipo" />
+
+                <div class="mb-3">
+                    <label>Fecha y hora</label>
+                    <input type="datetime-local" class="form-control" id="editFechaHora">
+                </div>
+
+                <div id="editCamposCita">
+
+                    <div class="mb-2">
+                        <label>Nombre del cliente</label>
+                        <div class="cliente-autocomplete-wrapper">
+                            <input class="form-control cliente-autocomplete-input"
+                                   id="editNombreCliente"
+                                   autocomplete="off"
+                                   aria-autocomplete="list"
+                                   aria-expanded="false"
+                                   aria-controls="editSugerenciasClientes">
+                            <input type="hidden" id="editNombreClienteClienteId">
+                            <div id="editSugerenciasClientes"
+                                 class="cliente-autocomplete-dropdown d-none"
+                                 role="listbox"></div>
+                        </div>
+                    </div>
+
+                    <div class="mb-2">
+                        <label>Teléfono</label>
+                        <input class="form-control" id="editTelefonoCliente">
+                    </div>
+
+                    @* Mismo estado del cliente que en "Nueva cita": misma regla, mismos textos. *@
+                    <div id="editClienteEstado" class="cal-cliente-estado is-empty" aria-live="polite">
+                        <span id="editClienteEstadoRegistrado" class="cal-cliente-estado-registrado d-none">
+                            <i class="bi bi-check-circle-fill cal-cliente-estado-icon"></i>
+                            Este cliente ya está registrado
+                        </span>
+                        <span id="editClienteEstadoSinTelefono" class="cal-cliente-estado-hint d-none">
+                            Si deseas registrar este cliente, agrega también el teléfono.
+                        </span>
+                        <span id="editClienteEstadoAmbiguo" class="cal-cliente-estado-aviso d-none">
+                            <i class="bi bi-exclamation-triangle-fill cal-cliente-estado-icon"></i>
+                            Hay varios clientes con este teléfono. Elegí el correcto en las sugerencias del nombre o guardá la cita sin vincular.
+                        </span>
+                        <div id="editClienteEstadoRegistrarContainer" class="form-check d-none">
+                            <input class="form-check-input" type="checkbox" id="editRegistrarCliente" checked>
+                            <label class="form-check-label" for="editRegistrarCliente">Registrar cliente</label>
+                        </div>
+                    </div>
+
+                    <div id="editClienteConsentInfo" class="small border rounded p-2 mb-2 d-none"></div>
+
+                    <div id="editManualConsentContainer" class="form-check mb-2 d-none">
+                        <input class="form-check-input" type="checkbox" id="editWhatsAppConsentAtCreation">
+                        <input type="hidden" id="editWhatsAppConsentCapturedAtUtc">
+                        <label class="form-check-label" for="editWhatsAppConsentAtCreation">
+                            El cliente autorizó recibir mensajes de WhatsApp enviados por LuxuryCloud en nombre de este negocio para confirmaciones, cancelaciones y recordatorios de esta cita. No se usará para promociones.
+                        </label>
+                    </div>
+
+                    <div id="editWhatsAppStatus" class="small text-muted border rounded p-2 mb-2 d-none"></div>
+
+                    <div class="mb-3">
+                        <label>Servicio</label>
+
+                        <div class="cal-servicio-toggle" role="group" aria-label="Tipo de servicio">
+                            <button type="button" class="cal-servicio-toggle-btn active" id="editServicioModoCatalogo" data-modo="catalogo" aria-pressed="true">
+                                <i class="bi bi-list-check"></i> Servicio
+                            </button>
+                            <button type="button" class="cal-servicio-toggle-btn" id="editServicioModoPersonalizado" data-modo="personalizado" aria-pressed="false">
+                                <i class="bi bi-pencil-square"></i> Personalizado
+                            </button>
+                        </div>
+
+                        <div id="editServicioCatalogoContainer" class="mt-2">
+                            <select id="editServicioId" class="form-select"></select>
+                        </div>
+
+                        <div id="editServicioPersonalizadoContainer" class="mt-2 d-none">
+                            <input type="text"
+                                   id="editServicioNombrePersonalizado"
+                                   class="form-control mb-2"
+                                   maxlength="100"
+                                   placeholder="Nombre del servicio (ej. Tratamiento especial)">
+                            <label class="form-label cal-servicio-dur-label">Duración (minutos)</label>
+                            <input type="number"
+                                   id="editServicioDuracionPersonalizada"
+                                   class="form-control"
+                                   value="30" min="5" max="480" step="5">
+                        </div>
+                    </div>
+
+                </div>
+
+                <div id="editCamposDescanso" class="d-none">
+                    <div class="mb-3">
+                        <label>Duración del descanso (minutos)</label>
+                        <input type="number" class="form-control" id="editDuracionDescanso" min="5" max="180">
+                    </div>
+                </div>
+
+                <div class="mb-2">
+                    <label>Funcionario</label>
+                    <select id="editFuncionarioId" class="form-select"></select>
+                </div>
+
+            </div>
+
+            <div class="modal-footer cal-modal-footer">
+                <button class="cal-btn-danger" onclick="cancelarCita()">
+                    <i class="bi bi-trash3"></i> Eliminar
+                </button>
+                <div class="d-flex gap-2">
+                    <button class="cal-btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-arrow-left"></i> Volver
+                    </button>
+                    <button class="cal-btn-primary" onclick="guardarEdicion()">
+                        <i class="bi bi-floppy2-fill"></i> Guardar cambios
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@* MODAL VER CHAT / HISTORIAL WHATSAPP — solo para tenants con add-on *@
+@if (hasWhatsAppAddon)
+{
+    <div class="modal fade" id="waChatModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="waChatModalTitle">Historial de WhatsApp</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="waChatModalBody">
+                    <div class="text-muted small">Cargando…</div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+
+@* MODAL CANCELAR CITA *@
+<div class="modal fade" id="cancelCitaModal" tabindex="-1" aria-labelledby="lblCancelCita" aria-modal="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content cal-modal-content cal-cancel-modal-content">
+            <div class="modal-header cal-cancel-modal-header">
+                <div class="d-flex align-items-center gap-3 flex-grow-1">
+                    <div class="cal-cancel-modal-icon">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                    </div>
+                    <div>
+                        <h5 class="cal-cancel-modal-title" id="cancelCitaModalTitle">Cancelar cita</h5>
+                        <p class="cal-cancel-modal-desc" id="cancelCitaDesc">¿Seguro que deseas cancelar esta cita?</p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <p class="cal-cancel-extra-text">
+                    @if (hasWhatsAppAddon)
+                    {
+                        @:Esta cita se eliminará de la agenda y se actualizará el estado de seguimiento en WhatsApp.
+                    }
+                    else
+                    {
+                        @:Esta cita se eliminará de la agenda permanentemente.
+                    }
+                </p>
+
+                <input type="hidden" id="cancelCitaId" />
+
+                <div class="cal-cancel-summary" id="cancelCitaSummary"></div>
+
+                @* Aviso real de lo que va a pasar con el cliente. Lo llena calendar.js con la     *@
+                @* respuesta de /Calendar/GetById, que aplica la MISMA regla que el envío.          *@
+                <div class="cal-cancel-notice d-none" id="cancelCitaNotice">
+                    <i class="bi" id="cancelCitaNoticeIcon"></i>
+                    <span id="cancelCitaNoticeText"></span>
+                </div>
+
+                @* El motivo viaja al cliente SOLO cuando la cita nacio de una reserva online. *@
+                <div class="cal-cancel-motivo" id="cancelCitaMotivoWrap">
+                    <label class="form-label" for="cancelCitaMotivo">Motivo de la cancelación</label>
+                    <textarea id="cancelCitaMotivo" class="form-control" rows="2" maxlength="300"
+                              placeholder="Ej.: colaborador no disponible."></textarea>
+                    <small class="cal-cancel-motivo-hint">
+                        Podés editarlo. Si la cita vino de una reserva online, el cliente recibe este motivo por WhatsApp.
+                    </small>
+                </div>
+
+                <div class="cal-cancel-warning-box" id="cancelCitaWarningBox">
+                    <i class="bi bi-exclamation-circle-fill"></i>
+                    <span>Esta acción no se puede deshacer. La cita será eliminada permanentemente.</span>
+                </div>
+            </div>
+            <div class="modal-footer cal-cancel-modal-footer">
+                <button type="button" class="cal-btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-arrow-left"></i> Volver
+                </button>
+                <button type="button" class="cal-btn-cancel-cita" id="btnConfirmarCancelarCita" onclick="confirmarCancelarCita()">
+                    <i class="bi bi-x-circle-fill"></i> Cancelar cita
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* MODAL DETALLE DE SOLICITUD DE RESERVA ONLINE PENDIENTE *@
+@* Los bloques de 15/30 min son demasiado pequeños para botones: el bloque sólo muestra el     *@
+@* estado y el detalle con las acciones vive acá, igual que el resto de acciones del calendario. *@
+<div class="modal fade" id="pendingBookingModal" tabindex="-1" aria-labelledby="pendingBookingModalTitle" aria-modal="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content cal-modal-content">
+            <div class="modal-header cal-modal-header">
+                <div class="d-flex align-items-center gap-3 flex-grow-1">
+                    <div class="cal-modal-icon cal-pending-modal-icon">
+                        <i class="bi bi-hourglass-split"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title cal-modal-title" id="pendingBookingModalTitle">Solicitud de reserva online</h5>
+                        <p class="cal-modal-subtitle">Pendiente de confirmar. El espacio ya está apartado en la agenda.</p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+
+            <div class="modal-body">
+                <input type="hidden" id="pendingBookingId" />
+                <dl class="cal-pending-detail" id="pendingBookingDetail"></dl>
+
+                @if (Model.PuedeGestionarReservas)
+                {
+                    <div class="cal-pending-motivo">
+                        <label class="form-label" for="pendingBookingMotivo">Motivo del rechazo</label>
+                        <textarea id="pendingBookingMotivo" class="form-control" rows="2" maxlength="300"
+                                  placeholder="Se guarda junto a la solicitud rechazada."></textarea>
+                    </div>
+                }
+            </div>
+
+            <div class="modal-footer cal-modal-footer">
+                <button type="button" class="cal-btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-arrow-left"></i> Volver
+                </button>
+                @if (Model.PuedeGestionarReservas)
+                {
+                    <div class="d-flex gap-2">
+                        <button type="button" class="cal-btn-danger" id="btnRechazarSolicitud">
+                            <i class="bi bi-x-lg"></i> Rechazar
+                        </button>
+                        <button type="button" class="cal-btn-primary" id="btnConfirmarSolicitud">
+                            <i class="bi bi-check-lg"></i> Confirmar
+                        </button>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@* DECISIÓN SOBRE EL CLIENTE AL CONFIRMAR UNA RESERVA *@
+@* Solo aparece cuando el servidor dice que hace falta decidir algo (cliente nuevo, mismo teléfono *@
+@* con otro nombre, o varios clientes con ese teléfono). Si el cliente ya está identificado, la    *@
+@* confirmación sigue siendo de un solo clic.                                                     *@
+@if (Model.PuedeGestionarReservas)
+{
+    <div class="modal fade" id="bookingClienteModal" tabindex="-1" aria-labelledby="bookingClienteModalTitle" aria-modal="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content cal-modal-content">
+                <div class="modal-header cal-modal-header">
+                    <div class="d-flex align-items-center gap-3 flex-grow-1">
+                        <div class="cal-modal-icon">
+                            <i class="bi bi-person-plus"></i>
+                        </div>
+                        <h5 class="modal-title cal-modal-title" id="bookingClienteModalTitle">Cliente de la reserva</h5>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+
+                <div class="modal-body">
+                    <input type="hidden" id="bookingClienteSolicitudId" />
+                    <p id="bookingClienteMensaje" class="mb-2"></p>
+                    <div id="bookingClienteOpciones" class="cal-booking-cliente-opciones"></div>
+                </div>
+
+                <div class="modal-footer cal-modal-footer">
+                    <button type="button" class="cal-btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-arrow-left"></i> Volver
+                    </button>
+                    <div class="d-flex gap-2 flex-wrap justify-content-end">
+                        <button type="button" class="cal-btn-secondary" id="btnConfirmarSinVincular">Confirmar sin registrar</button>
+                        <button type="button" class="cal-btn-primary" id="btnConfirmarConCliente">Confirmar y registrar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@* Modal compartido de cobro rápido por cita (mismo que "Control de citas y cobros"). *@
+@await Html.PartialAsync("_RegistrarCobroModal")
+
+@section Scripts {
+    <script>
+        window.LUXURY_CALENDAR_CONFIG = Object.assign({}, window.LUXURY_CALENDAR_CONFIG, {
+            tenantWhatsAppEnabled: @(tenantWhatsAppEnabled ? "true" : "false"),
+            hasWhatsAppAddon: @(hasWhatsAppAddon ? "true" : "false"),
+            businessToday: "@Model.BusinessTodayIso"
+        });
+    </script>
+    <script src="~/js/cobro-cita-modal.js" asp-append-version="true"></script>
+    <script src="~/js/calendar.js" asp-append-version="true"></script>
+    @if (hasWhatsAppAddon)
+    {
+        <script src="~/js/whatsapp-inbox.js" asp-append-version="true"></script>
+    }
+    else
+    {
+        <script src="~/js/appointments-panel.js" asp-append-version="true"></script>
+    }
+}

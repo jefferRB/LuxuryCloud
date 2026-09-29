@@ -1,0 +1,240 @@
+﻿@model LuxuryApp.Models.Finanzas.EgresoViewModel
+
+@{
+    ViewData["Title"] = "Editar Egreso";
+    var hasErrors = !ViewData.ModelState.IsValid
+        && ViewData.ModelState.Values.Any(v => v.Errors.Count > 0);
+    var categoriaNombre = Model.Categorias
+        .FirstOrDefault(c => c.Value == Model.Egreso.CategoriaId.ToString())?.Text ?? "—";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/finance-modules.css" asp-append-version="true" />
+}
+
+<div class="finance-page-shell">
+
+    @* ── HERO ── *@
+    <div class="finance-hero">
+        <div class="finance-hero-left module-heading">
+            <span class="module-eyebrow">GESTIÓN DE EGRESOS</span>
+            <h1 class="module-title"><i class="bi bi-bag-dash module-title-icon" aria-hidden="true"></i>Editar Egreso</h1>
+            <p class="module-subtitle">Actualiza la información del egreso seleccionado.</p>
+        </div>
+    </div>
+
+    @* ── FORM ── *@
+    <form asp-action="Edit" asp-route-id="@Model.Egreso.IdEgreso" method="post" id="formEditarEgreso">
+        @Html.AntiForgeryToken()
+        <input asp-for="Egreso.IdEgreso" type="hidden" />
+
+        <div class="finance-form-body">
+
+            @if (hasErrors)
+            {
+                <div class="finance-validation-summary" role="alert">
+                    <div asp-validation-summary="ModelOnly"></div>
+                </div>
+            }
+
+            <div class="finance-form-grid">
+
+                @* Fecha *@
+                <div class="finance-form-field">
+                    <label asp-for="Egreso.FechaEgreso" class="finance-form-label">
+                        Fecha <span class="finance-required">*</span>
+                    </label>
+                    <div class="finance-input-wrap">
+                        <span class="finance-input-icon"><i class="bi bi-calendar3"></i></span>
+                        <input asp-for="Egreso.FechaEgreso"
+                               class="finance-form-control"
+                               type="datetime-local"
+                               step="60" />
+                    </div>
+                    <span asp-validation-for="Egreso.FechaEgreso" class="finance-field-error"></span>
+                </div>
+
+                @* Categoría *@
+                <div class="finance-form-field">
+                    <label asp-for="Egreso.CategoriaId" class="finance-form-label">
+                        Categoría <span class="finance-required">*</span>
+                    </label>
+                    <div class="finance-input-wrap">
+                        <span class="finance-input-icon"><i class="bi bi-folder2"></i></span>
+                        <select asp-for="Egreso.CategoriaId"
+                                class="finance-form-control"
+                                asp-items="Model.Categorias">
+                            <option value="">Seleccione categoría</option>
+                        </select>
+                    </div>
+                    <span asp-validation-for="Egreso.CategoriaId" class="finance-field-error"></span>
+                    <p class="finance-field-hint">
+                        <strong>Pago Funcionarios:</strong> solo para pagar liquidaciones o comisiones
+                        que ya aparecen en «Liquidaciones del equipo» (no vuelve a restar la ganancia).<br />
+                        <strong>Costo laboral extraordinario:</strong> vacaciones, bonos o pagos
+                        adicionales que no forman parte de una liquidación ordinaria (sí resta la ganancia).
+                    </p>
+                </div>
+
+                @* Detalle *@
+                <div class="finance-form-field finance-form-full">
+                    <label asp-for="Egreso.Detalle" class="finance-form-label">
+                        Detalle <span class="finance-required">*</span>
+                    </label>
+                    <div class="finance-input-wrap">
+                        <span class="finance-input-icon"><i class="bi bi-card-text"></i></span>
+                        <input asp-for="Egreso.Detalle"
+                               class="finance-form-control"
+                               placeholder="Descripción del egreso" />
+                    </div>
+                    <span asp-validation-for="Egreso.Detalle" class="finance-field-error"></span>
+                </div>
+
+                @* Monto *@
+                <div class="finance-form-field">
+                    <label asp-for="Egreso.Monto" class="finance-form-label">
+                        Monto <span class="finance-required">*</span>
+                    </label>
+                    <div class="finance-input-wrap">
+                        <span class="finance-input-icon" style="font-weight:700;font-size:1rem;">₡</span>
+                        <input asp-for="Egreso.Monto"
+                               class="finance-form-control money-input"
+                               id="egresoMonto"
+                               type="text"
+                               autocomplete="off" />
+                    </div>
+                    <span asp-validation-for="Egreso.Monto" class="finance-field-error"></span>
+                </div>
+
+                @* Método de Pago *@
+                <div class="finance-form-field">
+                    <label asp-for="Egreso.MetodoPago" class="finance-form-label">
+                        Método de Pago <span class="finance-required">*</span>
+                    </label>
+                    <div class="finance-input-wrap">
+                        <span class="finance-input-icon"><i class="bi bi-credit-card"></i></span>
+                        <select asp-for="Egreso.MetodoPago"
+                                class="finance-form-control"
+                                asp-items="Model.MetodosPago">
+                            <option value="">Seleccione método de pago</option>
+                        </select>
+                    </div>
+                    <span asp-validation-for="Egreso.MetodoPago" class="finance-field-error"></span>
+                </div>
+
+            </div>
+        </div>
+
+        @* ── FOOTER ── *@
+        <div class="finance-form-footer">
+            <div class="finance-form-footer-left">
+                <button type="submit" class="finance-btn-save" id="btnGuardarCambios">
+                    <i class="bi bi-floppy2-fill"></i> Guardar Cambios
+                </button>
+                <a asp-action="Index" class="finance-btn-back">
+                    <i class="bi bi-arrow-left"></i> Volver
+                </a>
+            </div>
+            <button type="button"
+                    class="finance-btn-danger-form"
+                    onclick="abrirEliminarEgreso()">
+                <i class="bi bi-trash3"></i> Eliminar Egreso
+            </button>
+        </div>
+
+    </form>
+</div>
+
+@* ── MODAL ELIMINAR EGRESO ── *@
+<div class="modal fade finance-delete-modal" id="modalEliminarEgreso" tabindex="-1"
+     aria-labelledby="lblEliminarEgreso" aria-modal="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="finance-delete-modal-title" id="lblEliminarEgreso">
+                    <div class="finance-delete-modal-icon">
+                        <i class="bi bi-trash3-fill"></i>
+                    </div>
+                    Eliminar Egreso
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <p class="finance-delete-intro">
+                    ¿Estás seguro que deseas eliminar este egreso? Esta acción no se puede deshacer.
+                </p>
+                <div class="finance-delete-summary">
+                    <div class="finance-delete-summary-row">
+                        <span class="finance-delete-summary-label">
+                            <i class="bi bi-folder2"></i> Categoría
+                        </span>
+                        <span class="finance-delete-summary-value">@categoriaNombre</span>
+                    </div>
+                    <div class="finance-delete-summary-row">
+                        <span class="finance-delete-summary-label">
+                            <i class="bi bi-card-text"></i> Detalle
+                        </span>
+                        <span class="finance-delete-summary-value">@Model.Egreso.Detalle</span>
+                    </div>
+                    <div class="finance-delete-summary-row">
+                        <span class="finance-delete-summary-label">
+                            <i class="bi bi-currency-exchange"></i> Monto
+                        </span>
+                        <span class="finance-delete-summary-value finance-monto-expense">
+                            ₡ @Model.Egreso.Monto.ToString("N2")
+                        </span>
+                    </div>
+                    <div class="finance-delete-summary-row">
+                        <span class="finance-delete-summary-label">
+                            <i class="bi bi-credit-card"></i> Método de pago
+                        </span>
+                        <span class="finance-delete-summary-value">@Model.Egreso.MetodoPago</span>
+                    </div>
+                    <div class="finance-delete-summary-row">
+                        <span class="finance-delete-summary-label">
+                            <i class="bi bi-calendar3"></i> Fecha
+                        </span>
+                        <span class="finance-delete-summary-value">
+                            @Model.Egreso.FechaEgreso.ToString("dd/MM/yyyy HH:mm")
+                        </span>
+                    </div>
+                </div>
+                <div class="finance-delete-warning-box">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <span>Esta acción es permanente. Se eliminará el egreso y se actualizarán los indicadores financieros.</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="finance-btn-back" data-bs-dismiss="modal">
+                    <i class="bi bi-x-lg"></i> Cancelar
+                </button>
+                <form asp-action="Delete" asp-route-id="@Model.Egreso.IdEgreso" method="post" style="margin:0;">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="finance-btn-danger-form">
+                        <i class="bi bi-trash3-fill"></i> Eliminar
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/finanzas.js" asp-append-version="true"></script>
+    <script>
+    function abrirEliminarEgreso() {
+        new bootstrap.Modal(document.getElementById('modalEliminarEgreso')).show();
+    }
+
+    (function () {
+        var btn = document.getElementById('btnGuardarCambios');
+        if (btn) {
+            document.getElementById('formEditarEgreso').addEventListener('submit', function () {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Guardando…';
+            });
+        }
+    })();
+    </script>
+}

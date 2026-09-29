@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="LuxuryApp/LuxuryApp.csproj" />
+  <Folder Name="/tests/">
+    <Project Path="LuxuryApp/LuxuryApp.Tests/LuxuryApp.Tests.csproj" />
+  </Folder>
+</Solution>

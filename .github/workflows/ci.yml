@@ -1,0 +1,114 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  build-and-test:
+    name: Build & unit/integration tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore LuxuryApp.slnx
+
+      - name: Vulnerable package check
+        run: |
+          dotnet list LuxuryApp.slnx package --vulnerable --include-transitive | tee vulnerable.txt
+          if grep -q -E "^\s*>" vulnerable.txt; then echo "::error::Vulnerable packages found"; exit 1; fi
+
+      - name: Build
+        run: dotnet build LuxuryApp.slnx --configuration Release --no-restore
+
+      # Everything except Category=SqlServer runs on SQLite in-memory and needs no
+      # external services or credentials.
+      - name: Test
+        run: >
+          dotnet test LuxuryApp.slnx
+          --configuration Release
+          --no-build
+          --filter "Category!=SqlServer"
+          --logger "trx;LogFileName=test-results.trx"
+          --results-directory TestResults
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: TestResults/*.trx
+          if-no-files-found: ignore
+
+  sqlserver-rls-tests:
+    name: SQL Server RLS tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    # Ephemeral SQL Server that exists only for this job. The SA password is a
+    # throwaway value for this container; it protects nothing outside the job.
+    services:
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: "Y"
+          MSSQL_SA_PASSWORD: "CiOnly-Throwaway-2026!"
+        ports:
+          - 1433:1433
+        options: >-
+          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'CiOnly-Throwaway-2026!' -C -Q 'SELECT 1' -b"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 20
+
+    env:
+      LUXURYCLOUD_TEST_SQLSERVER: "Server=localhost,1433;User ID=sa;Password=CiOnly-Throwaway-2026!;Encrypt=False;TrustServerCertificate=True"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Build
+        run: dotnet build LuxuryApp.slnx --configuration Release
+
+      # Session-context interceptor + RLS migration tests against a real engine.
+      # Each test creates and drops its own throwaway database.
+      - name: Test (Category=SqlServer)
+        run: >
+          dotnet test LuxuryApp.slnx
+          --configuration Release
+          --no-build
+          --filter "Category=SqlServer"
+          --logger "trx;LogFileName=sqlserver-results.trx"
+          --results-directory TestResults
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sqlserver-test-results
+          path: TestResults/*.trx
+          if-no-files-found: ignore

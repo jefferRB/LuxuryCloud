@@ -1,0 +1,396 @@
+@model LuxuryApp.Models.Funcionarios.MiCalendarioViewModel
+@using System.Globalization
+@{
+    ViewData["Title"] = "Mi Calendario";
+    ViewData["PortalActive"] = "calendario";
+    ViewData["PuedeRegistrarCobros"] = Model.PuedeRegistrarCobros;
+    ViewData["PuedeEditarCitas"] = Model.PuedeEditarCitas;
+    ViewData["PuedeCancelarCitas"] = Model.PuedeCancelarCitas;
+    ViewData["CalFecha"] = Model.Fecha.ToString("yyyy-MM-dd");
+    ViewData["CobroRetorno"] = "calendario";
+    var cr = new CultureInfo("es-CR");
+    string Day(DateTime d) => d.ToString("yyyy-MM-dd");
+    string Money(decimal v) => "₡" + v.ToString("#,##0.00", cr);
+
+    var primerDia = Model.MesActual;
+    var diasEnMes = DateTime.DaysInMonth(Model.Year, Model.Month);
+    var startDay = ((int)primerDia.DayOfWeek + 6) % 7; // lunes primero
+    var dows = new[] { "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom" };
+    var ctrl = Model.Control;
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/calendar-module.css" asp-append-version="true" />
+    <style>
+        /* Ancho equivalente al módulo principal */
+        .lp-main { max-width: 1280px; }
+        .mp-cal-monthhead { display:flex; align-items:center; gap:.5rem; margin-bottom:1rem; flex-wrap:wrap; justify-content:center; }
+        .mp-cal-monthhead h4 { font-weight:700; text-transform:capitalize; margin:0; }
+        .calendar-day { cursor:pointer; }
+        /* Header del modal diario: adaptado al tema (surface) */
+        .mp-dia-head { background:var(--private-surface-bg,#fff); color:var(--private-surface-text,#0f172a);
+            border-bottom:1px solid var(--private-surface-border,#eef1f6); border-radius:1rem 1rem 0 0; }
+        .mp-dia-head .modal-title { color:var(--private-surface-text,#0f172a); font-weight:700; text-transform:capitalize; }
+        #diaModal .modal-content { background:var(--private-surface-bg,#fff); color:var(--private-surface-text,#0f172a); }
+        /* Grilla diaria dentro del modal: reutiliza .cita-bloque y .cita-resize-handle del módulo principal */
+        #diaModalBody .day-grid { min-height: 200px; }
+        #diaModalBody .cita-bloque { cursor:pointer; }
+        #diaModalBody .cita-resize-handle { touch-action:none; }
+        #diaModalBody .slot-line { box-sizing:border-box; }
+        /* ── Control de citas y cobros (adaptado a los 4 temas con variables) ── */
+        .mpc-card { background:var(--private-surface-bg,#fff); border:1px solid var(--private-surface-border,#eef1f6); border-radius:20px; padding:1.5rem;
+            box-shadow:var(--private-card-shadow,0 12px 32px rgba(15,23,42,.06)); margin-top:1.25rem; color:var(--private-surface-text,#0f172a); }
+        .mpc-head { display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; flex-wrap:wrap; margin-bottom:1.25rem; }
+        .mpc-head-left { display:flex; align-items:center; gap:.9rem; }
+        .mpc-icon { width:3rem; height:3rem; border-radius:14px; background:rgba(var(--private-accent-alt-rgb), .16); color:var(--private-accent-alt-soft);
+            display:flex; align-items:center; justify-content:center; font-size:1.4rem; flex-shrink:0; }
+        .mpc-title { font-size:1.5rem; font-weight:800; margin:0; color:var(--private-surface-text,#0f172a); }
+        .mpc-range { font-size:.85rem; color:var(--private-muted-text,#64748b); margin:.2rem 0 0; display:flex; align-items:center; gap:.35rem; }
+        .mpc-tabs { display:inline-flex; background:rgba(148,163,184,.16); border-radius:12px; padding:.25rem; gap:.15rem; }
+        .mpc-tab { padding:.45rem 1.1rem; border:none; background:transparent; cursor:pointer; border-radius:9px; font-size:.85rem; font-weight:700; color:var(--private-muted-text,#64748b); text-decoration:none; transition:.15s; }
+        .mpc-tab:hover { color:var(--private-surface-text,#0f172a); }
+        .mpc-tab--on { background:var(--private-surface-bg,#fff); color:var(--private-chart-accent,var(--private-accent-indigo-strong)); box-shadow:0 2px 6px rgba(15,23,42,.12); }
+        .mpc-kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:.85rem; margin-bottom:1.4rem; }
+        .mpc-kpi { display:flex; align-items:center; gap:.7rem; background:var(--private-row-bg,var(--private-surface-bg,#fff)); border:1px solid var(--private-surface-border,#eef1f6); border-radius:14px; padding:.9rem 1rem; }
+        .mpc-kpi-ic { width:2.5rem; height:2.5rem; border-radius:11px; display:flex; align-items:center; justify-content:center; font-size:1.1rem; flex-shrink:0; }
+        .mpc-ic-violet { background:rgba(var(--private-accent-alt-rgb), .16); color:var(--private-accent-alt-soft); }
+        .mpc-ic-green  { background:rgba(22,163,74,.16); color:#34d399; }
+        .mpc-ic-amber  { background:rgba(217,119,6,.18); color:#fbbf24; }
+        .mpc-kpi-body { display:flex; flex-direction:column; min-width:0; }
+        .mpc-kpi-label { font-size:.7rem; font-weight:700; color:var(--private-muted-text,#94a3b8); text-transform:uppercase; letter-spacing:.3px; }
+        .mpc-kpi-val { font-size:1.45rem; font-weight:800; color:var(--private-surface-text,#0f172a); line-height:1.1; }
+        .mpc-val-green { color:var(--private-chart-success,#16a34a); } .mpc-val-amber { color:var(--private-chart-warning,#d97706); }
+        .mpc-table { width:100%; border-collapse:separate; border-spacing:0; }
+        .mpc-table thead th { font-size:.72rem; font-weight:700; color:var(--private-muted-text,#94a3b8); text-transform:uppercase; letter-spacing:.3px;
+            padding:.6rem .75rem; border-bottom:1px solid var(--private-surface-border,#eef1f6); text-align:left; }
+        .mpc-table tbody td { padding:.7rem .75rem; border-bottom:1px solid var(--private-table-border,rgba(15,23,42,.06)); font-size:.88rem; vertical-align:middle; color:var(--private-surface-text,#0f172a); }
+        .mpc-table tbody tr:last-child td { border-bottom:none; }
+        .mpc-table tbody tr:hover { background:var(--private-row-hover-bg,rgba(15,23,42,.035)); }
+        .mpc-cell-ic { color:var(--private-muted-text,#cbd5e1); opacity:.7; margin-right:.25rem; }
+        .mpc-badge { display:inline-flex; align-items:center; gap:.3rem; font-size:.74rem; font-weight:700; border-radius:999px; padding:.22rem .6rem; }
+        .mpc-badge-ok { color:#15803d; background:rgba(22,163,74,.16); }
+        .mpc-badge-pend { color:#b45309; background:rgba(217,119,6,.18); }
+        .mpc-cobrar { border:none; background:linear-gradient(135deg,var(--private-accent-indigo),var(--private-accent-indigo-strong)); color:#fff; border-radius:9px;
+            font-size:.8rem; font-weight:700; padding:.4rem .8rem; cursor:pointer; display:inline-flex; align-items:center; gap:.35rem; }
+        .mpc-cobrar:hover { filter:brightness(1.05); }
+        .mpc-empty { display:flex; flex-direction:column; align-items:center; gap:.5rem; padding:2.5rem 1rem; color:var(--private-muted-text,#94a3b8); }
+        .mpc-empty i { font-size:2rem; }
+        @@media (max-width:560px){ .mpc-card { padding:1rem; } .mpc-title { font-size:1.2rem; } }
+        /* Control de citas y cobros → cards premium en móvil */
+        .mpc-cards { display:none; flex-direction:column; gap:.65rem; }
+        .mpc-rec { border:1px solid var(--private-surface-border,#eef1f6); border-radius:14px; padding:.85rem .95rem;
+            background:var(--private-row-bg,var(--private-surface-bg,#fff)); box-shadow:0 2px 10px rgba(15,23,42,.04); }
+        .mpc-rec-top { display:flex; align-items:center; justify-content:space-between; gap:.6rem; margin-bottom:.4rem; }
+        .mpc-rec-when { font-size:.74rem; font-weight:700; color:var(--private-muted-text,#94a3b8); display:inline-flex; align-items:center; gap:.3rem; }
+        .mpc-rec-monto { font-size:1.08rem; font-weight:800; color:var(--private-surface-text,#0f172a); white-space:nowrap; }
+        .mpc-rec-cliente { font-size:1rem; font-weight:800; color:var(--private-surface-text,#0f172a); }
+        .mpc-rec-serv { font-size:.84rem; color:var(--private-muted-text,#64748b); display:inline-flex; align-items:center; gap:.35rem; margin-top:.1rem; }
+        .mpc-rec-foot { display:flex; align-items:center; justify-content:space-between; gap:.5rem; margin-top:.75rem; flex-wrap:wrap; }
+        .mpc-rec-foot .mpc-cobrar { padding:.5rem .95rem; }
+        @@media (max-width:680px){
+            .mpc-desktop { display:none; }
+            .mpc-cards { display:flex; }
+            .mpc-kpis { grid-template-columns:1fr 1fr; gap:.6rem; margin-bottom:1.1rem; }
+            .mpc-kpi { padding:.7rem .8rem; gap:.55rem; }
+            .mpc-kpi-ic { width:2.2rem; height:2.2rem; font-size:1rem; }
+            .mpc-kpi-val { font-size:1.2rem; }
+            .mpc-head { margin-bottom:1rem; }
+            .mpc-tabs { width:100%; }
+            .mpc-tab { flex:1; text-align:center; padding:.5rem .3rem; }
+        }
+    </style>
+}
+
+<div id="calendar-antiforgery" class="d-none">@Html.AntiForgeryToken()</div>
+
+<div class="calendar-page-shell">
+
+    @* ── HERO ── *@
+    <div class="calendar-hero">
+        <div class="calendar-hero-left module-heading">
+            <span class="module-eyebrow">Mi Calendario</span>
+            <h1 class="module-title"><i class="bi bi-calendar-week module-title-icon" aria-hidden="true"></i>Mi calendario</h1>
+            <p class="module-subtitle">Consulta y administra tus citas según los permisos de tu negocio.</p>
+        </div>
+        <div class="calendar-kpi-grid">
+            <div class="calendar-kpi-card">
+                <div class="calendar-kpi-icon calendar-kpi-icon-violet"><i class="bi bi-calendar-check"></i></div>
+                <div class="calendar-kpi-body">
+                    <span class="calendar-kpi-label">Citas de hoy</span>
+                    <span class="calendar-kpi-value calendar-kpi-value-violet">@Model.KpisHoy.CitasHoy</span>
+                    <span class="calendar-kpi-hint">@Model.KpisHoy.PendientesHoy pendiente@(Model.KpisHoy.PendientesHoy == 1 ? "" : "s")</span>
+                </div>
+            </div>
+            <div class="calendar-kpi-card">
+                <div class="calendar-kpi-icon calendar-kpi-icon-amber"><i class="bi bi-hourglass-split"></i></div>
+                <div class="calendar-kpi-body">
+                    <span class="calendar-kpi-label">Pendiente de cobrar</span>
+                    <span class="calendar-kpi-value">@Money(Model.KpisHoy.PendienteCobrarHoy)</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* ── WORKSPACE ── *@
+    <div class="calendar-workspace">
+
+        <div class="calendar-panel calendar-panel-left">
+
+            <div class="calendar-controls">
+                <div class="calendar-controls-row">
+                    <div class="calendar-view-toggle" role="group">
+                        <button type="button" class="btn btn-dark btn-sm active"><i class="bi bi-calendar3"></i> Mensual</button>
+                        <button type="button" class="btn btn-outline-dark btn-sm js-abrir-dia" data-fecha="@Day(Model.Fecha)">
+                            <i class="bi bi-calendar-day"></i> Diario
+                        </button>
+                    </div>
+                    @if (Model.PuedeCrearCitas)
+                    {
+                        <button type="button" class="btn btn-dark btn-sm ms-auto" data-bs-toggle="modal" data-bs-target="#nuevaCitaModal">
+                            <i class="bi bi-plus-lg"></i> Nueva cita
+                        </button>
+                    }
+                </div>
+                <div class="calendar-controls-row">
+                    <div class="calendar-control-group">
+                        <label class="calendar-control-label" for="mpInicio">Inicio</label>
+                        <input type="number" id="mpInicio" class="form-control form-control-sm" style="width:70px" min="0" max="23" value="6">
+                    </div>
+                    <div class="calendar-control-group">
+                        <label class="calendar-control-label" for="mpFin">Fin</label>
+                        <input type="number" id="mpFin" class="form-control form-control-sm" style="width:70px" min="1" max="24" value="22">
+                    </div>
+                    <div class="calendar-control-group">
+                        <label class="calendar-control-label" for="mpIntervalo">Intervalo</label>
+                        <select id="mpIntervalo" class="form-select form-select-sm" style="width:95px">
+                            <option value="15">15 min</option>
+                            <option value="30" selected>30 min</option>
+                            <option value="45">45 min</option>
+                            <option value="60">60 min</option>
+                        </select>
+                    </div>
+                    <div class="calendar-control-group">
+                        <label class="calendar-control-label">&nbsp;</label>
+                        <button type="button" id="mpAplicar" class="btn btn-dark btn-sm">Aplicar</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="calendar" class="calendar-container">
+                <div class="mp-cal-monthhead">
+                    <a href="/MiPortal/Calendario?fecha=@Day(Model.MesAnterior)&rango=@ctrl.Rango" class="btn btn-sm btn-outline-dark" title="Mes anterior"><i class="bi bi-chevron-left"></i></a>
+                    <h4>@Model.MesActual.ToString("MMMM yyyy", cr)</h4>
+                    <select class="form-select form-select-sm w-auto mp-cal-jump" data-kind="month">
+                        @for (var m = 1; m <= 12; m++)
+                        {
+                            <option value="@m" selected="@(m == Model.Month)">@(new DateTime(2024, m, 1).ToString("MMMM", cr))</option>
+                        }
+                    </select>
+                    <select class="form-select form-select-sm w-auto mp-cal-jump" data-kind="year">
+                        @for (var y = Model.Year - 5; y <= Model.Year + 5; y++)
+                        {
+                            <option value="@y" selected="@(y == Model.Year)">@y</option>
+                        }
+                    </select>
+                    <a href="/MiPortal/Calendario?fecha=@Day(Model.MesSiguiente)&rango=@ctrl.Rango" class="btn btn-sm btn-outline-dark" title="Mes siguiente"><i class="bi bi-chevron-right"></i></a>
+                </div>
+
+                <div class="calendar-grid">
+                    @foreach (var d in dows)
+                    {
+                        <div class="calendar-day-name">@d</div>
+                    }
+                    @for (var i = 0; i < startDay; i++)
+                    {
+                        <div></div>
+                    }
+                    @for (var dnum = 1; dnum <= diasEnMes; dnum++)
+                    {
+                        var fechaCelda = new DateTime(Model.Year, Model.Month, dnum);
+                        var clases = "calendar-day js-dia-cell";
+                        if (dnum == Model.Fecha.Day) { clases += " selected"; }
+                        if (fechaCelda.Date == Model.HoyNegocio.Date) { clases += " today"; }
+                        var total = Model.ConteoPorDia.TryGetValue(dnum, out var t) ? t : 0;
+                        <div class="@clases" data-fecha="@Day(fechaCelda)">
+                            <strong>@dnum</strong>
+                            <div class="text-muted small">Citas: @total</div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+        </div>
+
+        @* RIGHT: próximas / restantes *@
+        <div class="calendar-panel calendar-panel-right">
+            <div class="whatsapp-inbox-panel today-apt-panel">
+                <div class="whatsapp-inbox-header">
+                    <div>
+                        <h2 class="whatsapp-inbox-title">
+                            <span class="today-apt-mark"><i class="bi bi-clock-history"></i></span>
+                            Próximas citas
+                        </h2>
+                        <p class="today-apt-subtitle">
+                            @Model.Fecha.ToString("dddd dd 'de' MMMM", cr)@(Model.EsHoy ? " · desde ahora" : "")
+                        </p>
+                    </div>
+                    @if (!Model.EsHoy)
+                    {
+                        <a href="/MiPortal/Calendario?rango=@ctrl.Rango" class="action-icon-button">Hoy</a>
+                    }
+                </div>
+
+                <div class="today-apt-toolbar">
+                    <a href="/MiPortal/Calendario?fecha=@Day(Model.FechaAnterior)&rango=@ctrl.Rango" class="btn btn-sm btn-outline-dark"><i class="bi bi-chevron-left"></i></a>
+                    <a href="/MiPortal/Calendario?fecha=@Day(Model.FechaSiguiente)&rango=@ctrl.Rango" class="btn btn-sm btn-outline-dark"><i class="bi bi-chevron-right"></i></a>
+                    <button type="button" class="btn btn-sm btn-outline-dark js-abrir-dia ms-auto" data-fecha="@Day(Model.Fecha)">
+                        <i class="bi bi-calendar-day"></i> Ver día
+                    </button>
+                </div>
+
+                <div id="tareasContainer">
+                    @if (Model.DiaEsPasado)
+                    {
+                        <p class="lp-muted px-1 py-3 m-0">No hay citas restantes para este día. Revisa el control de abajo.</p>
+                    }
+                    else if (Model.CitasRestantes.Count == 0)
+                    {
+                        <p class="lp-muted px-1 py-3 m-0">No tienes citas próximas para este día.</p>
+                    }
+                    else
+                    {
+                        <ul id="listaTareas" class="whatsapp-thread-list list-group">
+                            @foreach (var cita in Model.CitasRestantes)
+                            {
+                                <partial name="_PortalThreadCard" model="cita" />
+                            }
+                        </ul>
+                    }
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    @* ── CONTROL DE CITAS Y COBROS ── *@
+    <div class="mpc-card" id="mpcCard" data-fecha="@Day(Model.Fecha)">
+        <div class="mpc-head">
+            <div class="mpc-head-left">
+                <div class="mpc-icon"><i class="bi bi-calendar2-check"></i></div>
+                <div>
+                    <h2 class="mpc-title">Control de citas y cobros</h2>
+                    <p class="mpc-range" style="margin-top:.15rem;"><i class="bi bi-info-circle"></i> Revisa tus citas y registra cobros pendientes.</p>
+                </div>
+            </div>
+            <div class="mpc-tabs">
+                <button type="button" class="@(ctrl.Rango == "dia" ? "mpc-tab mpc-tab--on" : "mpc-tab") js-mpc-tab" data-rango="dia">Día</button>
+                <button type="button" class="@(ctrl.Rango == "semana" ? "mpc-tab mpc-tab--on" : "mpc-tab") js-mpc-tab" data-rango="semana">Semana</button>
+                <button type="button" class="@(ctrl.Rango == "mes" ? "mpc-tab mpc-tab--on" : "mpc-tab") js-mpc-tab" data-rango="mes">Mes</button>
+            </div>
+        </div>
+
+        <div id="mpcBody" class="mpc-body">
+            @{ ViewData["PuedeRegistrarCobros"] = Model.PuedeRegistrarCobros; }
+            <partial name="_PortalControlBody" model="ctrl" />
+        </div>
+    </div>
+</div>
+
+@if (!Model.PuedeCrearCitas && !Model.PuedeEditarCitas && !Model.PuedeCancelarCitas)
+{
+    <p class="lp-muted" style="font-size:.78rem;margin-top:1rem;text-align:center;">
+        Vista de solo lectura. Para cambios en tus citas, contacta a tu negocio.
+    </p>
+}
+
+@if (Model.PuedeRegistrarCobros)
+{
+    <partial name="_PortalCobroModal" />
+}
+
+@* ── MODAL VISTA DIARIA ── *@
+<div class="modal fade" id="diaModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header mp-dia-head">
+                <div class="d-flex align-items-center gap-2 flex-grow-1">
+                    <button type="button" class="btn btn-sm btn-outline-dark js-dia-prev"><i class="bi bi-chevron-left"></i></button>
+                    <button type="button" class="btn btn-sm btn-outline-dark js-dia-hoy d-none">Hoy</button>
+                    <button type="button" class="btn btn-sm btn-outline-dark js-dia-next"><i class="bi bi-chevron-right"></i></button>
+                    <h5 class="modal-title ms-2" id="diaModalTitle"></h5>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body" id="diaModalBody"></div>
+        </div>
+    </div>
+</div>
+
+@if (Model.PuedeCrearCitas)
+{
+    <div class="modal fade" id="nuevaCitaModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content cal-modal-content">
+                <form method="post" action="/MiPortal/Calendario/CrearCita">
+                    @Html.AntiForgeryToken()
+                    <div class="modal-header cal-modal-header">
+                        <div class="d-flex align-items-center gap-3 flex-grow-1">
+                            <div class="cal-modal-icon"><i class="bi bi-calendar-plus"></i></div>
+                            <div>
+                                <h5 class="modal-title cal-modal-title">Nueva cita</h5>
+                                <p class="cal-modal-subtitle">Agenda una nueva cita en tu calendario</p>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    </div>
+                    <div class="modal-body"><partial name="_PortalCitaCampos" model="Model" /></div>
+                    <div class="modal-footer cal-modal-footer">
+                        <button type="button" class="cal-btn-secondary" data-bs-dismiss="modal"><i class="bi bi-arrow-left"></i> Volver</button>
+                        <button type="submit" class="cal-btn-primary"><i class="bi bi-calendar-check"></i> Guardar cita</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}
+
+@if (Model.PuedeEditarCitas)
+{
+    <div class="modal fade" id="editarCitaModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content cal-modal-content">
+                <form method="post" action="/MiPortal/Calendario/EditarCita">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="citaId" />
+                    <div class="modal-header cal-modal-header">
+                        <div class="d-flex align-items-center gap-3 flex-grow-1">
+                            <div class="cal-modal-icon cal-modal-icon-edit"><i class="bi bi-pencil-fill"></i></div>
+                            <h5 class="modal-title cal-modal-title">Editar cita</h5>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    </div>
+                    <div class="modal-body"><partial name="_PortalCitaCampos" model="Model" /></div>
+                    <div class="modal-footer cal-modal-footer">
+                        <button type="button" class="cal-btn-secondary" data-bs-dismiss="modal"><i class="bi bi-arrow-left"></i> Volver</button>
+                        <button type="submit" class="cal-btn-primary"><i class="bi bi-floppy2-fill"></i> Guardar cambios</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        window.MP_CAL = {
+            citasDiaUrl: "/MiPortal/Calendario/CitasDia",
+            hoy: "@Day(Model.HoyNegocio)",
+            puedeCrear: @(Model.PuedeCrearCitas ? "true" : "false"),
+            puedeEditar: @(Model.PuedeEditarCitas ? "true" : "false"),
+            puedeCancelar: @(Model.PuedeCancelarCitas ? "true" : "false"),
+            puedeCobrar: @(Model.PuedeRegistrarCobros ? "true" : "false"),
+            color: "@Model.ColorCalendario"
+        };
+    </script>
+    <script src="~/js/miportal-calendar.js" asp-append-version="true"></script>
+}

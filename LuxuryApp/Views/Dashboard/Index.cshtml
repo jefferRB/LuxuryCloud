@@ -1,0 +1,451 @@
+﻿@model LuxuryApp.Models.Finanzas.DashboardViewModel
+@using System.Globalization
+
+@{
+    ViewData["Title"] = "Dashboard";
+    var esCr = CultureInfo.GetCultureInfo("es-CR");
+
+    var margenPct = Model.TotalGenerado > 0
+        ? Math.Round(Model.ResultadoAnalitico / Model.TotalGenerado * 100, 1)
+        : 0m;
+
+    var gananciaCssClass = Model.ResultadoAnalitico > 0 ? "dfin-color-profit"
+                         : Model.ResultadoAnalitico < 0 ? "dfin-color-danger"
+                         : "dfin-color-neutral";
+
+    var margenCssClass = margenPct > 0 ? "dfin-color-profit"
+                       : margenPct < 0 ? "dfin-color-danger"
+                       : "dfin-color-neutral";
+
+    var totalMetodos = Model.IngresosEfectivo + Model.IngresosSinpe + Model.IngresosTarjeta;
+    var pctEfectivo = totalMetodos > 0 ? Math.Round(Model.IngresosEfectivo / totalMetodos * 100, 0) : 0m;
+    var pctSinpe    = totalMetodos > 0 ? Math.Round(Model.IngresosSinpe    / totalMetodos * 100, 0) : 0m;
+    var pctTarjeta  = totalMetodos > 0 ? Math.Round(Model.IngresosTarjeta  / totalMetodos * 100, 0) : 0m;
+}
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+<link rel="stylesheet" href="~/css/dashboard-fin.css" asp-append-version="true">
+
+<div class="dashboard-wrapper">
+<div class="dashboard-container">
+
+    <!-- ── A. HEADER ── -->
+    <div class="dfin-header">
+
+        <div class="module-heading">
+            <span class="module-eyebrow">RESUMEN FINANCIERO</span>
+            <h2 class="module-title">Dashboard Financiero</h2>
+            <p class="module-subtitle">
+                @esCr.DateTimeFormat.GetMonthName(Model.MesSeleccionado) @Model.AnioSeleccionado
+            </p>
+        </div>
+
+        <div class="dfin-header-right">
+            <a class="dfin-nav-btn"
+               asp-action="Index"
+               asp-route-mes="@(Model.MesSeleccionado == 1 ? 12 : Model.MesSeleccionado - 1)"
+               asp-route-anio="@(Model.MesSeleccionado == 1 ? Model.AnioSeleccionado - 1 : Model.AnioSeleccionado)">
+                <i class="bi bi-chevron-left"></i>
+            </a>
+
+            <form asp-action="Index" method="get" class="dfin-period-form">
+                <select name="mes" class="dfin-select" onchange="this.form.submit()">
+                    @for (int m = 1; m <= 12; m++)
+                    {
+                        <option value="@m" selected="@(m == Model.MesSeleccionado)">
+                            @esCr.DateTimeFormat.GetMonthName(m)
+                        </option>
+                    }
+                </select>
+                <select name="anio" class="dfin-select" onchange="this.form.submit()">
+                    @for (int a = Model.AnioSeleccionado - 5; a <= Model.AnioSeleccionado + 1; a++)
+                    {
+                        <option value="@a" selected="@(a == Model.AnioSeleccionado)">@a</option>
+                    }
+                </select>
+            </form>
+
+            <a class="dfin-nav-btn"
+               asp-action="Index"
+               asp-route-mes="@(Model.MesSeleccionado == 12 ? 1 : Model.MesSeleccionado + 1)"
+               asp-route-anio="@(Model.MesSeleccionado == 12 ? Model.AnioSeleccionado + 1 : Model.AnioSeleccionado)">
+                <i class="bi bi-chevron-right"></i>
+            </a>
+        </div>
+
+    </div>
+
+    <!-- ── B. SUMMARY STRIP ── -->
+    <div class="dfin-summary">
+
+        <div class="dfin-summary-col">
+            <span class="dfin-sum-label">INGRESOS NETOS</span>
+            <span class="dfin-sum-value dfin-color-income">&#8353; @Model.TotalSinImpuestos.ToString("N2")</span>
+            <span class="dfin-sum-sub">Servicios + productos - impuestos</span>
+        </div>
+
+        <div class="dfin-summary-sep"><span>&minus;</span></div>
+
+        @* Costo ECONÓMICO del mes (devengado), no lo que salió de caja: por eso no se llama
+           "Egresos" como la pantalla /Egresos, que suma por fecha de pago. *@
+        <div class="dfin-summary-col">
+            <span class="dfin-sum-label">COSTOS Y GASTOS DEL MES</span>
+            <span class="dfin-sum-value dfin-color-expenses">&#8353; @Model.TotalEgresosAnaliticos.ToString("N2")</span>
+            @* Las dos partes a la vista: así el dueño puede explicarse el número sin abrir otra
+               pantalla, y se ve que la planilla cuenta aunque todavía no se haya pagado. *@
+            <span class="dfin-sum-sub dfin-sum-breakdown">
+                <span>Liquidaciones devengadas <b>&#8353; @Model.TotalPagadoFuncionariosAnalitico.ToString("N2")</b></span>
+                <span>Gastos operativos <b>&#8353; @((Model.Desglose?.GastosOperativos ?? 0m).ToString("N2"))</b></span>
+            </span>
+        </div>
+
+        <div class="dfin-summary-sep"><span>&equals;</span></div>
+
+        <div class="dfin-summary-col">
+            <span class="dfin-sum-label">GANANCIA DEL MES</span>
+            <span class="dfin-sum-value @gananciaCssClass">&#8353; @Model.ResultadoAnalitico.ToString("N2")</span>
+            <span class="dfin-sum-sub">
+                @if (margenPct != 0)
+                {
+                    var arrow = margenPct > 0 ? "&#8593;" : "&#8595;";
+                    <span class="dfin-badge-margen @margenCssClass">@Html.Raw(arrow) @margenPct%</span>
+                }
+                <span>margen @margenPct%</span>
+            </span>
+        </div>
+
+    </div>
+
+    @* ── B1. MOVIMIENTO DE CAJA ──
+       Deliberadamente FUERA de la ecuación de arriba: la ganancia es por devengado. Esto responde
+       otra pregunta ("¿cuánto dinero registré como salido este mes?") y es lo mismo que muestra la
+       pantalla /Egresos con el mismo rango. *@
+    <div class="dfin-caja-strip">
+        <div class="dfin-caja-main">
+            <span class="dfin-caja-label">
+                <i class="bi bi-cash-stack"></i> Salidas de caja
+            </span>
+            <span class="dfin-caja-value">&#8353; @Model.SalidasCajaMes.ToString("N2")</span>
+        </div>
+        <p class="dfin-caja-help">
+            Pagos y egresos registrados durante el período. Puede diferir de los costos del mes
+            porque algunos pagos corresponden a producción de otros períodos.
+        </p>
+    </div>
+
+    @* ── B2. REPARTO DE LA GANANCIA ──
+       Solo existe si hay participación vigente en el periodo. Cuando no la hay, el bloque
+       no se renderiza: la cifra no viaja al HTML. *@
+    @if (Model.ParticipacionAsociados is { } reparto)
+    {
+        <div class="dfin-alloc">
+            <div class="dfin-alloc-head">
+                <i class="bi bi-people-fill"></i>
+                <span>Reparto de la ganancia</span>
+                <a class="dfin-alloc-link" asp-controller="Asociados" asp-action="Index">
+                    Ver asociados <i class="bi bi-arrow-right-short"></i>
+                </a>
+            </div>
+
+            <div class="dfin-alloc-grid">
+                <div class="dfin-alloc-col">
+                    <span class="dfin-alloc-label">Ganancia distribuible</span>
+                    <span class="dfin-alloc-value @(reparto.GananciaDistribuible >= 0 ? "dfin-color-profit" : "dfin-color-danger")">
+                        &#8353; @reparto.GananciaDistribuible.ToString("N2")
+                    </span>
+                    <span class="dfin-alloc-sub">Cobrado sin IVA &minus; gastos &minus; liquidaciones</span>
+                </div>
+
+                <div class="dfin-alloc-col">
+                    <span class="dfin-alloc-label">Participación estimada del mes</span>
+                    <span class="dfin-alloc-value">&#8353; @reparto.ParticipacionMonto.ToString("N2")</span>
+                    <span class="dfin-alloc-sub">
+                        <span class="dfin-alloc-pct">@reparto.ParticipacionPorcentaje.ToString("0.##")%</span>
+                        @if (reparto.CantidadAsociados == 1)
+                        {
+                            <span>1 asociado</span>
+                        }
+                        else
+                        {
+                            <span>@reparto.CantidadAsociados asociados</span>
+                        }
+                    </span>
+                    @if (reparto.ProximoCorte is { } proximoCorte)
+                    {
+                        <span class="dfin-alloc-sub">Próximo corte: @proximoCorte.ToString("dd/MM/yyyy")</span>
+                    }
+                </div>
+
+                <div class="dfin-alloc-col">
+                    <span class="dfin-alloc-label">Ganancia restante</span>
+                    <span class="dfin-alloc-value @(reparto.GananciaRestante >= 0 ? "dfin-color-profit" : "dfin-color-danger")">
+                        &#8353; @reparto.GananciaRestante.ToString("N2")
+                    </span>
+                    <span class="dfin-alloc-sub">@reparto.PorcentajeRestante.ToString("0.##")% del negocio</span>
+                </div>
+            </div>
+
+            @* El Dashboard mide el MES CALENDARIO. Si el corte contractual no coincide, el monto
+               de arriba es una estimación del mes, no lo que se paga en el próximo corte. *@
+            @if (reparto.PeriodoDifiereDelCorte)
+            {
+                <p class="dfin-alloc-note">
+                    <i class="bi bi-info-circle"></i>
+                    Este monto corresponde al mes calendario (@reparto.PeriodoEtiqueta). El pago real
+                    se calcula sobre el período del corte de cada asociado, que empieza y termina en
+                    otras fechas: mirá su estado de cuenta para el número definitivo.
+                </p>
+            }
+        </div>
+    }
+
+    <!-- ── C. KPI GRID ── -->
+    <div class="dfin-kpi-grid">
+
+        <div class="kpi-card dfin-kpi-card">
+            <div class="dfin-kpi-icon dfin-icon-blue"><i class="bi bi-scissors"></i></div>
+            <div class="dfin-kpi-body">
+                <span class="dfin-kpi-label-text">Servicios Generados</span>
+                <span class="dfin-kpi-value-text dfin-color-income">&#8353; @Model.TotalServicios.ToString("N2")</span>
+            </div>
+        </div>
+
+        <div class="kpi-card dfin-kpi-card">
+            <div class="dfin-kpi-icon dfin-icon-blue"><i class="bi bi-box-seam"></i></div>
+            <div class="dfin-kpi-body">
+                <span class="dfin-kpi-label-text">Productos Generados</span>
+                <span class="dfin-kpi-value-text dfin-color-income">&#8353; @Model.TotalProductos.ToString("N2")</span>
+            </div>
+        </div>
+
+        <div class="kpi-card dfin-kpi-card">
+            <div class="dfin-kpi-icon dfin-icon-neutral"><i class="bi bi-receipt"></i></div>
+            <div class="dfin-kpi-body">
+                <span class="dfin-kpi-label-text">Total sin Impuestos</span>
+                <span class="dfin-kpi-value-text">&#8353; @Model.TotalSinImpuestos.ToString("N2")</span>
+            </div>
+        </div>
+
+        <div class="kpi-card dfin-kpi-card">
+            <div class="dfin-kpi-icon dfin-icon-yellow"><i class="bi bi-percent"></i></div>
+            <div class="dfin-kpi-body">
+                <span class="dfin-kpi-label-text">Impuestos</span>
+                <span class="dfin-kpi-value-text dfin-color-warning">&#8353; @Model.TotalImpuestos.ToString("N2")</span>
+            </div>
+        </div>
+
+        <div class="kpi-card dfin-kpi-card">
+            <div class="dfin-kpi-icon dfin-icon-yellow"><i class="bi bi-people"></i></div>
+            <div class="dfin-kpi-body">
+                @* Devengado del período (lo que el equipo ganó), no lo que salió de caja: es la
+                   misma línea que resta el estado de cuenta del inversionista. *@
+                <span class="dfin-kpi-label-text">Liquidaciones del equipo</span>
+                <span class="dfin-kpi-value-text dfin-color-warning">&#8353; @Model.TotalPagadoFuncionariosAnalitico.ToString("N2")</span>
+            </div>
+        </div>
+
+        <div class="kpi-card dfin-kpi-card">
+            <div class="dfin-kpi-icon dfin-icon-green"><i class="bi bi-graph-up-arrow"></i></div>
+            <div class="dfin-kpi-body">
+                <span class="dfin-kpi-label-text">Margen de Ganancia</span>
+                <span class="dfin-kpi-value-text @margenCssClass">@margenPct%</span>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ── D. CHARTS ── -->
+    <div class="dfin-charts-row">
+
+        <!-- Donut: Ingresos por Método de Pago -->
+        <div class="kpi-card private-chart-card dfin-chart-card">
+            <h6 class="dfin-chart-title">Ingresos por Método de Pago</h6>
+            <div class="dfin-donut-layout">
+                <div class="dfin-donut-wrap">
+                    <canvas id="metodosPagoChart"></canvas>
+                </div>
+                <div class="dfin-donut-legend">
+                    <div class="dfin-legend-row">
+                        <span class="dfin-legend-dot" style="background:var(--dfin-c1)"></span>
+                        <span class="dfin-legend-name">Efectivo</span>
+                        <span class="dfin-legend-amt">&#8353; @Model.IngresosEfectivo.ToString("N0")</span>
+                        <span class="dfin-legend-pct">@pctEfectivo%</span>
+                    </div>
+                    <div class="dfin-legend-row">
+                        <span class="dfin-legend-dot" style="background:var(--dfin-c2)"></span>
+                        <span class="dfin-legend-name">SINPE</span>
+                        <span class="dfin-legend-amt">&#8353; @Model.IngresosSinpe.ToString("N0")</span>
+                        <span class="dfin-legend-pct">@pctSinpe%</span>
+                    </div>
+                    <div class="dfin-legend-row">
+                        <span class="dfin-legend-dot" style="background:var(--dfin-c3)"></span>
+                        <span class="dfin-legend-name">Tarjeta</span>
+                        <span class="dfin-legend-amt">&#8353; @Model.IngresosTarjeta.ToString("N0")</span>
+                        <span class="dfin-legend-pct">@pctTarjeta%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bar: Resultado Caja vs Analítico -->
+        <div class="kpi-card private-chart-card dfin-chart-card">
+            <h6 class="dfin-chart-title">Ganancias mensuales </h6>
+            <div class="dfin-bar-wrap">
+                <canvas id="gananciaMesChart"></canvas>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+</div>
+
+@section Scripts {
+<script>
+(function () {
+    'use strict';
+
+    var tokens = window.luxuryGetPrivateThemeTokens
+        ? window.luxuryGetPrivateThemeTokens()
+        : { chartText: '#e2e8f0', chartMuted: '#94a3b8', chartGrid: 'rgba(148,163,184,0.22)' };
+
+    // Fallback en literales: solo aplica si el motor de temas no cargo. Con el motor
+    // presente la paleta sale de los tokens --private-chart-* del tema activo.
+    var palette = tokens.chartPalette || ['#2563eb', '#16a34a', '#d97706', '#dc2626', '#0891b2'];
+
+    // Push palette colors into CSS vars so the HTML legend dots match the chart
+    var wrapper = document.querySelector('.dashboard-wrapper');
+    if (wrapper) {
+        wrapper.style.setProperty('--dfin-c1', palette[0]);
+        wrapper.style.setProperty('--dfin-c2', palette[1]);
+        wrapper.style.setProperty('--dfin-c3', palette[2]);
+    }
+
+    // ── Donut chart (center-text via inline plugin) ──────
+    var donutCanvas = document.getElementById('metodosPagoChart');
+    if (window.Chart && donutCanvas) {
+        window.luxuryDestroyChartForCanvas?.(donutCanvas);
+
+        var centerTextPlugin = {
+            id: 'dfinCenterText',
+            afterDraw: function (chart) {
+                if (chart.config.type !== 'doughnut') return;
+                var ctx2 = chart.ctx;
+                var cx = chart.width / 2;
+                var cy = chart.height / 2;
+                var total = chart.data.datasets[0].data.reduce(function (a, b) { return a + b; }, 0);
+                var fmt = new Intl.NumberFormat('es-CR', { maximumFractionDigits: 0 });
+                ctx2.save();
+                ctx2.textAlign = 'center';
+                ctx2.textBaseline = 'middle';
+                ctx2.font = 'bold 13px sans-serif';
+                ctx2.fillStyle = tokens.chartText;
+                ctx2.fillText('₡ ' + fmt.format(total), cx, cy - 9);
+                ctx2.font = '10px sans-serif';
+                ctx2.fillStyle = tokens.chartMuted;
+                ctx2.fillText('TOTAL', cx, cy + 9);
+                ctx2.restore();
+            }
+        };
+
+        var metodosPagoChart = new Chart(donutCanvas, {
+            type: 'doughnut',
+            plugins: [centerTextPlugin],
+            data: {
+                labels: ['Efectivo', 'SINPE', 'Tarjeta'],
+                datasets: [{
+                    data: @Html.Raw(Json.Serialize(new[] { Model.IngresosEfectivo, Model.IngresosSinpe, Model.IngresosTarjeta })),
+                    backgroundColor: palette,
+                    borderColor: 'transparent',
+                    borderWidth: 0,
+                    hoverOffset: 8,
+                    luxuryUsePalette: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '68%',
+                color: tokens.chartText,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function (ctx) {
+                                var val = ctx.parsed;
+                                var t = ctx.dataset.data.reduce(function (a, b) { return a + b; }, 0);
+                                var pct = t > 0 ? Math.round(val / t * 100) : 0;
+                                return ' ₡ ' + new Intl.NumberFormat('es-CR').format(val) + '  (' + pct + '%)';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        window.luxuryRegisterChart?.(metodosPagoChart);
+    }
+
+    // ── Bar chart (monthly results) ──────────────────────
+    var barCanvas = document.getElementById('gananciaMesChart');
+    if (window.Chart && barCanvas) {
+        window.luxuryDestroyChartForCanvas?.(barCanvas);
+
+        var barData = @Html.Raw(Json.Serialize(Model.ResultadoAnaliticoPorMes));
+
+        var successColor = tokens.chartSuccessSoft || 'rgba(74,222,128,0.75)';
+        var dangerColor  = tokens.chartDangerSoft  || 'rgba(251,113,133,0.75)';
+        var successBorder = tokens.chartSuccess || 'rgba(74,222,128,1)';
+        var dangerBorder  = tokens.chartDanger  || 'rgba(251,113,133,1)';
+
+        var bgColors     = barData.map(function (v) { return v >= 0 ? successColor : dangerColor; });
+        var borderColors = barData.map(function (v) { return v >= 0 ? successBorder : dangerBorder; });
+
+        var gananciaMesChart = new Chart(barCanvas, {
+            type: 'bar',
+            data: {
+                labels: ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'],
+                datasets: [{
+                    label: 'Ganancias',
+                    data: barData,
+                    backgroundColor: bgColors,
+                    borderColor: borderColors,
+                    borderWidth: 1,
+                    borderRadius: 5,
+                    borderSkipped: false,
+                    luxuryAutoBackground: true,
+                    luxuryAutoBorder: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                color: tokens.chartText,
+                scales: {
+                    x: {
+                        ticks: { color: tokens.chartMuted, font: { size: 11 } },
+                        grid: { color: tokens.chartGrid }
+                    },
+                    y: {
+                        ticks: { color: tokens.chartMuted, font: { size: 11 } },
+                        grid: { color: tokens.chartGrid }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        labels: { color: tokens.chartText }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function (ctx) {
+                                return ' ₡ ' + new Intl.NumberFormat('es-CR').format(ctx.parsed.y);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        window.luxuryRegisterChart?.(gananciaMesChart);
+    }
+}());
+</script>
+}

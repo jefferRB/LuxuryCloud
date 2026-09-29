@@ -1,0 +1,178 @@
+@using LuxuryApp.Models.Inversionistas
+@model InvestorPolicyViewModel
+
+@{
+    ViewData["Title"] = "Cómo se calcula la ganancia";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/finance-modules.css" asp-append-version="true" />
+}
+
+<div class="finance-page-shell">
+
+    <div class="finance-hero">
+        <div class="finance-hero-left module-heading">
+            <span class="module-eyebrow">Inversionistas</span>
+            <h1 class="module-title"><i class="bi bi-sliders module-title-icon" aria-hidden="true"></i>Cómo se calcula la ganancia</h1>
+            <p class="module-subtitle">
+                Definí qué entra y qué sale de la ganancia distribuible del negocio.
+            </p>
+        </div>
+    </div>
+
+    @if (TempData["Mensaje"] is string mensaje)
+    {
+        <div class="svc-alert svc-alert--success" role="status">@mensaje</div>
+    }
+
+    <form asp-action="Politica" method="post">
+        @Html.AntiForgeryToken()
+
+        <div class="finance-form-body">
+
+            <div class="finance-form-info-box">
+                <i class="bi bi-info-circle-fill"></i>
+                <strong>Ingresos cobrados sin IVA</strong> − gastos operativos − liquidaciones del equipo
+                ± ajustes − pérdida anterior = <strong>ganancia distribuible</strong>.
+                Los pagos a colaboradores y a inversionistas se excluyen siempre de los gastos para no
+                restar dos veces ni reducir la ganancia con el propio pago del inversionista.
+            </div>
+
+            <div class="finance-form-grid">
+
+                <div class="finance-form-full">
+                    <div class="finance-checkbox-group">
+                        <label class="finance-checkbox-item">
+                            <input asp-for="ExcluirIva" type="checkbox" />
+                            <span>Excluir el IVA de los ingresos (recomendado: el IVA no es del negocio)</span>
+                        </label>
+                        <label class="finance-checkbox-item">
+                            <input asp-for="IncluirLiquidaciones" type="checkbox" />
+                            <span>Restar las liquidaciones de colaboradores</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="finance-form-field">
+                    <label asp-for="BaseLiquidaciones" class="finance-form-label">Base de las liquidaciones</label>
+                    <select asp-for="BaseLiquidaciones" class="finance-form-control">
+                        <option value="@((int)InvestorSettlementBasis.Devengado)">
+                            Lo devengado en el periodo (recomendado)
+                        </option>
+                        <option value="@((int)InvestorSettlementBasis.Pagado)">
+                            Solo lo efectivamente pagado
+                        </option>
+                    </select>
+                </div>
+
+                <div class="finance-form-field">
+                    <label asp-for="ModoCategoriasGasto" class="finance-form-label">Categorías de gasto</label>
+                    <select asp-for="ModoCategoriasGasto" class="finance-form-control" id="modoCategorias">
+                        <option value="@((int)InvestorExpenseCategoryMode.Todas)">Todas las categorías</option>
+                        <option value="@((int)InvestorExpenseCategoryMode.SoloSeleccionadas)">Solo las seleccionadas</option>
+                        <option value="@((int)InvestorExpenseCategoryMode.TodasExceptoSeleccionadas)">Todas excepto las seleccionadas</option>
+                    </select>
+                </div>
+
+                <div class="finance-form-full">
+                    <label class="finance-form-label">Categorías</label>
+                    <div class="finance-checkbox-group">
+                        @if (Model.Categorias.Any())
+                        {
+                            foreach (var categoria in Model.Categorias)
+                            {
+                                <label class="finance-checkbox-item">
+                                    <input type="checkbox"
+                                           name="CategoriasSeleccionadas"
+                                           value="@categoria.Id"
+                                           checked="@Model.CategoriasSeleccionadas.Contains(categoria.Id)" />
+                                    <span>@categoria.Nombre</span>
+                                </label>
+                            }
+                        }
+                        else
+                        {
+                            <p class="svc-sub">Todavía no hay categorías de egreso registradas.</p>
+                        }
+                    </div>
+                    <span class="finance-historial-help">
+                        Solo aplica cuando el modo no es «Todas las categorías».
+                    </span>
+                </div>
+
+                <div class="finance-form-field">
+                    <label asp-for="TratamientoPerdidasPorDefecto" class="finance-form-label">
+                        Tratamiento de pérdidas por defecto
+                    </label>
+                    <select asp-for="TratamientoPerdidasPorDefecto" class="finance-form-control">
+                        <option value="@((int)InvestorLossTreatment.NoDistribution)">Sin arrastre</option>
+                        <option value="@((int)InvestorLossTreatment.CarryForward)">Con arrastre</option>
+                    </select>
+                </div>
+
+                <div class="finance-form-field">
+                    <label asp-for="FrecuenciaPorDefecto" class="finance-form-label">Frecuencia por defecto</label>
+                    <select asp-for="FrecuenciaPorDefecto" class="finance-form-control"
+                            asp-items="Html.GetEnumSelectList<InvestorPayoutFrequency>()"></select>
+                </div>
+
+                <div class="finance-form-field">
+                    <label asp-for="DiasEsperaGeneracion" class="finance-form-label">
+                        Días de espera tras el cierre del periodo
+                    </label>
+                    <input asp-for="DiasEsperaGeneracion" type="number" min="0" max="15"
+                           class="finance-form-control finance-form-control--no-icon" />
+                </div>
+
+                <div class="finance-form-field">
+                    <label asp-for="HoraGeneracion" class="finance-form-label">Hora de generación</label>
+                    <input asp-for="HoraGeneracion" type="number" min="0" max="23"
+                           class="finance-form-control finance-form-control--no-icon" />
+                </div>
+
+                <div class="finance-form-full">
+                    <div class="finance-checkbox-group">
+                        <label class="finance-checkbox-item">
+                            <input asp-for="GeneracionAutomatica" type="checkbox" />
+                            <span>Generar los estados automáticamente al cerrar el periodo</span>
+                        </label>
+                        <label class="finance-checkbox-item">
+                            <input asp-for="EnvioAutomatico" type="checkbox" />
+                            <span>Enviar automáticamente tras generar</span>
+                        </label>
+                    </div>
+
+                    @* Generar y enviar son dos cosas distintas y se explican como tales: el estado
+                       siempre se genera; el correo solo sale si además se pide. *@
+                    <div class="finance-form-info-box" style="margin-top:1rem;">
+                        <i class="bi bi-info-circle-fill"></i>
+                        <p>
+                            Con la generación automática activada, cada corte se emite solo cuando su
+                            período <strong>ya cerró por completo</strong> (el propio día de corte
+                            todavía cuenta para ese período), respetando los días de espera y la hora
+                            de arriba. Si el sistema estuvo caído, al volver genera los cortes que
+                            hayan quedado pendientes, en orden.
+                        </p>
+                        <p>
+                            <strong>Generar no es enviar.</strong> El estado se emite igual; el correo
+                            al inversionista solo sale si marcás el envío automático (acá para todos, o
+                            en la ficha de cada inversionista). Si no, lo mandás vos desde el estado.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="finance-form-footer">
+                <div class="finance-form-footer-left">
+                    <a asp-controller="Asociados" asp-action="Index" class="finance-btn-back">
+                        <i class="bi bi-arrow-left"></i> Volver
+                    </a>
+                </div>
+                <button type="submit" class="finance-btn-save">
+                    <i class="bi bi-check2-circle"></i> Guardar
+                </button>
+            </div>
+        </div>
+    </form>
+</div>

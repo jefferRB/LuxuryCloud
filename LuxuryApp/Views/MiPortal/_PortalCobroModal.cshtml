@@ -1,0 +1,204 @@
+@using LuxuryApp.Models.Funcionarios
+@{
+    var retorno = ViewData["CobroRetorno"] as string ?? "panel";
+    var permsCobro = ViewData["PortalPerms"] as FuncionarioPortalPermisosSet;
+    var puedeComprobante = permsCobro?.PuedeEnviarComprobantes ?? false;
+}
+<style>
+    /* Modal Registrar cobro — premium, adaptado a los 4 temas con variables --private-* */
+    #cobroModal .modal-content { border:none; border-radius:1.1rem; overflow:hidden;
+        background:var(--private-surface-bg,#fff); color:var(--private-surface-text,#0f172a);
+        box-shadow:var(--private-panel-shadow,0 24px 60px rgba(2,6,23,.35)); }
+    .pcm-header { display:flex; align-items:center; gap:.9rem; padding:1.15rem 1.25rem;
+        border-bottom:1px solid var(--private-surface-border,#eef1f6);
+        background:linear-gradient(135deg, rgba(var(--private-accent-indigo-rgb), .16), rgba(var(--private-accent-alt-rgb), .08)); }
+    .pcm-header-ic { width:2.8rem; height:2.8rem; border-radius:13px; flex-shrink:0; display:flex; align-items:center; justify-content:center;
+        font-size:1.3rem; background:rgba(var(--private-accent-indigo-rgb), .22); color:#a5b4fc; }
+    .pcm-title { font-size:1.08rem; font-weight:800; margin:0; color:var(--private-surface-text,#0f172a); }
+    .pcm-sub { font-size:.8rem; margin:.1rem 0 0; color:var(--private-muted-text,#64748b); }
+    .pcm-close { margin-left:auto; border:none; background:transparent; color:var(--private-muted-text,#64748b);
+        font-size:1.1rem; cursor:pointer; line-height:1; padding:.3rem; border-radius:.5rem; }
+    .pcm-close:hover { background:var(--private-row-hover-bg,rgba(15,23,42,.06)); }
+    .pcm-body { padding:1.25rem; }
+    .pcm-summary { display:flex; align-items:center; gap:.8rem; padding:.85rem .95rem; margin-bottom:1.1rem;
+        border:1px solid var(--private-surface-border,#eef1f6); border-radius:14px;
+        background:var(--private-row-bg,rgba(148,163,184,.08)); }
+    .pcm-avatar { width:2.6rem; height:2.6rem; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center;
+        font-weight:800; font-size:.85rem; color:#fff; background:linear-gradient(135deg,var(--private-accent-indigo),var(--private-accent-alt-mid)); }
+    .pcm-summary-info { flex:1; min-width:0; }
+    .pcm-cliente { font-weight:800; font-size:1rem; color:var(--private-surface-text,#0f172a); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .pcm-servicio { font-size:.82rem; color:var(--private-muted-text,#64748b); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .pcm-summary-monto { text-align:right; flex-shrink:0; }
+    .pcm-summary-label { display:block; font-size:.62rem; font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:var(--private-muted-text,#94a3b8); }
+    .pcm-esperado { font-weight:800; font-size:.98rem; color:var(--private-surface-text,#0f172a); }
+    .pcm-label { display:block; font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.3px;
+        color:var(--private-muted-text,#94a3b8); margin:0 0 .35rem; }
+    .pcm-money { display:flex; align-items:center; gap:.55rem; margin-bottom:1rem; padding:.55rem .8rem; border-radius:.7rem;
+        border:1.5px solid var(--private-input-border,rgba(15,23,42,.14)); background:var(--private-input-bg,#fff);
+        transition:border-color .15s, box-shadow .15s; }
+    .pcm-money:focus-within { border-color:var(--private-accent-indigo); box-shadow:0 0 0 3px rgba(var(--private-accent-indigo-rgb), .2); }
+    .pcm-money-cur { font-weight:800; font-size:1.15rem; color:var(--private-muted-text,#64748b); }
+    .pcm-money-input { flex:1; border:none; background:transparent; outline:none; font-size:1.35rem; font-weight:800;
+        color:var(--private-input-text,#0f172a); width:100%; }
+    .pcm-select, .pcm-input { width:100%; border-radius:.7rem; padding:.6rem .8rem; font-size:.9rem; margin-bottom:1rem;
+        border:1px solid var(--private-input-border,rgba(15,23,42,.14)); background:var(--private-input-bg,#fff);
+        color:var(--private-input-text,#0f172a); }
+    .pcm-select:focus, .pcm-input:focus { outline:none; border-color:var(--private-accent-indigo); box-shadow:0 0 0 3px rgba(var(--private-accent-indigo-rgb), .18); }
+    .pcm-footer { display:flex; gap:.6rem; padding:1rem 1.25rem 1.25rem; }
+    .pcm-btn-ghost { flex:0 0 auto; border:1px solid var(--private-surface-border,rgba(15,23,42,.15)); background:transparent;
+        color:var(--private-surface-text,#0f172a); border-radius:.7rem; padding:.65rem 1.1rem; font-weight:700; font-size:.9rem; cursor:pointer; }
+    .pcm-btn-ghost:hover { background:var(--private-row-hover-bg,rgba(15,23,42,.06)); }
+    .pcm-btn-primary { flex:1; border:none; border-radius:.7rem; padding:.65rem 1.1rem; font-weight:800; font-size:.92rem; cursor:pointer;
+        color:#fff; background:linear-gradient(135deg,var(--private-accent-indigo),var(--private-accent-indigo-strong)); box-shadow:0 8px 20px rgba(var(--private-accent-indigo-strong-rgb), .35);
+        display:inline-flex; align-items:center; justify-content:center; gap:.45rem; }
+    .pcm-btn-primary:hover { filter:brightness(1.06); }
+    @@media (max-width:480px){
+        .pcm-body { padding:1rem; } .pcm-footer { padding:.85rem 1rem 1.1rem; flex-direction:column-reverse; }
+        .pcm-btn-ghost, .pcm-btn-primary { width:100%; }
+    }
+</style>
+
+<div class="modal fade" id="cobroModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <form method="post" action="/MiPortal/Cobros/Registrar">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="citaId" id="cobroCitaId" />
+                <input type="hidden" name="retorno" value="@retorno" />
+
+                <div class="pcm-header">
+                    <div class="pcm-header-ic"><i class="bi bi-cash-coin"></i></div>
+                    <div>
+                        <h5 class="pcm-title">Registrar cobro</h5>
+                        <p class="pcm-sub">Confirma el cobro del servicio</p>
+                    </div>
+                    <button type="button" class="pcm-close" data-bs-dismiss="modal" aria-label="Cerrar"><i class="bi bi-x-lg"></i></button>
+                </div>
+
+                <div class="modal-body pcm-body">
+                    <div class="pcm-summary">
+                        <div class="pcm-avatar" id="cobroIniciales">··</div>
+                        <div class="pcm-summary-info">
+                            <div class="pcm-cliente" id="cobroCliente">Cliente</div>
+                            <div class="pcm-servicio" id="cobroServicio">Servicio</div>
+                        </div>
+                        <div class="pcm-summary-monto">
+                            <span class="pcm-summary-label">Monto cita</span>
+                            <span class="pcm-esperado" id="cobroEsperado">—</span>
+                        </div>
+                    </div>
+
+                    <label class="pcm-label">Monto cobrado</label>
+                    <div class="pcm-money">
+                        <span class="pcm-money-cur">₡</span>
+                        <input type="number" name="monto" id="cobroMonto" step="0.01" min="0.01" required
+                               class="pcm-money-input" placeholder="0,00" />
+                    </div>
+
+                    <label class="pcm-label">Método de pago</label>
+                    <select name="metodoPago" class="pcm-select">
+                        <option value="EFECTIVO">Efectivo</option>
+                        <option value="TARJETA">Tarjeta</option>
+                        <option value="SINPE">SINPE</option>
+                    </select>
+
+                    <label class="pcm-label">Observación (opcional)</label>
+                    <input type="text" name="observacion" maxlength="500" class="pcm-input"
+                           placeholder="Ej: propina incluida, pago parcial…" />
+
+                    @if (puedeComprobante)
+                    {
+                        <div style="margin-top:.4rem;padding-top:.9rem;border-top:1px solid var(--private-surface-border,#eef1f6);">
+                            <label style="display:flex;align-items:center;gap:.55rem;cursor:pointer;font-weight:700;font-size:.9rem;color:var(--private-surface-text,#0f172a);">
+                                <input type="checkbox" name="enviarComprobante" value="true" id="cobroEnviarComp" style="width:1.05rem;height:1.05rem;" />
+                                <i class="bi bi-envelope-paper"></i> Enviar comprobante por correo
+                            </label>
+                            <div id="cobroCompWrap" style="display:none;margin-top:.6rem;">
+                                <input type="email" name="emailComprobante" id="cobroCompEmail" class="pcm-input" style="margin-bottom:.5rem;"
+                                       placeholder="correo@@ejemplo.com" autocomplete="off" />
+                                <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;font-size:.82rem;color:var(--private-muted-text,#64748b);">
+                                    <input type="checkbox" name="guardarEmailEnCliente" value="true" style="width:1rem;height:1rem;" />
+                                    Guardar este correo en el perfil del cliente
+                                </label>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <div class="pcm-footer">
+                    <button type="button" class="pcm-btn-ghost" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="pcm-btn-primary" id="cobroSubmitBtn"><i class="bi bi-check2-circle"></i> Registrar cobro</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        var modalEl = document.getElementById("cobroModal");
+        if (!modalEl) return;
+        function iniciales(nombre) {
+            nombre = (nombre || "Cliente").trim();
+            var p = nombre.split(/\s+/).filter(Boolean);
+            return (p.length >= 2 ? (p[0][0] + p[1][0]) : nombre.substring(0, 2)).toUpperCase();
+        }
+        // Rellena el modal. window.MP_fillCobro queda disponible para el modal diario del calendario.
+        window.MP_fillCobro = function (d) {
+            document.getElementById("cobroCitaId").value = d.citaId || "";
+            document.getElementById("cobroCliente").textContent = d.cliente || "Cliente";
+            document.getElementById("cobroServicio").textContent = d.servicio || "Servicio";
+            document.getElementById("cobroIniciales").textContent = iniciales(d.cliente);
+            document.getElementById("cobroMonto").value = d.precio || "";
+            var esp = document.getElementById("cobroEsperado");
+            esp.textContent = (d.precio && Number(d.precio) > 0)
+                ? "₡" + Number(d.precio).toLocaleString("es-CR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                : "—";
+
+            // Reset del bloque de comprobante; prefill del correo si la cita lo trae.
+            var enviar = document.getElementById("cobroEnviarComp");
+            var wrap = document.getElementById("cobroCompWrap");
+            var email = document.getElementById("cobroCompEmail");
+            if (enviar) enviar.checked = false;
+            if (wrap) wrap.style.display = "none";
+            if (email) email.value = d.email || "";
+            return true;
+        };
+
+        // Toggle del bloque de comprobante.
+        var enviarChk = document.getElementById("cobroEnviarComp");
+        if (enviarChk) {
+            enviarChk.addEventListener("change", function () {
+                var wrap = document.getElementById("cobroCompWrap");
+                if (wrap) wrap.style.display = this.checked ? "" : "none";
+            });
+        }
+
+        // Loading state + anti doble submit + validación de correo.
+        var form = modalEl.querySelector("form");
+        if (form) {
+            form.addEventListener("submit", function (e) {
+                var enviar = document.getElementById("cobroEnviarComp");
+                var email = document.getElementById("cobroCompEmail");
+                if (enviar && enviar.checked) {
+                    var val = email ? email.value.trim() : "";
+                    if (!/^[^\s@@]+@@[^\s@@]+\.[^\s@@]+$/.test(val)) {
+                        e.preventDefault();
+                        if (email) email.focus();
+                        return;
+                    }
+                }
+                var btn = document.getElementById("cobroSubmitBtn");
+                if (btn) { btn.disabled = true; btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Procesando…'; }
+            });
+        }
+
+        // Delegación: funciona con botones estáticos y los inyectados por AJAX (Día/Semana/Mes).
+        document.addEventListener("click", function (e) {
+            var btn = e.target.closest(".js-cobrar-btn");
+            if (!btn) return;
+            window.MP_fillCobro({ citaId: btn.dataset.citaId, cliente: btn.dataset.cliente, servicio: btn.dataset.servicio, precio: btn.dataset.precio, email: btn.dataset.email });
+            bootstrap.Modal.getOrCreateInstance(modalEl).show();
+        });
+    })();
+</script>

@@ -1,0 +1,113 @@
+@using LuxuryApp.Models.Calendar
+@model CalendarIndexViewModel
+
+@* ── CENTRO DE CONFIRMACIONES WHATSAPP (solo tenants con add-on) ── *@
+<section class="wa-followup-panel" id="waFollowUpPanel">
+
+    <div class="wa-followup-header">
+        <div class="wa-followup-heading">
+            <h2 class="wa-followup-title">
+                <span class="wa-mark"><i class="bi bi-whatsapp"></i></span>
+                Centro de confirmaciones WhatsApp
+            </h2>
+            <p class="wa-followup-subtitle">
+                Da seguimiento a confirmaciones, recordatorios y respuestas de tus clientes.
+            </p>
+        </div>
+        <button type="button" id="waFollowRefresh" class="action-icon-button" title="Actualizar">
+            <i class="bi bi-arrow-clockwise"></i><span>Actualizar</span>
+        </button>
+    </div>
+
+    @if (!Model.TenantWhatsAppEnabled)
+    {
+        <div class="whatsapp-inbox-notice">
+            <i class="bi bi-exclamation-triangle"></i>
+            <span>WhatsApp no está configurado para este negocio. El seguimiento es de solo lectura y las acciones de envío están deshabilitadas.</span>
+        </div>
+    }
+
+    @* ── KPIs (los llena whatsapp-inbox.js) ── *@
+    <div class="wa-followup-kpis">
+        <div class="wa-followup-kpi">
+            <span class="wa-followup-kpi-label">En seguimiento</span>
+            <span class="wa-followup-kpi-value" id="waKpiTotal">0</span>
+        </div>
+        <div class="wa-followup-kpi">
+            <span class="wa-followup-kpi-label">Confirmadas</span>
+            <span class="wa-followup-kpi-value wa-kpi-green" id="waKpiConfirmadas">0</span>
+        </div>
+        <div class="wa-followup-kpi">
+            <span class="wa-followup-kpi-label">Pendientes</span>
+            <span class="wa-followup-kpi-value wa-kpi-amber" id="waKpiPendientes">0</span>
+        </div>
+        <div class="wa-followup-kpi">
+            <span class="wa-followup-kpi-label">Enviadas</span>
+            <span class="wa-followup-kpi-value wa-kpi-blue" id="waKpiEnviadas">0</span>
+        </div>
+        <div class="wa-followup-kpi">
+            <span class="wa-followup-kpi-label">No entregadas</span>
+            <span class="wa-followup-kpi-value wa-kpi-red" id="waKpiFallidas">0</span>
+        </div>
+        <div class="wa-followup-kpi">
+            <span class="wa-followup-kpi-label">Tasa de confirmación</span>
+            <span class="wa-followup-kpi-value" id="waKpiTasa">—</span>
+        </div>
+    </div>
+
+    @* ── Filtros ── *@
+    <div class="wa-followup-filters">
+        <div class="wa-followup-filter-group">
+            <label class="calendar-control-label" for="waFollowRange">Rango</label>
+            <select id="waFollowRange" class="whatsapp-inbox-filter">
+                <option value="hoy">Hoy</option>
+                <option value="24h">Próximas 24 horas</option>
+                <option value="3d">Próximos 3 días</option>
+                <option value="5d" selected>Próximos 5 días</option>
+                <option value="7d">Próximos 7 días</option>
+                <option value="custom">Rango personalizado</option>
+            </select>
+        </div>
+
+        <div class="wa-followup-filter-group wa-followup-custom d-none" id="waFollowCustomGroup">
+            <label class="calendar-control-label" for="waFollowFrom">Desde</label>
+            <input type="date" id="waFollowFrom" class="whatsapp-inbox-filter">
+        </div>
+        <div class="wa-followup-filter-group wa-followup-custom d-none" id="waFollowCustomGroupTo">
+            <label class="calendar-control-label" for="waFollowTo">Hasta</label>
+            <input type="date" id="waFollowTo" class="whatsapp-inbox-filter">
+        </div>
+
+        <div class="wa-followup-filter-group">
+            <label class="calendar-control-label" for="waFollowStatus">Estado</label>
+            <select id="waFollowStatus" class="whatsapp-inbox-filter">
+                <option value="">Todos</option>
+                <option value="confirmados">Confirmadas</option>
+                <option value="pendientes">Pendientes</option>
+                <option value="enviados">Enviadas</option>
+                <option value="fallidos">No entregadas</option>
+                <option value="cancelados">Canceladas</option>
+                <option value="atencion">Requieren atención</option>
+            </select>
+        </div>
+
+        <div class="wa-followup-filter-group">
+            <label class="calendar-control-label" for="waFollowFuncionario">Funcionario</label>
+            <select id="waFollowFuncionario" class="whatsapp-inbox-filter">
+                <option value="">Todos</option>
+            </select>
+        </div>
+
+        <div class="wa-followup-filter-group wa-followup-search">
+            <label class="calendar-control-label" for="waFollowSearch">Buscar</label>
+            <input type="search" id="waFollowSearch" class="whatsapp-inbox-filter"
+                   placeholder="Cliente o teléfono" autocomplete="off">
+        </div>
+    </div>
+
+    @* ── Lista de seguimiento (la llena whatsapp-inbox.js) ── *@
+    <div class="wa-followup-list" id="waFollowList">
+        <div class="text-muted small" style="padding:1rem 0;">Cargando seguimiento…</div>
+    </div>
+
+</section>

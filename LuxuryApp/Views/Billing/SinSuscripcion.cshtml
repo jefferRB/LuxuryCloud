@@ -1,0 +1,29 @@
+@{
+    Layout = "_PublicLayout";
+    ViewData["Title"] = "Sin suscripcion";
+    ViewData["PublicBodyClass"] = "public-status-page";
+}
+
+<section class="status-section">
+    <div class="container">
+        <div class="status-card" data-aos="zoom-in">
+            <span class="status-kicker">Acceso pendiente</span>
+            <h1>Tu cuenta ya esta creada. Falta activar un plan para usar los modulos privados.</h1>
+            <p>
+                El sistema ya conoce tu tenant y mantiene intacto el flujo actual. Solo necesitas activar una suscripcion
+                para habilitar clientes, funcionarios, calendario, finanzas, dashboard e informacion del negocio.
+            </p>
+
+            <div class="status-benefits">
+                <span>Agenda y citas en un solo lugar</span>
+                <span>Control real de ingresos y egresos</span>
+                <span>Dashboard financiero para decidir mejor</span>
+            </div>
+
+            <div class="status-actions">
+                <a class="btn public-btn public-btn-primary" asp-controller="Billing" asp-action="Planes">Ver precios</a>
+                <a class="btn public-btn public-btn-secondary" asp-controller="Billing" asp-action="Planes">Activar mi plan</a>
+            </div>
+        </div>
+    </div>
+</section>

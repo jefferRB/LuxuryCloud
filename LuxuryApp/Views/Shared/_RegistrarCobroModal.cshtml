@@ -1,0 +1,99 @@
+@*
+    Modal compartido de "Cobro rápido por cita".
+    Lo usan tanto "Control de citas y cobros" (Views/Calendar/ControlCobros.cshtml) como el
+    Calendario (Views/Calendar/Index.cshtml). La lógica vive en wwwroot/js/cobro-cita-modal.js
+    (window.cobroCitaModal). El token antiforgery viaja con el partial para que el POST a
+    /Calendar/CobrarCita esté siempre protegido sin depender de la página contenedora.
+*@
+<div id="cobro-cita-antiforgery" class="d-none">@Html.AntiForgeryToken()</div>
+
+<div class="modal fade" id="ccCobroModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content cc-modal-content">
+            <div class="cc-modal-header">
+                <div class="cc-modal-icon"><i class="bi bi-cash-coin"></i></div>
+                <div>
+                    <h5 class="cc-modal-title">Registrar cobro</h5>
+                    <p class="cc-modal-subtitle">Confirma el cobro de esta cita</p>
+                </div>
+                <button type="button" class="btn-close cc-modal-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body cc-modal-body">
+                <input type="hidden" id="ccCobroCitaId" />
+
+                <div class="cc-modal-summary">
+                    <div class="cc-modal-summary-main">
+                        <div id="ccCobroCliente" class="cc-modal-client">Cliente</div>
+                        <div id="ccCobroServicio" class="cc-modal-service">Servicio</div>
+                    </div>
+                    <div class="cc-modal-amount">
+                        <span class="cc-modal-amount-label">Monto cita</span>
+                        <span id="ccCobroEsperado" class="cc-modal-amount-value">-</span>
+                    </div>
+                </div>
+
+                <label class="cc-field-label" for="ccCobroMonto">Monto cobrado</label>
+                <div class="cc-money-input">
+                    <span class="cc-money-prefix">CRC</span>
+                    <input type="number" id="ccCobroMonto" step="0.01" min="0.01" required placeholder="0.00" class="cc-money-field" />
+                </div>
+                <p id="ccCobroHint" class="cc-modal-hint d-none">
+                    <i class="bi bi-info-circle"></i>
+                    Esta cita no tiene un precio base definido. Ingresa el monto cobrado manualmente.
+                </p>
+
+                <!-- Desglose fiscal en vivo (calculado por el backend: sin fórmulas de IVA en el front).
+                     Orden: primero el desglose, y al final el total como resultado destacado. -->
+                <div id="ccFiscalCard" class="cc-fiscal-card d-none" aria-live="polite">
+                    <span class="cc-fiscal-title">Desglose de IVA incluido</span>
+                    <div class="cc-fiscal-row">
+                        <span class="cc-fiscal-label">Base sin IVA</span>
+                        <span class="cc-fiscal-value" id="ccFiscalBase">—</span>
+                    </div>
+                    <div class="cc-fiscal-row">
+                        <span class="cc-fiscal-label" id="ccFiscalIvaLabel">IVA incluido</span>
+                        <span class="cc-fiscal-value" id="ccFiscalIva">—</span>
+                    </div>
+                    <div class="cc-fiscal-row cc-fiscal-row--total">
+                        <span class="cc-fiscal-label">Monto cobrado</span>
+                        <span class="cc-fiscal-value" id="ccFiscalTotal">—</span>
+                    </div>
+                </div>
+
+                <label class="cc-field-label" for="ccCobroMetodo">M&eacute;todo de pago</label>
+                <select id="ccCobroMetodo" class="cc-select cc-field-full">
+                    <option value="EFECTIVO">Efectivo</option>
+                    <option value="TARJETA">Tarjeta</option>
+                    <option value="SINPE">SINPE</option>
+                </select>
+
+                <label class="cc-field-label" for="ccCobroObs">Observaci&oacute;n (opcional)</label>
+                <input type="text" id="ccCobroObs" maxlength="500" class="cc-input cc-field-full"
+                       placeholder="Ej: propina incluida, pago parcial..." />
+
+                <div class="cc-comprobante-box">
+                    <label class="cc-check-label">
+                        <input type="checkbox" id="ccCobroEnviar" class="cc-check" />
+                        <i class="bi bi-envelope-paper"></i> Enviar comprobante por correo
+                    </label>
+                    <div id="ccCobroEmailWrap" class="cc-email-wrap d-none">
+                        <input type="email" id="ccCobroEmail" class="cc-input cc-field-full"
+                               placeholder="correo@ejemplo.com" autocomplete="off" />
+                        <label id="ccCobroGuardarWrap" class="cc-save-email-wrap d-none">
+                            <input type="checkbox" id="ccCobroGuardarEmail" class="cc-check" />
+                            Guardar este correo en el perfil del cliente
+                        </label>
+                    </div>
+                </div>
+
+                <div id="ccCobroError" class="cc-error d-none"></div>
+            </div>
+            <div class="cc-modal-footer">
+                <button type="button" class="cc-act cc-modal-cancel" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" id="ccCobroSubmit" class="cc-act cc-act-cobrar cc-modal-submit">
+                    <i class="bi bi-check2-circle"></i> Registrar cobro
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

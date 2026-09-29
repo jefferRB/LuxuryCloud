@@ -1,0 +1,56 @@
+@using LuxuryApp.Models.Asociados
+@model AssociatePermissionsMatrixViewModel
+
+@*
+    Matriz de permisos agrupada por módulo. Se construye desde AppPermissions.Modulos, así que
+    agregar un permiso al catálogo lo hace aparecer acá sin tocar la vista.
+
+    Todo lo que se marca viaja como "permisos"; lo que no se marca, no viaja: la ausencia de
+    concesión ES la denegación. La casilla es solo la UI — la puerta real está en el backend.
+*@
+
+@if (Model.MostrarPresets && !Model.SoloLectura)
+{
+    <div class="assoc-presets" role="group" aria-label="Presets de permisos">
+        <span class="assoc-block-sub" style="margin:0 .35rem 0 0;align-self:center;">Sugerencias:</span>
+        @foreach (var preset in AssociatePermissionPresets.Todos.Where(p => p != AssociatePermissionPreset.Personalizado))
+        {
+            <button type="button"
+                    class="assoc-preset-btn"
+                    data-assoc-preset="@string.Join(',', AssociatePermissionPresets.Resolve(preset))">
+                @AssociatePermissionPresets.Describe(preset)
+            </button>
+        }
+        <button type="button" class="assoc-preset-btn" data-assoc-preset="">
+            Limpiar
+        </button>
+    </div>
+}
+
+<div class="assoc-perm-grid" data-assoc-perm-grid>
+    @foreach (var modulo in AppPermissions.Modulos)
+    {
+        <div class="assoc-perm-block">
+            <h4><i class="bi @modulo.Icono"></i> @modulo.Nombre</h4>
+
+            @foreach (var permiso in modulo.Permisos)
+            {
+                var marcado = Model.Concedidos.Contains(permiso.Key);
+                <label class="assoc-perm-item @(Model.SoloLectura ? "assoc-perm-readonly" : string.Empty)">
+                    <input type="checkbox"
+                           name="permisos"
+                           value="@permiso.Key"
+                           checked="@marcado"
+                           disabled="@Model.SoloLectura" />
+                    <span>@permiso.Etiqueta</span>
+                </label>
+            }
+        </div>
+    }
+</div>
+
+<p class="assoc-note">
+    Marcar <strong>Administrar</strong> incluye automáticamente <strong>Ver</strong> del mismo
+    módulo. Lo que no esté marcado queda bloqueado: el asociado no puede entrar ni escribiendo la
+    dirección a mano.
+</p>

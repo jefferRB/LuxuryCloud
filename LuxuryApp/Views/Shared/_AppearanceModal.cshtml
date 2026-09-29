@@ -1,0 +1,46 @@
+@using LuxuryApp.Services.Layout
+@*
+    Modal de personalizacion visual. Fuente unica reutilizada por el layout administrativo y por
+    el portal de funcionarios. Las tarjetas se generan desde AppearanceThemeCatalog: agregar un
+    tema al catalogo lo agrega aca sin tocar esta vista. La logica vive en site.js (motor de
+    apariencia: data-luxury-appearance-option / data-luxury-theme-check, persistencia en
+    localStorage). No incluye links administrativos: es seguro para el portal.
+*@
+<div class="modal fade theme-style-modal" id="themeStyleModal" tabindex="-1" aria-labelledby="themeStyleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content private-theme-modal">
+            <div class="modal-header private-theme-modal-header">
+                <div>
+                    <span class="private-theme-modal-kicker">Personalizacion visual</span>
+                    <h5 class="modal-title private-theme-modal-title" id="themeStyleModalLabel">Apariencia del espacio de trabajo</h5>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+
+            <div class="modal-body private-theme-modal-body">
+                <p class="private-theme-modal-copy">
+                    Elige una apariencia para el espacio privado. El cambio se aplica de inmediato y se conserva solo en este navegador.
+                </p>
+
+                <div class="private-theme-grid">
+                    @foreach (var theme in AppearanceThemeCatalog.All)
+                    {
+                        <button type="button"
+                                class="private-theme-card"
+                                data-luxury-appearance-option="@theme.Id"
+                                aria-pressed="false">
+                            <span class="private-theme-card-preview @theme.PreviewCssClass" aria-hidden="true"></span>
+                            <span class="private-theme-card-body">
+                                <span class="private-theme-card-title">@theme.Label</span>
+                                <span class="private-theme-card-copy">@theme.Description</span>
+                            </span>
+                            <span class="private-theme-card-state">
+                                <i class="bi bi-check-circle-fill d-none" data-luxury-theme-check aria-hidden="true"></i>
+                            </span>
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

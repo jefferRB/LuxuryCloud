@@ -1,0 +1,820 @@
+﻿@model LuxuryApp.Models.Funcionarios.Funcionario
+@using LuxuryApp.Models.Funcionarios
+@{
+    var acceso = ViewData["Acceso"] as FuncionarioAccesoViewModel
+        ?? new FuncionarioAccesoViewModel { FuncionarioId = Model.IdFuncionario, Estado = FuncionarioAccesoEstado.SinAcceso };
+    var permisos = ViewData["Permisos"] as FuncionarioPortalPermisosSet
+        ?? FuncionarioPortalPermisosSet.Defaults();
+}
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+<link rel="stylesheet" href="~/css/funcionarios.css" asp-append-version="true">
+
+<style>
+    .func-access-card{margin-top:1.25rem;}
+    .func-access-head{display:flex;align-items:center;gap:.6rem;margin-bottom:.35rem;}
+    .func-access-head i{font-size:1.15rem;color:var(--private-accent);}
+    .func-access-title{font-size:1rem;font-weight:800;margin:0;color:var(--private-surface-text,#111827);}
+    .func-access-sub{font-size:.82rem;color:var(--private-muted-text,#64748b);margin:0 0 1rem;}
+    .func-access-status{display:inline-flex;align-items:center;gap:.4rem;font-size:.78rem;font-weight:700;
+        padding:.25rem .6rem;border-radius:999px;margin-bottom:1rem;}
+    .func-access-status--ok{background:rgba(16,185,129,.12);color:#047857;}
+    .func-access-status--blocked{background:rgba(220,38,38,.12);color:#b91c1c;}
+    .func-access-status--none{background:rgba(100,116,139,.12);color:#475569;}
+    .func-access-row{display:flex;flex-wrap:wrap;gap:.6rem;align-items:flex-end;}
+    .func-access-actions{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.25rem;}
+    .func-access-modes{display:flex;flex-wrap:wrap;gap:1rem;margin:.25rem 0 .75rem;}
+    .func-access-modes label{font-size:.85rem;display:flex;align-items:center;gap:.4rem;cursor:pointer;}
+    .func-access-note{font-size:.78rem;color:var(--private-muted-text,#64748b);margin-top:.6rem;line-height:1.5;}
+    .func-photo-row{display:flex;flex-wrap:wrap;align-items:flex-start;gap:1.1rem;}
+    .func-photo-preview{flex:0 0 auto;}
+    .func-photo-preview img{width:96px;height:96px;border-radius:50%;object-fit:cover;border:2px solid var(--private-card-border,#e6e6e6);}
+    .func-photo-avatar{width:96px;height:96px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+        color:#fff;font-size:2.2rem;font-weight:800;text-transform:uppercase;}
+    .func-photo-form{flex:1 1 240px;display:flex;flex-direction:column;gap:.7rem;min-width:0;}
+    .func-photo-file{display:flex;flex-direction:column;gap:.3rem;cursor:pointer;}
+    .func-photo-file input[type=file]{font-size:.82rem;}
+    .func-photo-filename{font-size:.75rem;color:var(--private-muted-text,#64748b);}
+    .func-photo-check{display:flex;align-items:center;gap:.5rem;font-size:.85rem;cursor:pointer;}
+    .func-photo-actions{display:flex;gap:.5rem;}
+    .func-photo-delete{flex:0 0 auto;align-self:flex-start;}
+</style>
+
+<div class="kpi-card func-main-card">
+
+    <!-- ── CABECERA ── -->
+    <div class="func-header">
+        <div class="func-header-left module-heading">
+            <span class="module-eyebrow">Gestión de equipo</span>
+            @* El avatar conserva el color de calendario del funcionario: es dato, no decoración. *@
+            <h2 class="module-title">
+                <span class="func-avatar func-avatar--title" style="background-color:@Model.ColorCalendario;" aria-hidden="true">@(Model.Nombre.Length > 0 ? char.ToUpper(Model.Nombre[0]).ToString() : "?")</span>
+                @Model.Nombre
+            </h2>
+            <div style="display:flex;align-items:center;gap:0.6rem;flex-wrap:wrap;">
+                <p class="module-subtitle">Editar información del funcionario</p>
+                @if (Model.Activo)
+                {
+                    <span class="func-status-badge func-status-badge--active">
+                        <span class="func-dot func-dot--green"></span>
+                        Activo
+                    </span>
+                }
+                else
+                {
+                    <span class="func-status-badge func-status-badge--inactive">
+                        <span class="func-dot func-dot--gray"></span>
+                        Inactivo
+                    </span>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- ── FORMULARIO ── -->
+    <div class="func-form-body">
+        <form asp-action="Edit" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="IdFuncionario" />
+
+            @if (!ViewData.ModelState.IsValid && ViewData.ModelState.Values.Any(v => v.Errors.Count > 0))
+            {
+                <div class="func-validation-summary" role="alert">
+                    <div asp-validation-summary="ModelOnly"></div>
+                </div>
+            }
+
+            <div class="func-form-grid">
+
+                <!-- Nombre -->
+                <div class="func-field">
+                    <label asp-for="Nombre" class="func-label">
+                        Nombre <span class="func-required">*</span>
+                    </label>
+                    <div class="func-input-wrap">
+                        <span class="func-input-icon"><i class="bi bi-person"></i></span>
+                        <input asp-for="Nombre" class="func-input" placeholder="Nombre completo" autocomplete="off" />
+                    </div>
+                    <span asp-validation-for="Nombre" class="func-field-error"></span>
+                </div>
+
+                <!-- Teléfono -->
+                <div class="func-field">
+                    <label asp-for="Telefono" class="func-label">Teléfono (opcional)</label>
+                    <div class="func-input-wrap">
+                        <span class="func-input-icon"><i class="bi bi-telephone"></i></span>
+                        <input asp-for="Telefono" class="func-input" placeholder="Ej: 88889999" inputmode="tel" />
+                    </div>
+                    <span asp-validation-for="Telefono" class="func-field-error"></span>
+                </div>
+
+                <!-- Puesto -->
+                <div class="func-field">
+                    <label asp-for="IdPuesto" class="func-label">
+                        Puesto <span class="func-required">*</span>
+                    </label>
+                    <div class="func-input-wrap">
+                        <span class="func-input-icon"><i class="bi bi-briefcase"></i></span>
+                        <select asp-for="IdPuesto"
+                                class="func-input func-select"
+                                asp-items="@(new SelectList(ViewBag.Puestos, "IdPuesto", "NombrePuesto"))">
+                            <option value="">-- Seleccione un puesto --</option>
+                        </select>
+                    </div>
+                    <span asp-validation-for="IdPuesto" class="func-field-error"></span>
+                </div>
+
+                <!-- Fecha Ingreso -->
+                <div class="func-field">
+                    <label asp-for="FechaIngreso" class="func-label">
+                        Fecha de Ingreso <span class="func-required">*</span>
+                    </label>
+                    <div class="func-input-wrap">
+                        <span class="func-input-icon"><i class="bi bi-calendar3"></i></span>
+                        <input asp-for="FechaIngreso" type="date" class="func-input" />
+                    </div>
+                    <span asp-validation-for="FechaIngreso" class="func-field-error"></span>
+                </div>
+
+                <!-- % Ganancia Servicios -->
+                <div class="func-field">
+                    <label asp-for="PorcentajeGanancia" class="func-label">
+                        % Ganancia Servicios <span class="func-required">*</span>
+                    </label>
+                    <div class="func-input-wrap">
+                        <span class="func-input-icon"><i class="bi bi-percent"></i></span>
+                        <input asp-for="PorcentajeGanancia"
+                               id="func-pct-g"
+                               class="func-input"
+                               type="number"
+                               step="0.01"
+                               min="0"
+                               max="100"
+                               placeholder="Ej: 50" />
+                    </div>
+                    <div class="func-pct-bar-preview">
+                        <div class="func-pct-bar-preview-fill func-pct-bar--blue" id="func-bar-g"></div>
+                    </div>
+                    <span asp-validation-for="PorcentajeGanancia" class="func-field-error"></span>
+                </div>
+
+                <!-- % Ganancia Productos -->
+                <div class="func-field">
+                    <label asp-for="PorcentajeProducto" class="func-label">
+                        % Ganancia Productos <span class="func-required">*</span>
+                    </label>
+                    <div class="func-input-wrap">
+                        <span class="func-input-icon"><i class="bi bi-box-seam"></i></span>
+                        <input asp-for="PorcentajeProducto"
+                               id="func-pct-p"
+                               class="func-input"
+                               type="number"
+                               step="0.01"
+                               min="0"
+                               max="100"
+                               placeholder="Ej: 30" />
+                    </div>
+                    <div class="func-pct-bar-preview">
+                        <div class="func-pct-bar-preview-fill func-pct-bar--purple" id="func-bar-p"></div>
+                    </div>
+                    <span asp-validation-for="PorcentajeProducto" class="func-field-error"></span>
+                </div>
+
+                <!-- Color en Calendario -->
+                <div class="func-field func-form-full">
+                    <label asp-for="ColorCalendario" class="func-label">
+                        Color en Calendario <span class="func-required">*</span>
+                    </label>
+                    <div class="func-color-wrap">
+                        <input asp-for="ColorCalendario"
+                               id="func-color-input"
+                               type="color"
+                               class="func-color-swatch" />
+                        <div class="func-color-preview-pill" id="func-color-pill">
+                            <i class="bi bi-circle-fill" style="font-size:0.7rem"></i>
+                            <span id="func-color-hex">@Model.ColorCalendario</span>
+                            <span style="font-weight:400;opacity:0.8;font-size:0.75rem;margin-left:auto;">Identificador en el calendario</span>
+                        </div>
+                    </div>
+                    <span asp-validation-for="ColorCalendario" class="func-field-error"></span>
+                </div>
+
+                <!-- Configuración fiscal del colaborador -->
+                <div class="func-field func-form-full">
+                    <label class="func-label">Configuración fiscal del colaborador</label>
+                    <div class="func-tax-toggle">
+                        <div class="func-fiscal-row">
+                            <div class="func-fiscal-item">
+                                <label asp-for="TipoRelacionColaborador" class="func-sublabel">Tipo de relación</label>
+                                <select asp-for="TipoRelacionColaborador" class="func-input" id="func-tipo-relacion">
+                                    <option value="Empleado">Empleado</option>
+                                    <option value="Independiente">Independiente</option>
+                                    <option value="AlquilerSilla">Alquiler de silla</option>
+                                </select>
+                            </div>
+                            <div class="func-fiscal-item">
+                                <label asp-for="ComisionCalculadaSobre" class="func-sublabel">Comisión calculada sobre</label>
+                                <select asp-for="ComisionCalculadaSobre" class="func-input">
+                                    <option value="BaseSinIva">Base sin IVA</option>
+                                    <option value="TotalCobrado">Total cobrado</option>
+                                </select>
+                            </div>
+                        </div>
+                        <p class="func-tax-hint">
+                            <strong>Base sin IVA</strong>: el porcentaje se calcula sobre el precio sin IVA
+                            (Total ÷ 1.13). <strong>Total cobrado</strong>: se calcula sobre el total con IVA incluido.
+                        </p>
+
+                        <div class="func-fiscal-independiente" id="func-fiscal-independiente">
+                            <div class="func-fiscal-item">
+                                <label asp-for="ModalidadIvaColaborador" class="func-sublabel">Modalidad de IVA del colaborador</label>
+                                <select asp-for="ModalidadIvaColaborador" class="func-input">
+                                    <option value="NoFactura">No factura IVA</option>
+                                    <option value="IvaIncluido">Factura IVA — incluido en su parte</option>
+                                    <option value="IvaAdicional">Factura IVA — adicional sobre la comisión</option>
+                                </select>
+                                <p class="func-tax-hint" style="margin-top:0.35rem;">
+                                    <strong>Incluido en su parte</strong>: su % ya incluye el IVA; se descompone sin subir el total (caso más común).
+                                    <strong>Adicional</strong>: el IVA se suma por encima de la comisión.
+                                </p>
+                            </div>
+                            <div class="func-fiscal-item">
+                                <label asp-for="TarifaIvaFacturaColaborador" class="func-sublabel">Tarifa IVA de su factura (%)</label>
+                                <input asp-for="TarifaIvaFacturaColaborador" class="func-input" type="number"
+                                       step="0.01" min="0" max="100" />
+                            </div>
+                        </div>
+
+                        <div class="form-check form-switch func-tax-switch">
+                            <input asp-for="RequiereFacturaAntesDePagar" class="form-check-input" type="checkbox"
+                                   role="switch" id="func-requiere-factura" />
+                            <label class="form-check-label" for="func-requiere-factura">
+                                Requiere factura antes de pagarle
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            @{ var avisoHistorico = ViewData[LuxuryApp.Models.Fiscal.AvisoImpactoHistorico.CampoConfirmacion] as string; }
+            @if (!string.IsNullOrEmpty(avisoHistorico))
+            {
+                @await Html.PartialAsync("_AvisoImpactoHistorico", avisoHistorico)
+            }
+
+            <div class="func-actions">
+                <button type="submit" class="func-btn func-btn--primary">
+                    <i class="bi bi-floppy2-fill"></i>
+                    Guardar Cambios
+                </button>
+                <a asp-action="Index" class="func-btn func-btn--ghost">
+                    <i class="bi bi-arrow-left"></i>
+                    Volver al Listado
+                </a>
+            </div>
+
+            <!-- ── ZONA DE PELIGRO ── -->
+            <div class="func-danger-zone">
+                <span class="func-danger-label">Zona de peligro</span>
+
+                @if (Model.Activo)
+                {
+                    <button type="button"
+                            class="func-btn func-btn--warning"
+                            data-bs-toggle="modal"
+                            data-bs-target="#modalDesactivarEdit">
+                        <i class="bi bi-toggle-on"></i>
+                        Desactivar funcionario
+                    </button>
+                }
+                else
+                {
+                    <button type="button"
+                            class="func-btn func-btn--success"
+                            data-bs-toggle="modal"
+                            data-bs-target="#modalActivarEdit">
+                        <i class="bi bi-toggle-off"></i>
+                        Activar funcionario
+                    </button>
+                }
+
+                <button type="button"
+                        class="func-btn func-btn--danger"
+                        data-bs-toggle="modal"
+                        data-bs-target="#modalEliminarEdit">
+                    <i class="bi bi-trash3"></i>
+                    Eliminar funcionario
+                </button>
+            </div>
+
+        </form>
+    </div>
+
+</div>
+
+<!-- ── FOTO DEL PROFESIONAL ── -->
+<div class="kpi-card func-main-card func-access-card">
+    <div class="func-form-body">
+        <div class="func-access-head">
+            <i class="bi bi-camera-fill"></i>
+            <h3 class="func-access-title">Perfil público del profesional</h3>
+        </div>
+        <p class="func-access-sub">Opcional. La foto y la descripción pueden mostrarse a los clientes en el enlace público de reservas y en la landing del negocio.</p>
+
+        <div class="func-photo-row">
+            <div class="func-photo-preview">
+                @if (!string.IsNullOrWhiteSpace(Model.FotoUrl))
+                {
+                    <img src="@Model.FotoUrl" alt="Foto de @Model.Nombre" />
+                }
+                else
+                {
+                    <span class="func-photo-avatar" style="background-color:@Model.ColorCalendario;">
+                        @(Model.Nombre.Length > 0 ? char.ToUpper(Model.Nombre[0]).ToString() : "?")
+                    </span>
+                }
+            </div>
+
+            <form asp-action="ActualizarFoto" method="post" enctype="multipart/form-data" class="func-photo-form">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.IdFuncionario" />
+
+                <label class="func-photo-file">
+                    <span class="btn btn-outline-secondary btn-sm"><i class="bi bi-upload"></i> Elegir imagen</span>
+                    <input type="file" name="foto" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" />
+                    <span class="func-photo-filename">JPG, PNG o WEBP · máx. 5 MB</span>
+                </label>
+
+                <label class="func-photo-check">
+                    <input type="checkbox" name="mostrarFotoEnReservas" value="true" @(Model.MostrarFotoEnReservas ? "checked" : "") />
+                    <span>Mostrar mi foto en el enlace público de reservas</span>
+                </label>
+
+                <div class="func-field func-form-full" style="margin-top:.35rem;">
+                    <label class="func-label" for="func-descripcion-publica">Descripción pública (opcional)</label>
+                    <textarea id="func-descripcion-publica" name="descripcionPublica" class="func-input" rows="3"
+                              maxlength="280" placeholder="Ej: Especialista en cortes clásicos y arreglo de barba, con 8 años de experiencia."
+                              style="resize:vertical;min-height:70px;">@Model.DescripcionPublica</textarea>
+                    <span class="func-photo-filename">Se muestra en la sección de equipo de la landing. Máx. 280 caracteres, sin HTML.</span>
+                </div>
+
+                <div class="func-photo-actions">
+                    <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-save"></i> Guardar perfil</button>
+                </div>
+            </form>
+
+            @if (!string.IsNullOrWhiteSpace(Model.FotoUrl))
+            {
+                <form asp-action="EliminarFoto" method="post" class="func-photo-delete"
+                      onsubmit="return confirm('¿Eliminar la foto de este profesional?');">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@Model.IdFuncionario" />
+                    <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-trash"></i> Eliminar foto</button>
+                </form>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- ── ACCESO AL SISTEMA ── -->
+<div class="kpi-card func-main-card func-access-card">
+    <div class="func-form-body">
+        <div class="func-access-head">
+            <i class="bi bi-shield-lock-fill"></i>
+            <h3 class="func-access-title">Acceso al sistema</h3>
+        </div>
+        <p class="func-access-sub">
+            Permite que este funcionario inicie sesión en su propio portal para ver su agenda,
+            su producción y sus pagos. Solo verá su información.
+        </p>
+
+        @if (TempData["Mensaje"] != null)
+        {
+            <div class="func-alert func-alert--success" style="margin-bottom:1rem;">
+                <i class="bi bi-check-circle-fill"></i> @TempData["Mensaje"]
+            </div>
+        }
+        @if (TempData["Error"] != null)
+        {
+            <div class="func-alert func-alert--danger" style="margin-bottom:1rem;">
+                <i class="bi bi-exclamation-triangle-fill"></i> @TempData["Error"]
+            </div>
+        }
+
+        @if (acceso.Estado == FuncionarioAccesoEstado.SinAcceso)
+        {
+            <span class="func-access-status func-access-status--none">
+                <i class="bi bi-dash-circle"></i> Sin acceso
+            </span>
+
+            @if (!Model.Activo)
+            {
+                <div class="func-modal-warning-box func-modal-warning-box--amber" style="margin-bottom:1rem;">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <span>El funcionario está inactivo. Actívalo primero para poder habilitar su acceso.</span>
+                </div>
+            }
+            else
+            {
+                <form asp-action="ActivarAcceso" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@Model.IdFuncionario" />
+
+                    <div class="func-field func-form-full">
+                        <label class="func-label">Correo de acceso <span class="func-required">*</span></label>
+                        <div class="func-input-wrap">
+                            <span class="func-input-icon"><i class="bi bi-envelope"></i></span>
+                            <input type="email" name="email" class="func-input" placeholder="correo@ejemplo.com" required autocomplete="off" />
+                        </div>
+                    </div>
+
+                    <div class="func-access-modes">
+                        <label>
+                            <input type="radio" name="modoCredencial" value="invitacion" checked
+                                   onchange="document.getElementById('tempPwdWrap').style.display='none'" />
+                            Enviar invitación por correo (recomendado)
+                        </label>
+                        <label>
+                            <input type="radio" name="modoCredencial" value="temporal"
+                                   onchange="document.getElementById('tempPwdWrap').style.display='block'" />
+                            Definir contraseña temporal
+                        </label>
+                    </div>
+
+                    <div class="func-field func-form-full" id="tempPwdWrap" style="display:none;">
+                        <label class="func-label">Contraseña temporal</label>
+                        <div class="func-input-wrap">
+                            <span class="func-input-icon"><i class="bi bi-key"></i></span>
+                            <input type="text" name="contrasenaTemporal" class="func-input"
+                                   placeholder="Mínimo 5 caracteres, con una mayúscula" autocomplete="off" />
+                        </div>
+                        <span class="func-access-note">Compártela de forma segura. El funcionario podrá cambiarla luego.</span>
+                    </div>
+
+                    <div class="func-access-actions">
+                        <button type="submit" class="func-btn func-btn--primary">
+                            <i class="bi bi-key-fill"></i> Habilitar acceso
+                        </button>
+                    </div>
+                </form>
+                <p class="func-access-note">
+                    Con la opción recomendada, el funcionario recibe un correo para definir su propia
+                    contraseña. Nunca se guarda ni se muestra una contraseña en texto plano.
+                </p>
+            }
+        }
+        else
+        {
+            var esBloqueado = acceso.Estado == FuncionarioAccesoEstado.AccesoBloqueado;
+            <span class="func-access-status @(esBloqueado ? "func-access-status--blocked" : "func-access-status--ok")">
+                <i class="bi @(esBloqueado ? "bi-lock-fill" : "bi-key-fill")"></i>
+                @(esBloqueado ? "Acceso bloqueado" : "Acceso activo")
+            </span>
+
+            <div class="func-field func-form-full">
+                <label class="func-label">Correo de acceso</label>
+                <form asp-action="CambiarCorreoAcceso" method="post" class="func-access-row">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@Model.IdFuncionario" />
+                    <div class="func-input-wrap" style="flex:1;min-width:220px;">
+                        <span class="func-input-icon"><i class="bi bi-envelope"></i></span>
+                        <input type="email" name="email" class="func-input" value="@acceso.Email" required autocomplete="off" />
+                    </div>
+                    <button type="submit" class="func-btn func-btn--ghost">
+                        <i class="bi bi-arrow-repeat"></i> Actualizar correo
+                    </button>
+                </form>
+            </div>
+
+            <div class="func-access-actions">
+                <form asp-action="ReenviarInvitacionAcceso" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@Model.IdFuncionario" />
+                    <button type="submit" class="func-btn func-btn--ghost">
+                        <i class="bi bi-send"></i> Reenviar invitación / cambio de contraseña
+                    </button>
+                </form>
+
+                @if (esBloqueado)
+                {
+                    <form asp-action="ReactivarAcceso" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@Model.IdFuncionario" />
+                        <button type="submit" class="func-btn func-btn--success">
+                            <i class="bi bi-unlock"></i> Reactivar acceso
+                        </button>
+                    </form>
+                }
+                else
+                {
+                    <form asp-action="DesactivarAcceso" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@Model.IdFuncionario" />
+                        <button type="submit" class="func-btn func-btn--warning">
+                            <i class="bi bi-lock"></i> Bloquear acceso
+                        </button>
+                    </form>
+                }
+            </div>
+            <p class="func-access-note">
+                Bloquear el acceso impide que el funcionario inicie sesión, pero conserva todo su
+                historial de citas, producción y pagos. Puedes reactivarlo cuando quieras.
+            </p>
+        }
+    </div>
+</div>
+
+<!-- ── PERMISOS DEL PORTAL ── -->
+<style>
+    .perm-card{margin-top:1.25rem;}
+    .perm-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1rem;margin-top:.5rem;}
+    .perm-block{border:1px solid var(--private-surface-border,rgba(15,23,42,.1));border-radius:.85rem;padding:1rem;background:rgba(148,163,184,.05);}
+    .perm-block h4{font-size:.9rem;font-weight:800;margin:0 0 .6rem;display:flex;align-items:center;gap:.45rem;}
+    .perm-item{display:flex;align-items:flex-start;gap:.5rem;padding:.35rem 0;font-size:.86rem;}
+    .perm-item input{margin-top:.15rem;width:1.05rem;height:1.05rem;flex-shrink:0;}
+    .perm-item--locked{opacity:.55;}
+    .perm-tag{font-size:.65rem;font-weight:700;color:#64748b;background:rgba(100,116,139,.15);border-radius:999px;padding:.05rem .4rem;margin-left:.3rem;}
+    .perm-help{font-size:.78rem;color:var(--private-muted-text,#64748b);margin:.8rem 0 0;line-height:1.5;}
+</style>
+<div class="kpi-card func-main-card perm-card">
+    <div class="func-form-body">
+        <div class="func-access-head">
+            <i class="bi bi-sliders"></i>
+            <h3 class="func-access-title">Permisos del portal</h3>
+        </div>
+        <p class="func-access-sub">Decide qué puede hacer este funcionario dentro de su portal.</p>
+
+        @if (!acceso.TienePortal)
+        {
+            <div class="func-modal-warning-box func-modal-warning-box--amber">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <span>Activa primero el acceso del funcionario para configurar sus permisos.</span>
+            </div>
+        }
+        else
+        {
+            <form asp-action="GuardarPermisos" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.IdFuncionario" />
+
+                <div class="perm-grid">
+                    <!-- Calendario -->
+                    <div class="perm-block">
+                        <h4><i class="bi bi-calendar3"></i> Calendario</h4>
+                        <label class="perm-item">
+                            <input type="checkbox" name="permisos" value="@FuncionarioPortalPermissions.VerMiCalendario"
+                                   checked="@permisos.Tiene(FuncionarioPortalPermissions.VerMiCalendario)" />
+                            <span>Ver mi calendario</span>
+                        </label>
+                        <label class="perm-item">
+                            <input type="checkbox" name="permisos" value="@FuncionarioPortalPermissions.CrearMisCitas"
+                                   checked="@permisos.Tiene(FuncionarioPortalPermissions.CrearMisCitas)" />
+                            <span>Agendar citas propias</span>
+                        </label>
+                        <label class="perm-item">
+                            <input type="checkbox" name="permisos" value="@FuncionarioPortalPermissions.EditarMisCitas"
+                                   checked="@permisos.Tiene(FuncionarioPortalPermissions.EditarMisCitas)" />
+                            <span>Editar mis citas</span>
+                        </label>
+                        <label class="perm-item">
+                            <input type="checkbox" name="permisos" value="@FuncionarioPortalPermissions.CancelarMisCitas"
+                                   checked="@permisos.Tiene(FuncionarioPortalPermissions.CancelarMisCitas)" />
+                            <span>Cancelar mis citas</span>
+                        </label>
+                    </div>
+
+                    <!-- Cobros propios -->
+                    <div class="perm-block">
+                        <h4><i class="bi bi-cash-coin"></i> Cobros propios</h4>
+                        <label class="perm-item">
+                            <input type="checkbox" name="permisos" value="@FuncionarioPortalPermissions.VerMisCobros"
+                                   checked="@permisos.Tiene(FuncionarioPortalPermissions.VerMisCobros)" />
+                            <span>Ver mis cobros propios</span>
+                        </label>
+                        <label class="perm-item">
+                            <input type="checkbox" name="permisos" value="@FuncionarioPortalPermissions.RegistrarMisCobros"
+                                   checked="@permisos.Tiene(FuncionarioPortalPermissions.RegistrarMisCobros)" />
+                            <span>Registrar cobros desde mis citas</span>
+                        </label>
+                        <label class="perm-item">
+                            <input type="checkbox" name="permisos" value="@FuncionarioPortalPermissions.RegistrarMisCobrosManuales"
+                                   checked="@permisos.Tiene(FuncionarioPortalPermissions.RegistrarMisCobrosManuales)" />
+                            <span>Registrar cobros manuales</span>
+                        </label>
+                    </div>
+
+                    <!-- Finanzas personales -->
+                    <div class="perm-block">
+                        <h4><i class="bi bi-graph-up-arrow"></i> Finanzas personales</h4>
+                        <label class="perm-item">
+                            <input type="checkbox" name="permisos" value="@FuncionarioPortalPermissions.VerMisGanancias"
+                                   checked="@permisos.Tiene(FuncionarioPortalPermissions.VerMisGanancias)" />
+                            <span>Ver mis ganancias</span>
+                        </label>
+                        <label class="perm-item">
+                            <input type="checkbox" name="permisos" value="@FuncionarioPortalPermissions.VerMisPagos"
+                                   checked="@permisos.Tiene(FuncionarioPortalPermissions.VerMisPagos)" />
+                            <span>Ver mis pagos recibidos</span>
+                        </label>
+                    </div>
+                </div>
+
+                <p class="perm-help">
+                    Estos permisos solo aplican al portal del funcionario. El funcionario nunca verá
+                    información de otros funcionarios. Los cobros registrados desde el portal quedan
+                    asociados al funcionario autenticado.
+                </p>
+
+                <div class="func-access-actions">
+                    <button type="submit" class="func-btn func-btn--primary">
+                        <i class="bi bi-floppy2-fill"></i> Guardar permisos
+                    </button>
+                </div>
+            </form>
+        }
+    </div>
+</div>
+
+<!-- ── FORM OCULTO: DESACTIVAR ── -->
+<form id="formDesactivarEdit" asp-action="Desactivar" method="post" class="d-none">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="id" value="@Model.IdFuncionario" />
+</form>
+
+<!-- ── FORM OCULTO: ACTIVAR ── -->
+<form id="formActivarEdit" asp-action="Activar" method="post" class="d-none">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="id" value="@Model.IdFuncionario" />
+</form>
+
+<!-- ── FORM OCULTO: ELIMINAR ── -->
+<form id="formEliminarEdit" asp-action="Eliminar" method="post" class="d-none">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="idFuncionario" value="@Model.IdFuncionario" />
+</form>
+
+<!-- ── MODAL: DESACTIVAR ── -->
+<div class="modal fade func-modal" id="modalDesactivarEdit" tabindex="-1" aria-labelledby="lblDesactivar">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="func-modal-title func-modal-title--warning" id="lblDesactivar">
+                    <i class="bi bi-toggle-on"></i>
+                    Desactivar funcionario
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="func-modal-person">
+                    <div class="func-avatar" style="background-color:@Model.ColorCalendario;width:2.5rem;height:2.5rem;font-size:1rem;">
+                        @(Model.Nombre.Length > 0 ? char.ToUpper(Model.Nombre[0]).ToString() : "?")
+                    </div>
+                    <div>
+                        <span class="func-modal-person-name">@Model.Nombre</span>
+                        <span class="func-modal-person-sub">Funcionario activo</span>
+                    </div>
+                </div>
+                <div class="func-modal-warning-box func-modal-warning-box--amber">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <span>Al desactivar este funcionario no podrá ser asignado a nuevas citas ni aparecerá en el calendario. Su historial de pagos y servicios se conserva.</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="func-btn func-btn--ghost" data-bs-dismiss="modal">
+                    Cancelar
+                </button>
+                <button type="button" class="func-btn func-btn--warning"
+                        onclick="document.getElementById('formDesactivarEdit').submit()">
+                    <i class="bi bi-toggle-on"></i>
+                    Confirmar desactivación
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── MODAL: ACTIVAR ── -->
+<div class="modal fade func-modal" id="modalActivarEdit" tabindex="-1" aria-labelledby="lblActivar">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="func-modal-title func-modal-title--green" id="lblActivar">
+                    <i class="bi bi-toggle-off"></i>
+                    Activar funcionario
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="func-modal-person">
+                    <div class="func-avatar" style="background-color:@Model.ColorCalendario;width:2.5rem;height:2.5rem;font-size:1rem;">
+                        @(Model.Nombre.Length > 0 ? char.ToUpper(Model.Nombre[0]).ToString() : "?")
+                    </div>
+                    <div>
+                        <span class="func-modal-person-name">@Model.Nombre</span>
+                        <span class="func-modal-person-sub">Funcionario inactivo</span>
+                    </div>
+                </div>
+                <p style="font-size:0.88rem;color:var(--private-muted-text,#64748b);line-height:1.55;margin:0;">
+                    Al activarlo volverá a estar disponible para asignación de citas y aparecerá en el calendario y el módulo de pagos.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="func-btn func-btn--ghost" data-bs-dismiss="modal">
+                    Cancelar
+                </button>
+                <button type="button" class="func-btn func-btn--success"
+                        onclick="document.getElementById('formActivarEdit').submit()">
+                    <i class="bi bi-toggle-off"></i>
+                    Confirmar activación
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── MODAL: ELIMINAR ── -->
+<div class="modal fade func-modal" id="modalEliminarEdit" tabindex="-1" aria-labelledby="lblEliminar">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="func-modal-title func-modal-title--danger" id="lblEliminar">
+                    <i class="bi bi-trash3-fill"></i>
+                    Eliminar funcionario
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="func-modal-person">
+                    <div class="func-avatar" style="background-color:@Model.ColorCalendario;width:2.5rem;height:2.5rem;font-size:1rem;">
+                        @(Model.Nombre.Length > 0 ? char.ToUpper(Model.Nombre[0]).ToString() : "?")
+                    </div>
+                    <div>
+                        <span class="func-modal-person-name">@Model.Nombre</span>
+                        <span class="func-modal-person-sub">Esta acción no se puede deshacer</span>
+                    </div>
+                </div>
+                <div class="func-modal-warning-box">
+                    <i class="bi bi-exclamation-octagon-fill"></i>
+                    <span>Se eliminará permanentemente este funcionario y todos sus registros asociados. Si solo deseas retirarlo temporalmente, usa la opción <strong>Desactivar</strong> en lugar de eliminar.</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="func-btn func-btn--ghost" data-bs-dismiss="modal">
+                    Cancelar
+                </button>
+                <button type="button" class="func-btn func-btn--danger"
+                        onclick="document.getElementById('formEliminarEdit').submit()">
+                    <i class="bi bi-trash3"></i>
+                    Eliminar definitivamente
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+    (function () {
+        function updateBar(inputId, barId) {
+            var input = document.getElementById(inputId);
+            var bar   = document.getElementById(barId);
+            if (!input || !bar) return;
+            function sync() {
+                var v = Math.min(Math.max(parseFloat(input.value) || 0, 0), 100);
+                bar.style.width = v + "%";
+            }
+            input.addEventListener("input", sync);
+            sync();
+        }
+
+        updateBar("func-pct-g", "func-bar-g");
+        updateBar("func-pct-p", "func-bar-p");
+
+        var colorInput = document.getElementById("func-color-input");
+        var colorPill  = document.getElementById("func-color-pill");
+        var colorHex   = document.getElementById("func-color-hex");
+
+        function syncColor() {
+            if (!colorInput || !colorPill || !colorHex) return;
+            var c = colorInput.value || "#000000";
+            colorPill.style.background = c;
+            colorHex.textContent = c.toUpperCase();
+        }
+
+        if (colorInput) colorInput.addEventListener("input", syncColor);
+        syncColor();
+
+        // La configuración de factura IVA sólo tiene sentido para colaboradores independientes.
+        var tipoRelacion = document.getElementById("func-tipo-relacion");
+        var bloqueIndep  = document.getElementById("func-fiscal-independiente");
+        function syncTipoRelacion() {
+            if (!tipoRelacion || !bloqueIndep) return;
+            bloqueIndep.style.display = tipoRelacion.value === "Independiente" ? "" : "none";
+        }
+        if (tipoRelacion) tipoRelacion.addEventListener("change", syncTipoRelacion);
+        syncTipoRelacion();
+    })();
+    </script>
+}

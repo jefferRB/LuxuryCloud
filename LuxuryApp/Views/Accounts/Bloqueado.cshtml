@@ -1,0 +1,53 @@
+﻿@{
+    ViewData["Title"] = "Acceso Denegado";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    .denied-container {
+        min-height: 80vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .denied-card {
+        background: rgba(255,255,255,0.08);
+        backdrop-filter: blur(15px);
+        padding: 40px;
+        border-radius: 25px;
+        text-align: center;
+        color: white;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        max-width: 420px;
+    }
+
+    .btn-luxury {
+        border-radius: 30px;
+        padding: 10px 20px;
+        background: linear-gradient(45deg,#d4af37,#f5e27a);
+        border: none;
+        color: black;
+        margin: 5px;
+    }
+</style>
+
+<div class="denied-container">
+    <div class="denied-card">
+
+        <h2>🚫 Acceso Denegado</h2>
+
+        <p>
+            No tienes permisos para acceder a este módulo.
+        </p>
+
+        <a asp-controller="Accounts" asp-action="Acceso" class="btn btn-luxury">
+            Iniciar Sesión
+        </a>
+
+        <a asp-controller="Accounts" asp-action="Registro" class="btn btn-luxury">
+            Registrarse
+        </a>
+
+    </div>
+</div>

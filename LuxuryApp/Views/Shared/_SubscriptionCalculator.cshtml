@@ -1,0 +1,97 @@
+@using System.Text.Json
+@model LuxuryApp.Models.SaaS.SubscriptionCalculatorViewModel
+@{
+    var optionsJson = JsonSerializer.Serialize(Model.Options.Select(o => new
+    {
+        code = o.Code,
+        workers = o.Workers,
+        cycle = o.Cycle,
+        charge = o.ChargeAmount,
+        monthlyEq = o.MonthlyEquivalentAmount,
+        savings = o.AnnualSavings,
+        savingsPct = o.SavingsPercent,
+        available = o.IsAvailable
+    }));
+    var configJson = JsonSerializer.Serialize(new
+    {
+        min = Model.MinWorkers,
+        max = Model.MaxWorkers,
+        defaultWorkers = Model.DefaultWorkers,
+        defaultCycle = Model.DefaultCycle == LuxuryApp.Models.SaaS.BillingCycle.Annual ? "Annual" : "Monthly",
+        currency = Model.Currency,
+        activeFuncionarios = Model.ActiveFuncionarios,
+        hasActive = Model.HasActiveSubscription,
+        currentWorkers = Model.CurrentWorkers,
+        currentCycle = Model.CurrentCycle == null ? null : (Model.CurrentCycle == LuxuryApp.Models.SaaS.BillingCycle.Annual ? "Annual" : "Monthly"),
+        currentCode = Model.CurrentPlanCode,
+        currentRenewal = Model.CurrentPlanRenewalDisplay
+    });
+}
+
+@if (!Model.IsEnabled)
+{
+    <div class="sub-alert sub-alert--error">
+        <i class="bi bi-exclamation-triangle"></i>
+        La calculadora de planes no está disponible en este momento. Por favor contactá a soporte.
+    </div>
+}
+else
+{
+    <section class="lc-calc" id="lcCalc"
+             data-options='@Html.Raw(optionsJson)'
+             data-config='@Html.Raw(configJson)'>
+
+        <div class="lc-calc-toggle" role="tablist" aria-label="Ciclo de facturación">
+            <button type="button" class="lc-calc-cycle is-active" data-cycle="Monthly" role="tab">Mensual</button>
+            <button type="button" class="lc-calc-cycle" data-cycle="Annual" role="tab">
+                Anual <span class="lc-calc-cycle-tag" data-role="cycle-tag"></span>
+            </button>
+        </div>
+
+        <div class="lc-calc-grid">
+            <div class="lc-calc-picker">
+                <label class="lc-calc-q" for="lcCalcRange">¿Cuántos funcionarios tendrá tu negocio?</label>
+                <div class="lc-calc-count">
+                    <span class="lc-calc-count-num" data-role="workers">@Model.DefaultWorkers</span>
+                    <span class="lc-calc-count-label" data-role="workers-label">funcionarios</span>
+                </div>
+                <input type="range" class="lc-calc-range" id="lcCalcRange"
+                       min="@Model.MinWorkers" max="@Model.MaxWorkers" step="1" value="@Model.DefaultWorkers"
+                       aria-label="Cantidad de funcionarios" />
+                <div class="lc-calc-marks" data-role="marks"></div>
+                <p class="lc-calc-floor" data-role="floor" hidden></p>
+            </div>
+
+            <div class="lc-calc-panel">
+                <div class="lc-calc-pay">
+                    <span class="lc-calc-pay-label" data-role="pay-label">Pago mensual</span>
+                    <span class="lc-calc-pay-amount" data-role="charge">—</span>
+                    <span class="lc-calc-pay-sub" data-role="equivalent"></span>
+                </div>
+
+                <ul class="lc-calc-rows">
+                    <li><span>Funcionarios incluidos</span><strong data-role="limit">—</strong></li>
+                    <li data-role="savings-row" hidden><span>Ahorro anual</span><strong class="lc-calc-save" data-role="savings">—</strong></li>
+                    <li><span>Próxima renovación</span><strong data-role="renewal">—</strong></li>
+                    <li class="lc-calc-row-muted"><span>Código del plan</span><strong data-role="code">—</strong></li>
+                </ul>
+
+                <form asp-controller="Billing" asp-action="CheckoutCalculadora" method="post" class="lc-calc-form" data-role="form">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="workers" data-role="in-workers" value="@Model.DefaultWorkers" />
+                    <input type="hidden" name="cycle" data-role="in-cycle" value="@(Model.DefaultCycle == LuxuryApp.Models.SaaS.BillingCycle.Annual ? "Annual" : "Monthly")" />
+                    <button type="submit" class="sub-btn sub-btn--primary lc-calc-cta" data-role="cta">
+                        <span data-role="cta-text">Suscribirme</span>
+                        <span class="lc-calc-spin" data-role="spin" hidden><i class="bi bi-arrow-repeat"></i></span>
+                    </button>
+                    <p class="lc-calc-current" data-role="current" hidden></p>
+                    <p class="lc-calc-unavailable sub-alert sub-alert--error" data-role="unavailable" hidden></p>
+                </form>
+            </div>
+        </div>
+
+        <p class="lc-calc-note" data-role="annual-note" hidden></p>
+    </section>
+
+    <script src="~/js/subscription-calculator.js" asp-append-version="true"></script>
+}

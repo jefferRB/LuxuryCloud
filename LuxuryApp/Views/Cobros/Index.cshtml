@@ -1,0 +1,717 @@
+@using LuxuryApp.Models.Finanzas
+@model CobroIndexViewModel
+
+@{
+    ViewData["Title"] = "Ingresos";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/finance-modules.css" asp-append-version="true" />
+}
+
+<div class="finance-page-shell">
+
+    @* HERO *@
+    <div class="finance-hero">
+        <div class="finance-hero-left module-heading">
+            <span class="module-eyebrow">Gestión de Ingresos</span>
+            <h1 class="module-title"><i class="bi bi-cash-coin module-title-icon" aria-hidden="true"></i>Ingresos</h1>
+            <p class="module-subtitle">Administra tus cobros, servicios y productos.</p>
+        </div>
+
+        <div class="finance-kpi-grid">
+            <div class="finance-kpi-card">
+                <div class="finance-kpi-icon finance-kpi-icon-green">
+                    <i class="bi bi-currency-dollar"></i>
+                </div>
+                <div>
+                    <span class="finance-kpi-label">Total generado</span>
+                    <span class="finance-kpi-value finance-kpi-value-green">
+                        ₡ @Model.TotalGenerado.ToString("N2")
+                    </span>
+                </div>
+            </div>
+
+            <div class="finance-kpi-card">
+                <div class="finance-kpi-icon finance-kpi-icon-blue">
+                    <i class="bi bi-calculator"></i>
+                </div>
+                <div>
+                    <span class="finance-kpi-label">Sin impuestos</span>
+                    <span class="finance-kpi-value finance-kpi-value-blue">
+                        ₡ @Model.TotalSinImpuestos.ToString("N2")
+                    </span>
+                </div>
+            </div>
+
+            <div class="finance-kpi-card">
+                <div class="finance-kpi-icon finance-kpi-icon-orange">
+                    <i class="bi bi-percent"></i>
+                </div>
+                <div>
+                    <span class="finance-kpi-label">Impuestos</span>
+                    <span class="finance-kpi-value finance-kpi-value-orange">
+                        ₡ @Model.TotalImpuestos.ToString("N2")
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* KPIs secundarios *@
+    <div class="finance-secondary-kpis">
+        <span class="finance-secondary-kpi">
+            <span class="finance-secondary-kpi-label">Servicios:</span>
+            <span class="finance-secondary-kpi-value">₡ @Model.TotalServicios.ToString("N2")</span>
+        </span>
+        <span class="finance-secondary-kpi">
+            <span class="finance-secondary-kpi-label">Productos:</span>
+            <span class="finance-secondary-kpi-value">₡ @Model.TotalProductos.ToString("N2")</span>
+        </span>
+        <span class="finance-secondary-kpi">
+            <span class="finance-secondary-kpi-label">Funcionarios:</span>
+            <span class="finance-secondary-kpi-value">₡ @Model.PagoColaboradores.ToString("N2")</span>
+        </span>
+        <span class="finance-secondary-kpi">
+            <span class="finance-secondary-kpi-label">Negocio:</span>
+            <span class="finance-secondary-kpi-value">₡ @Model.GananciaNegocio.ToString("N2")</span>
+        </span>
+        <span class="finance-secondary-kpi">
+            <span class="finance-secondary-kpi-label">Efectivo:</span>
+            <span class="finance-secondary-kpi-value">₡ @Model.GananciaEfectivo.ToString("N2")</span>
+        </span>
+        <span class="finance-secondary-kpi">
+            <span class="finance-secondary-kpi-label">Tarjeta:</span>
+            <span class="finance-secondary-kpi-value">₡ @Model.GananciaTarjeta.ToString("N2")</span>
+        </span>
+        <span class="finance-secondary-kpi">
+            <span class="finance-secondary-kpi-label">Sinpe:</span>
+            <span class="finance-secondary-kpi-value">₡ @Model.GananciaSinpe.ToString("N2")</span>
+        </span>
+    </div>
+
+    @* Botones de acción *@
+    <div class="finance-actions">
+        <a asp-action="Create" class="finance-btn-primary">
+            <i class="bi bi-plus-lg"></i> Nuevo Cobro
+        </a>
+
+        <button type="button"
+                class="finance-btn-secondary"
+                data-bs-toggle="modal"
+                data-bs-target="#modalServicios"
+                onclick="cargarServicios()">
+            <i class="bi bi-gear"></i> Gestionar Servicios
+        </button>
+
+        <button type="submit"
+                form="formFiltros"
+                formaction="@Url.Action("ExportarExcel")"
+                class="finance-btn-excel">
+            <i class="bi bi-file-earmark-excel"></i> Excel
+        </button>
+
+        @* Acceso al control de citas y cobros (acceso secundario, alineado a la derecha). *@
+        <a href="/Calendar/ControlCobros" class="finance-btn-secondary finance-btn-control">
+            <i class="bi bi-cash-stack"></i> Control de citas y cobros
+        </a>
+    </div>
+
+    @* Filtros *@
+    <form method="get" id="formFiltros" class="finance-filters-panel">
+        <div class="finance-filters-grid">
+
+            <div class="finance-filter-group">
+                <label class="finance-filter-label">
+                    <i class="bi bi-calendar3"></i> Período
+                </label>
+                <select asp-for="Filtros.VistaTiempo"
+                        class="finance-filter-select"
+                        id="vistaTiempoSelect">
+                    <option value="dia">Hoy</option>
+                    <option value="semana">Semana</option>
+                    <option value="mes">Mes</option>
+                    <option value="anio">Año</option>
+                    <option value="fechas">Rango de Fechas</option>
+                    <option value="todo">Todo</option>
+                </select>
+                <div class="finance-date-range d-none" id="rangoFechasContainer">
+                    <input asp-for="Filtros.FechaInicio" type="date" class="finance-filter-input" />
+                    <input asp-for="Filtros.FechaFin"    type="date" class="finance-filter-input" />
+                </div>
+            </div>
+
+            <div class="finance-filter-group">
+                <label class="finance-filter-label">
+                    <i class="bi bi-person"></i> Funcionario
+                </label>
+                <select asp-for="Filtros.FuncionarioId"
+                        asp-items="Model.Funcionarios"
+                        class="finance-filter-select">
+                    <option value="">Todos los Funcionarios</option>
+                </select>
+            </div>
+
+            <div class="finance-filter-group">
+                <label class="finance-filter-label">
+                    <i class="bi bi-credit-card"></i> Método de pago
+                </label>
+                <select asp-for="Filtros.MetodoPago"
+                        asp-items="Model.MetodosPago"
+                        class="finance-filter-select">
+                    <option value="">Todos métodos</option>
+                </select>
+            </div>
+
+            <div class="finance-filter-group">
+                <label class="finance-filter-label">
+                    <i class="bi bi-funnel"></i> Tipo
+                </label>
+                <div class="finance-checkbox-group">
+                    <label class="finance-checkbox-item">
+                        <input type="checkbox"
+                               asp-for="Filtros.MostrarServicios"
+                               id="chkServicios" />
+                        ✂ Servicios
+                    </label>
+                    <label class="finance-checkbox-item">
+                        <input type="checkbox"
+                               asp-for="Filtros.MostrarProductos"
+                               id="chkProductos" />
+                        🧴 Productos
+                    </label>
+                </div>
+            </div>
+
+        </div>
+
+        @* Estado de paginación (lo mueven los botones de la barra inferior; se conserva con los filtros) *@
+        <input type="hidden" asp-for="Filtros.Page" id="filtroPage" />
+        <input type="hidden" asp-for="Filtros.PageSize" id="filtroPageSize" />
+    </form>
+
+    @* Alertas TempData *@
+    @if (TempData["Mensaje"] != null)
+    {
+        <div style="padding:0 2rem 0.5rem;">
+            <div class="svc-alert svc-alert--success">
+                <i class="bi bi-check-circle-fill"></i>
+                @TempData["Mensaje"]
+            </div>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div style="padding:0 2rem 0.5rem;">
+            <div class="svc-alert svc-alert--danger">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                @TempData["Error"]
+            </div>
+        </div>
+    }
+
+    @* Tabla desktop *@
+    <div class="finance-table-desktop">
+        <table class="finance-table">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Cliente</th>
+                    <th>Funcionario</th>
+                    <th>Servicio / Producto</th>
+                    <th>Monto</th>
+                    <th>Método Pago</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Cobros.Any())
+                {
+                    foreach (var cobro in Model.Cobros)
+                    {
+                        <tr>
+                            <td>@cobro.FechaCobro.ToString("dd/MM/yyyy HH:mm")</td>
+
+                            <td class="fw-semibold">@cobro.NombreCliente</td>
+
+                            <td>@cobro.FuncionarioNombre</td>
+
+                            <td>
+                                @if (cobro.EsServicio)
+                                {
+                                    <span class="badge"
+                                          style="background:rgba(var(--private-accent-rgb), 0.15);color:var(--private-chart-accent);border:1px solid rgba(var(--private-accent-rgb), 0.25);font-size:.68rem;font-weight:700;letter-spacing:.04em;padding:.2rem .55rem;border-radius:999px;">
+                                        Servicio
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge"
+                                          style="background:rgba(217,119,6,0.15);color:#d97706;border:1px solid rgba(217,119,6,0.25);font-size:.68rem;font-weight:700;letter-spacing:.04em;padding:.2rem .55rem;border-radius:999px;">
+                                        Producto
+                                    </span>
+                                }
+                                @cobro.Detalle
+                            </td>
+
+                            <td class="finance-monto-income">₡ @cobro.Monto.ToString("N2")</td>
+
+                            <td>
+                                <span class="finance-method-badge">@cobro.MetodoPago</span>
+                            </td>
+
+                            <td>
+                                <div class="finance-actions-cell">
+                                    @if (cobro.TieneComprobante)
+                                    {
+                                        var compTitle = $"Comprobante {cobro.ComprobanteNumero}" +
+                                            (string.IsNullOrWhiteSpace(cobro.ComprobanteEmail) ? "" : $" · {cobro.ComprobanteEmail}") +
+                                            (cobro.ComprobanteSentAt.HasValue ? $" · Enviado {cobro.ComprobanteSentAt.Value:dd/MM/yyyy HH:mm}" : "");
+                                        if (cobro.ComprobanteEnviado)
+                                        {
+                                            <span class="finance-method-badge" style="background:rgba(5,150,105,.12);color:#059669;" title="@compTitle">
+                                                <i class="bi bi-envelope-check"></i> Enviado
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="finance-method-badge" style="background:rgba(217,119,6,.12);color:#b45309;" title="@compTitle">
+                                                <i class="bi bi-envelope-exclamation"></i> Pendiente
+                                            </span>
+                                        }
+                                        <a href="/comprobantes/@cobro.ComprobanteToken" target="_blank" rel="noopener" class="finance-btn-row-edit" title="Ver comprobante">
+                                            <i class="bi bi-eye"></i> Ver
+                                        </a>
+                                        <form asp-action="ReenviarComprobante" method="post" style="display:inline;">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="comprobanteId" value="@cobro.ComprobanteId" />
+                                            <button type="submit" class="finance-btn-row-edit" title="Reenviar comprobante por correo">
+                                                <i class="bi bi-arrow-repeat"></i> Reenviar
+                                            </button>
+                                        </form>
+                                    }
+
+                                    <a asp-action="Edit"
+                                       asp-route-id="@cobro.IdCobro"
+                                       class="finance-btn-row-edit">
+                                        <i class="bi bi-pencil"></i> Editar
+                                    </a>
+
+                                    <button type="button"
+                                            class="finance-btn-row-delete"
+                                            onclick="abrirEliminarCobro(this)"
+                                            data-id="@cobro.IdCobro"
+                                            data-cliente="@Html.Raw(cobro.NombreCliente)"
+                                            data-funcionario="@Html.Raw(cobro.FuncionarioNombre)"
+                                            data-servicio="@Html.Raw(cobro.Detalle)"
+                                            data-tipo="@(cobro.EsServicio ? "Servicio" : "Producto")"
+                                            data-monto="₡ @cobro.Monto.ToString("N2")"
+                                            data-fecha="@cobro.FechaCobro.ToString("dd/MM/yyyy HH:mm")"
+                                            data-action="@Url.Action("Delete", new { id = cobro.IdCobro })">
+                                        <i class="bi bi-trash"></i> Eliminar
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="7">
+                            <div class="finance-empty-state">
+                                <div class="finance-empty-icon">
+                                    <i class="bi bi-wallet2"></i>
+                                </div>
+                                <p class="finance-empty-title">No hay cobros registrados</p>
+                                <p class="finance-empty-subtitle">Aún no se han registrado cobros en el rango seleccionado.</p>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @* Mobile cards *@
+    <div class="finance-mobile-list">
+        @if (Model.Cobros.Any())
+        {
+            foreach (var cobro in Model.Cobros)
+            {
+                <div class="finance-mobile-card">
+                    <div class="finance-mobile-card-header">
+                        <span class="finance-mobile-card-date">
+                            <i class="bi bi-calendar3"></i>
+                            @cobro.FechaCobro.ToString("dd/MM/yyyy HH:mm")
+                        </span>
+                        <span class="finance-mobile-card-monto finance-mobile-card-monto-income">
+                            ₡ @cobro.Monto.ToString("N2")
+                        </span>
+                    </div>
+
+                    <div class="finance-mobile-card-body">
+                        <div class="finance-mobile-card-name">@cobro.NombreCliente</div>
+
+                        <div class="finance-mobile-card-row">
+                            <span class="finance-mobile-card-row-label">Funcionario</span>
+                            <span class="finance-mobile-card-row-value">@cobro.FuncionarioNombre</span>
+                        </div>
+
+                        <div class="finance-mobile-card-row">
+                            <span class="finance-mobile-card-row-label">Detalle</span>
+                            <span class="finance-mobile-card-row-value">
+                                @if (cobro.EsServicio)
+                                {
+                                    <span style="font-size:.65rem;background:rgba(var(--private-accent-rgb), .14);color:var(--private-chart-accent);border:1px solid rgba(var(--private-accent-rgb), .22);padding:.1rem .4rem;border-radius:999px;font-weight:700;">S</span>
+                                }
+                                else
+                                {
+                                    <span style="font-size:.65rem;background:rgba(217,119,6,.14);color:#d97706;border:1px solid rgba(217,119,6,.22);padding:.1rem .4rem;border-radius:999px;font-weight:700;">P</span>
+                                }
+                                @cobro.Detalle
+                            </span>
+                        </div>
+
+                        <div class="finance-mobile-card-row">
+                            <span class="finance-mobile-card-row-label">Método</span>
+                            <span class="finance-mobile-card-row-value">
+                                <span class="finance-method-badge">@cobro.MetodoPago</span>
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="finance-mobile-card-footer">
+                        @if (cobro.TieneComprobante)
+                        {
+                            <a href="/comprobantes/@cobro.ComprobanteToken" target="_blank" rel="noopener" class="finance-btn-row-edit">
+                                <i class="bi @(cobro.ComprobanteEnviado ? "bi-envelope-check" : "bi-envelope-exclamation")"></i> Ver comprobante
+                            </a>
+                            <form asp-action="ReenviarComprobante" method="post" style="display:inline;">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="comprobanteId" value="@cobro.ComprobanteId" />
+                                <button type="submit" class="finance-btn-row-edit">
+                                    <i class="bi bi-arrow-repeat"></i> Reenviar
+                                </button>
+                            </form>
+                        }
+
+                        <a asp-action="Edit"
+                           asp-route-id="@cobro.IdCobro"
+                           class="finance-btn-row-edit">
+                            <i class="bi bi-pencil"></i> Editar
+                        </a>
+
+                        <button type="button"
+                                class="finance-btn-row-delete"
+                                onclick="abrirEliminarCobro(this)"
+                                data-id="@cobro.IdCobro"
+                                data-cliente="@Html.Raw(cobro.NombreCliente)"
+                                data-funcionario="@Html.Raw(cobro.FuncionarioNombre)"
+                                data-servicio="@Html.Raw(cobro.Detalle)"
+                                data-tipo="@(cobro.EsServicio ? "Servicio" : "Producto")"
+                                data-monto="₡ @cobro.Monto.ToString("N2")"
+                                data-fecha="@cobro.FechaCobro.ToString("dd/MM/yyyy HH:mm")"
+                                data-action="@Url.Action("Delete", new { id = cobro.IdCobro })">
+                            <i class="bi bi-trash"></i> Eliminar
+                        </button>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="finance-empty-state">
+                <div class="finance-empty-icon">
+                    <i class="bi bi-wallet2"></i>
+                </div>
+                <p class="finance-empty-title">No hay cobros registrados</p>
+                <p class="finance-empty-subtitle">Aún no se han registrado cobros en el rango seleccionado.</p>
+            </div>
+        }
+    </div>
+
+    @* Paginación (la tabla muestra una página; los indicadores de arriba son de todo el filtro) *@
+    @if (Model.TotalRegistros > 0)
+    {
+        <div class="finance-pagination">
+            <div class="finance-pagination-info">
+                Mostrando @Model.Desde–@Model.Hasta de @Model.TotalRegistros.ToString("N0") ingresos
+            </div>
+
+            <div class="finance-pagination-controls">
+                <button type="button" class="finance-page-btn" onclick="gotoPage(1)"
+                        title="Primera página" @(Model.Page <= 1 ? "disabled" : "")>«</button>
+                <button type="button" class="finance-page-btn" onclick="gotoPage(@(Model.Page - 1))"
+                        title="Anterior" @(Model.Page <= 1 ? "disabled" : "")>‹</button>
+
+                @{
+                    var startPage = Math.Max(1, Model.Page - 2);
+                    var endPage = Math.Min(Model.TotalPaginas, Model.Page + 2);
+                }
+                @if (startPage > 1)
+                {
+                    <span class="finance-page-ellipsis">…</span>
+                }
+                @for (var p = startPage; p <= endPage; p++)
+                {
+                    <button type="button" class="finance-page-btn @(p == Model.Page ? "is-active" : "")"
+                            onclick="gotoPage(@p)">@p</button>
+                }
+                @if (endPage < Model.TotalPaginas)
+                {
+                    <span class="finance-page-ellipsis">…</span>
+                }
+
+                <button type="button" class="finance-page-btn" onclick="gotoPage(@(Model.Page + 1))"
+                        title="Siguiente" @(Model.Page >= Model.TotalPaginas ? "disabled" : "")>›</button>
+                <button type="button" class="finance-page-btn" onclick="gotoPage(@Model.TotalPaginas)"
+                        title="Última página" @(Model.Page >= Model.TotalPaginas ? "disabled" : "")>»</button>
+            </div>
+
+            <div class="finance-pagination-size">
+                <label>Mostrar:</label>
+                <select id="pageSizeSelect" class="finance-filter-select" onchange="setPageSize(this.value)">
+                    @foreach (var size in CobroIndexViewModel.PageSizeOptions)
+                    {
+                        <option value="@size" selected="@(size == Model.PageSize)">@size</option>
+                    }
+                </select>
+            </div>
+        </div>
+    }
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     MODAL: ELIMINAR COBRO
+     ═══════════════════════════════════════════════════════════ -->
+<div class="modal fade finance-delete-modal" id="modalEliminarCobro" tabindex="-1"
+     aria-labelledby="lblEliminarCobro" aria-modal="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="finance-delete-modal-title" id="lblEliminarCobro">
+                    <div class="finance-delete-modal-icon">
+                        <i class="bi bi-trash3-fill"></i>
+                    </div>
+                    Eliminar Cobro
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <p class="finance-delete-intro">
+                    ¿Estás seguro que deseas eliminar este cobro? Esta acción no se puede deshacer.
+                </p>
+                <div class="finance-delete-summary">
+                    <div class="finance-delete-summary-row">
+                        <span class="finance-delete-summary-label">
+                            <i class="bi bi-person"></i> Cliente
+                        </span>
+                        <span class="finance-delete-summary-value" id="deleteCobro_Cliente"></span>
+                    </div>
+                    <div class="finance-delete-summary-row">
+                        <span class="finance-delete-summary-label">
+                            <i class="bi bi-person-badge"></i> Funcionario
+                        </span>
+                        <span class="finance-delete-summary-value" id="deleteCobro_Funcionario"></span>
+                    </div>
+                    <div class="finance-delete-summary-row">
+                        <span class="finance-delete-summary-label">
+                            <i class="bi bi-tag"></i> Servicio
+                        </span>
+                        <span class="finance-delete-summary-value" id="deleteCobro_Servicio"></span>
+                    </div>
+                    <div class="finance-delete-summary-row">
+                        <span class="finance-delete-summary-label">
+                            <i class="bi bi-currency-exchange"></i> Monto
+                        </span>
+                        <span class="finance-delete-summary-value" id="deleteCobro_Monto"></span>
+                    </div>
+                    <div class="finance-delete-summary-row">
+                        <span class="finance-delete-summary-label">
+                            <i class="bi bi-calendar3"></i> Fecha
+                        </span>
+                        <span class="finance-delete-summary-value" id="deleteCobro_Fecha"></span>
+                    </div>
+                </div>
+                <div class="finance-delete-warning-box">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <span>Esta acción es permanente. Se eliminará el cobro y se actualizarán los indicadores de ingresos y dashboards.</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="finance-btn-back" data-bs-dismiss="modal">
+                    <i class="bi bi-x-lg"></i> Cancelar
+                </button>
+                <form id="deleteCobroForm" method="post" action="" style="margin:0;">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="finance-btn-danger-form">
+                        <i class="bi bi-trash3-fill"></i> Eliminar
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     MODAL: GESTIONAR SERVICIOS
+     ═══════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="modalServicios" tabindex="-1" aria-labelledby="lblModalServicios">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header"
+                 style="background:linear-gradient(135deg,rgba(var(--private-accent-rgb), 0.08),rgba(var(--private-accent-alt-rgb), 0.08));border-bottom:1px solid var(--private-surface-border,rgba(15,23,42,0.1));">
+                <div style="display:flex;align-items:center;gap:0.65rem;">
+                    <div style="flex-shrink:0;display:flex;align-items:center;justify-content:center;width:2.25rem;height:2.25rem;border-radius:0.65rem;background:linear-gradient(135deg,rgba(var(--private-accent-rgb), 0.18),rgba(var(--private-accent-alt-rgb), 0.18));font-size:1.05rem;color:var(--private-chart-accent,var(--private-accent));">
+                        <i class="bi bi-scissors"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title" id="lblModalServicios"
+                            style="font-size:1rem;font-weight:800;color:var(--private-surface-text,#111827);margin:0;">
+                            Gestionar Servicios
+                        </h5>
+                        <p style="font-size:0.76rem;color:var(--private-muted-text,#64748b);margin:0;">
+                            Administra los servicios disponibles para tus cobros.
+                        </p>
+                    </div>
+                </div>
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <div id="serviciosMessageContainer"></div>
+                <div id="contenedorServicios">
+                    <div class="svc-empty">
+                        <i class="bi bi-scissors svc-empty-icon"></i>
+                        <span class="svc-empty-text">Cargando servicios...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     MODAL: CONFIRMAR ELIMINAR SERVICIO
+     ═══════════════════════════════════════════════════════════ -->
+<div class="modal fade finance-delete-modal" id="modalEliminarServicio" tabindex="-1"
+     aria-labelledby="lblEliminarServicio" aria-modal="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="finance-delete-modal-title" id="lblEliminarServicio">
+                    <div class="finance-delete-modal-icon">
+                        <i class="bi bi-scissors"></i>
+                    </div>
+                    Eliminar Servicio
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <div style="display:flex;align-items:center;gap:0.75rem;padding:0.85rem 1rem;border-radius:12px;background:var(--private-row-bg);border:1px solid var(--private-surface-border);margin-bottom:1rem;">
+                    <div style="width:2.5rem;height:2.5rem;border-radius:0.6rem;background:rgba(220,38,38,0.1);display:flex;align-items:center;justify-content:center;font-size:1.15rem;color:#dc2626;flex-shrink:0;">
+                        <i class="bi bi-scissors"></i>
+                    </div>
+                    <div>
+                        <span style="display:block;font-weight:700;font-size:0.925rem;color:var(--private-surface-text);"
+                              id="eliminarServicioNombre"></span>
+                        <span style="font-size:0.78rem;color:var(--private-muted-text);">Servicio</span>
+                    </div>
+                </div>
+                <div class="finance-delete-warning-box">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <span>
+                        Esta acción es permanente y no se puede deshacer.
+                        Solo es posible si el servicio no tiene cobros ni citas asociadas.
+                    </span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <input type="hidden" id="eliminarServicioId" value="" />
+                <button type="button" class="finance-btn-back" data-bs-dismiss="modal">
+                    Cancelar
+                </button>
+                <button type="button"
+                        class="finance-btn-danger-form"
+                        onclick="var id=document.getElementById('eliminarServicioId').value; bootstrap.Modal.getInstance(document.getElementById('modalEliminarServicio')).hide(); eliminarServicio(id);">
+                    <i class="bi bi-trash3-fill"></i>
+                    Eliminar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        /* ── filtros ─────────────────────────────────────────── */
+        function toggleRangoFechas() {
+            var select = document.getElementById("vistaTiempoSelect");
+            var container = document.getElementById("rangoFechasContainer");
+            container.classList.toggle("d-none", select.value !== "fechas");
+        }
+
+        /* ── paginación (conserva filtros; cambiar filtro vuelve a página 1) ── */
+        function resetPage() {
+            var p = document.getElementById("filtroPage");
+            if (p) p.value = 1;
+        }
+        function gotoPage(n) {
+            var p = document.getElementById("filtroPage");
+            if (p) p.value = n;
+            document.getElementById("formFiltros").submit();
+        }
+        function setPageSize(v) {
+            var ps = document.getElementById("filtroPageSize");
+            if (ps) ps.value = v;
+            resetPage();
+            document.getElementById("formFiltros").submit();
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            var form = document.getElementById("formFiltros");
+            // Solo los campos de FILTRO (no los hidden de paginación) reenvían al cambiar.
+            var filtros = form.querySelectorAll("select:not(#pageSizeSelect), input:not([type=hidden])");
+
+            toggleRangoFechas();
+
+            filtros.forEach(function (filtro) {
+                filtro.addEventListener("change", function () {
+                    resetPage(); // cambiar un filtro siempre vuelve a la página 1
+                    if (this.id === "vistaTiempoSelect") {
+                        toggleRangoFechas();
+                        if (this.value !== "fechas") form.submit();
+                        return;
+                    }
+                    form.submit();
+                });
+            });
+        });
+
+        document.querySelectorAll("#rangoFechasContainer input").forEach(function (input) {
+            input.addEventListener("change", function () {
+                var inicio = document.querySelector("[name='Filtros.FechaInicio']").value;
+                var fin    = document.querySelector("[name='Filtros.FechaFin']").value;
+                if (inicio && fin) {
+                    resetPage();
+                    document.getElementById("formFiltros").submit();
+                }
+            });
+        });
+
+        /* ── eliminar cobro (modal premium) ─────────────────── */
+        function abrirEliminarCobro(btn) {
+            document.getElementById('deleteCobro_Cliente').textContent    = btn.dataset.cliente    || '—';
+            document.getElementById('deleteCobro_Funcionario').textContent = btn.dataset.funcionario || '—';
+            document.getElementById('deleteCobro_Servicio').textContent   = btn.dataset.servicio   || '—';
+            document.getElementById('deleteCobro_Monto').textContent      = btn.dataset.monto      || '—';
+            document.getElementById('deleteCobro_Fecha').textContent      = btn.dataset.fecha      || '—';
+            document.getElementById('deleteCobroForm').action             = btn.dataset.action;
+            new bootstrap.Modal(document.getElementById('modalEliminarCobro')).show();
+        }
+    </script>
+}

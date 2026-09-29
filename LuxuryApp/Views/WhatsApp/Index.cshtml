@@ -1,0 +1,248 @@
+@model LuxuryApp.Models.SaaS.WhatsAppSettingsPageViewModel
+@{
+    ViewData["Title"] = "WhatsApp";
+    var sub = Model.Summary;
+    var hasAddon = Model.HasWhatsAppAddon;
+    var automationOn = sub?.WhatsAppAutomationEnabled == true;
+
+    var monthlyLimit = sub?.WhatsAppMonthlyLimit ?? 0;
+    var remainingMonth = sub?.WhatsAppMessagesRemaining ?? 0;
+    var dailyLimit = sub?.WhatsAppDailyLimit ?? 0;
+    var availableToday = Math.Max(dailyLimit - (sub?.WhatsAppTodayUsage ?? 0), 0);
+    var lowBalance = hasAddon && monthlyLimit > 0 && remainingMonth <= Math.Max(monthlyLimit / 10, 10);
+
+    string badgeLabel;
+    string badgeClass;
+    var manualGrant = sub?.WhatsAppAddonIsManualGrant == true;
+    var manualExpired = sub?.WhatsAppManualGrantExpired == true;
+    if (!hasAddon)
+    {
+        badgeLabel = "Sin paquete";
+        badgeClass = "wa-badge--muted";
+    }
+    else if (manualExpired)
+    {
+        badgeLabel = "Acceso manual vencido";
+        badgeClass = "wa-badge--warn";
+    }
+    else if (sub?.WhatsAppAddonStatus == LuxuryApp.Models.SaaS.EstadoSuscripcion.Morosa)
+    {
+        badgeLabel = "En gracia";
+        badgeClass = "wa-badge--warn";
+    }
+    else if (sub?.WhatsAppAddonNeedsConfiguration == true)
+    {
+        badgeLabel = "Falta configurar";
+        badgeClass = "wa-badge--warn";
+    }
+    else if (!automationOn)
+    {
+        badgeLabel = "Pausado";
+        badgeClass = "wa-badge--warn";
+    }
+    else
+    {
+        badgeLabel = "Activo";
+        badgeClass = "wa-badge--ok";
+    }
+}
+
+@section Styles {
+    @* finance-modules.css PRIMERO: define el shell y la geometría de los switches que
+       whatsapp-settings.css sólo recolorea. *@
+    <link rel="stylesheet" href="~/css/finance-modules.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/subscription.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/whatsapp-settings.css" asp-append-version="true" />
+}
+
+@* Mismo shell que Reservas, Mi cuenta y Suscripción. El motor de WhatsApp (consumo,
+   plantillas, programación, consentimiento, logs) no se tocó: esto es layout. *@
+<div class="finance-page-shell wa-shell">
+    <div class="finance-hero">
+        <div class="finance-hero-left module-heading">
+            <span class="module-eyebrow">Módulo operativo</span>
+            <h1 class="module-title"><i class="bi bi-whatsapp module-title-icon" aria-hidden="true"></i>WhatsApp <span class="wa-badge @badgeClass">@badgeLabel</span></h1>
+            <p class="module-subtitle">Configurá las confirmaciones, recordatorios y el consumo de mensajes de tu negocio.</p>
+        </div>
+        <div class="wa-head-links">
+            <a asp-controller="Calendar" asp-action="Index" class="wa-quick-link"><i class="bi bi-calendar3"></i> Calendario</a>
+            <a asp-controller="Reservas" asp-action="Index" class="wa-quick-link"><i class="bi bi-calendar-check"></i> Reservas</a>
+            <a asp-controller="Billing" asp-action="Suscripcion" class="wa-quick-link"><i class="bi bi-credit-card-2-front"></i> Suscripción</a>
+        </div>
+    </div>
+
+    @* ── 1. Estado del add-on ── *@
+    <section class="finance-section">
+        <div class="finance-section-head">
+            <h2 class="finance-section-title"><i class="bi bi-broadcast"></i> Estado del add-on</h2>
+        </div>
+
+        @if (manualExpired)
+        {
+            <p class="wa-addon-note wa-addon-note--warn"><i class="bi bi-exclamation-triangle"></i> Tu acceso manual/canje de WhatsApp está <strong>vencido</strong>: no se envían mensajes. Contactá soporte para renovar el acceso.</p>
+        }
+        else if (manualGrant)
+        {
+            <p class="wa-addon-note"><i class="bi bi-gift"></i> Acceso manual/canje de WhatsApp (@(sub?.WhatsAppManualGrantIndefinite == true ? "vigencia indefinida" : "vigente hasta " + (sub?.WhatsAppManualGrantExpiresDisplay ?? "—"))). No tiene cobro mensual.</p>
+        }
+        else
+        {
+            <p class="wa-addon-note"><i class="bi bi-info-circle"></i> WhatsApp se cobra como add-on mensual separado del plan base.</p>
+        }
+
+        @if (hasAddon)
+        {
+            @* Consumo y vigencia del paquete activo. *@
+            <div class="wa-summary-grid">
+                <div class="wa-card wa-metric">
+                    <span class="wa-metric-label">Paquete activo</span>
+                    <strong class="wa-metric-value">@sub!.WhatsAppAddonName</strong>
+                    <span class="wa-metric-foot">@sub.WhatsAppAddonStatusLabel</span>
+                </div>
+                <div class="wa-card wa-metric">
+                    <span class="wa-metric-label">Mensajes del mes</span>
+                    <strong class="wa-metric-value">@remainingMonth<span class="wa-metric-of"> restantes</span></strong>
+                    <span class="wa-metric-foot">@sub.WhatsAppMessagesUsed usados de @monthlyLimit</span>
+                </div>
+                <div class="wa-card wa-metric">
+                    <span class="wa-metric-label">Mensajes de hoy</span>
+                    <strong class="wa-metric-value">@availableToday<span class="wa-metric-of"> disponibles</span></strong>
+                    <span class="wa-metric-foot">@(sub.WhatsAppTodayUsage) usados de @dailyLimit</span>
+                </div>
+                <div class="wa-card wa-metric">
+                    <span class="wa-metric-label">Próxima renovación</span>
+                    <strong class="wa-metric-value">@(sub.WhatsAppNextBillingDateUtc?.ToString("dd/MM/yyyy") ?? "—")</strong>
+                    <span class="wa-metric-foot"><a asp-controller="Billing" asp-action="Suscripcion" asp-fragment="paquetes">Cambiar paquete</a></span>
+                </div>
+            </div>
+
+            @if (lowBalance)
+            {
+                <div class="wa-alert wa-alert--warn"><i class="bi bi-exclamation-triangle"></i> Te quedan pocos mensajes este mes. Considerá subir de paquete.</div>
+            }
+            @if (!automationOn)
+            {
+                <div class="wa-alert wa-alert--info"><i class="bi bi-bell-slash"></i> Tenés WhatsApp activo, pero las automatizaciones están desactivadas. Activá confirmaciones o recordatorios abajo.</div>
+            }
+        }
+        else
+        {
+            @* Estado vacío: se lee dentro de la misma card, sin otra card gigante adentro. *@
+            <div class="wa-empty">
+                <span class="wa-empty-icon"><i class="bi bi-whatsapp"></i></span>
+                <h3 class="wa-empty-title">No tenés un paquete de WhatsApp activo.</h3>
+                <p class="wa-empty-text">Activá un paquete para enviar confirmaciones y recordatorios automáticos a tus clientes.</p>
+                <a href="#paquetes" class="wa-save-btn wa-save-btn--inline">Ver paquetes de WhatsApp</a>
+            </div>
+        }
+    </section>
+
+    @* ── 2. Automatizaciones ── *@
+    <section class="finance-section wa-automation @(hasAddon ? null : "wa-automation--locked")">
+        <div class="finance-section-head">
+            <h2 class="finance-section-title"><i class="bi bi-magic"></i> Automatizaciones</h2>
+            <p class="finance-section-sub">
+                @(hasAddon
+                    ? "Controlá cuándo se envían confirmaciones y recordatorios."
+                    : "Confirmaciones, recordatorios y horas de silencio.")
+            </p>
+        </div>
+
+        @if (hasAddon)
+        {
+            <partial name="_AutomationSettings" model="sub" />
+        }
+        else
+        {
+            <p class="wa-locked-note"><i class="bi bi-lock"></i> Activá un paquete de WhatsApp para configurar las automatizaciones.</p>
+        }
+    </section>
+
+    @* ── 3. Paquetes disponibles ── *@
+    <section class="finance-section" id="paquetes">
+        <div class="finance-section-head">
+            <h2 class="finance-section-title"><i class="bi bi-box-seam"></i> Paquetes disponibles</h2>
+            <p class="finance-section-sub">Mirá qué paquete tenés, cuál podés adquirir y sus costos. La compra se realiza desde Suscripción.</p>
+        </div>
+        <partial name="_WhatsAppPackageCards" model="@(new LuxuryApp.Models.SaaS.WhatsAppPackageCardsViewModel
+            {
+                Cards = Model.WhatsAppAddonCards,
+                CurrentAddonCode = sub?.WhatsAppAddonCode,
+                HasBaseAccess = Model.HasBaseAccess,
+                HasActiveAddon = hasAddon
+            })" />
+    </section>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            "use strict";
+            var form = document.getElementById("waAutomationForm");
+            if (!form) return;
+
+                // Habilitar/deshabilitar la configuración avanzada según el toggle maestro.
+                document.querySelectorAll(".wa-master-toggle").forEach(function (toggle) {
+                    toggle.addEventListener("change", function () {
+                        var target = document.getElementById(toggle.dataset.target);
+                        if (target) target.classList.toggle("wa-advanced--disabled", !toggle.checked);
+                    });
+                });
+
+                // Modo relativo vs lote: muestra el panel correspondiente.
+                document.querySelectorAll(".wa-mode-select").forEach(function (sel) {
+                    sel.addEventListener("change", function () {
+                        var prefix = sel.dataset.prefix;
+                        var isBatch = sel.value === "batch";
+                        var rel = form.querySelector('[data-mode="' + prefix + '-relative"]');
+                        var bat = form.querySelector('[data-mode="' + prefix + '-batch"]');
+                        if (rel) rel.classList.toggle("d-none", isBatch);
+                        if (bat) bat.classList.toggle("d-none", !isBatch);
+                    });
+                });
+
+                // Ventana de mañana solo visible para el target "mañana siguiente".
+                document.querySelectorAll(".wa-target-select").forEach(function (sel) {
+                    sel.addEventListener("change", function () {
+                        var win = form.querySelector('.wa-morning-window[data-prefix="' + sel.dataset.prefix + '"]');
+                        if (win) win.classList.toggle("d-none", sel.value !== "TomorrowMorning");
+                    });
+                });
+
+                var statusEl = document.getElementById("waAutomationStatus");
+                var saveBtn = document.getElementById("waAutomationSave");
+
+                function setStatus(text, kind) {
+                    if (!statusEl) return;
+                    statusEl.textContent = text || "";
+                    statusEl.classList.remove("is-success", "is-error", "is-warning");
+                    if (kind) statusEl.classList.add("is-" + kind);
+                }
+
+                form.addEventListener("submit", async function (e) {
+                    e.preventDefault();
+                    setStatus("Guardando…", null);
+                    if (saveBtn) saveBtn.disabled = true;
+
+                    try {
+                        var resp = await fetch(form.getAttribute("action"), {
+                            method: "POST",
+                            headers: { "X-Requested-With": "XMLHttpRequest" },
+                            body: new FormData(form)
+                        });
+                        var data = await resp.json();
+                        if (data && data.success) {
+                            setStatus(data.warning || data.message, data.warning ? "warning" : "success");
+                        } else {
+                            setStatus((data && data.message) || "No fue posible guardar.", "error");
+                        }
+                    } catch (err) {
+                        console.error("Error guardando automatizaciones WhatsApp", err);
+                        setStatus("No fue posible guardar. Intenta de nuevo.", "error");
+                    } finally {
+                        if (saveBtn) saveBtn.disabled = false;
+                    }
+                });
+            })();
+        </script>
+}

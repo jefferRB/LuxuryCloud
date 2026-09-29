@@ -1,0 +1,233 @@
+﻿@using LuxuryApp.Models.Fiscal
+@using LuxuryApp.Models.Funcionarios
+@model LuxuryApp.Models.Funcionarios.PagoFuncionarioVM
+
+@*
+    Contenido interno del detalle de un colaborador. Se reutiliza en la card colapsable.
+    Todos los montos vienen ya calculados por el motor fiscal (no se recalcula IVA aquí).
+*@
+
+@{
+    var facturaColab = FuncionarioLiquidacionDisplay.FacturaIva(Model);
+    var montoColab = Model.MontoColaborador;
+}
+
+<div class="func-pagos-detail-inner">
+
+    <!-- Sección 1: Desglose fiscal y de comisión (3 bloques) -->
+    <div class="func-pagos-detail-title"><i class="bi bi-receipt-cutoff"></i> Desglose fiscal y de comisión</div>
+    <div class="lq-eq-grid lq-eq-grid--3">
+
+        <!-- Bloque 1: Venta al cliente -->
+        <div class="lq-eq">
+            <div class="lq-eq-head">Venta al cliente</div>
+            <div class="lq-eq-op">
+                <span class="lq-eq-sign"></span>
+                <span class="lq-eq-lbl">Base sin IVA</span>
+                <b>₡ @Model.BaseVentaSinIva.ToString("N0")</b>
+            </div>
+            <div class="lq-eq-op">
+                <span class="lq-eq-sign">+</span>
+                <span class="lq-eq-lbl">IVA de venta</span>
+                <b class="func-amount--red">₡ @Model.IvaVentaIncluido.ToString("N0")</b>
+            </div>
+            <div class="lq-eq-total">
+                <span class="lq-eq-sign">=</span>
+                <span class="lq-eq-lbl">Total cobrado</span>
+                <strong>₡ @Model.TotalCobrado.ToString("N0")</strong>
+            </div>
+        </div>
+
+        <!-- Bloque 2: Pago al colaborador -->
+        <div class="lq-eq">
+            <div class="lq-eq-head">Pago al colaborador</div>
+            <div class="lq-eq-op">
+                <span class="lq-eq-sign"></span>
+                <span class="lq-eq-lbl">Monto colaborador</span>
+                <b>₡ @montoColab.ToString("N0")</b>
+            </div>
+            <div class="lq-eq-op">
+                <span class="lq-eq-sign"></span>
+                <span class="lq-eq-lbl">Base colaborador</span>
+                <b>₡ @Model.BaseColaborador.ToString("N0")</b>
+            </div>
+            <div class="lq-eq-op">
+                <span class="lq-eq-sign">+</span>
+                <span class="lq-eq-lbl">IVA colaborador</span>
+                <b class="@(facturaColab ? "func-amount--amber" : "lq-muted")">₡ @Model.IvaColaborador.ToString("N0")</b>
+            </div>
+            <div class="lq-eq-total">
+                <span class="lq-eq-sign">=</span>
+                <span class="lq-eq-lbl">Total a pagar</span>
+                <strong class="func-amount--blue">₡ @Model.TotalAPagarColaborador.ToString("N0")</strong>
+            </div>
+        </div>
+
+        <!-- Bloque 3: Impacto fiscal del negocio -->
+        <div class="lq-eq">
+            <div class="lq-eq-head">Impacto fiscal del negocio</div>
+            <div class="lq-eq-op">
+                <span class="lq-eq-sign"></span>
+                <span class="lq-eq-lbl">IVA de venta</span>
+                <b class="func-amount--red">₡ @Model.IvaVentaIncluido.ToString("N0")</b>
+            </div>
+            <div class="lq-eq-op">
+                <span class="lq-eq-sign">−</span>
+                <span class="lq-eq-lbl">IVA colaborador</span>
+                <b class="@(facturaColab ? "func-amount--amber" : "lq-muted")">₡ @Model.IvaColaborador.ToString("N0")</b>
+            </div>
+            <div class="lq-eq-total">
+                <span class="lq-eq-sign">=</span>
+                <span class="lq-eq-lbl">IVA neto negocio</span>
+                <strong>₡ @Model.IvaNetoNegocio.ToString("N0")</strong>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- "Cómo se calculó": explicación dinámica + fórmulas (valores ya calculados) -->
+    <div class="lq-howto">
+        <span class="lq-howto-title"><i class="bi bi-lightbulb"></i> Cómo se calculó</span>
+        <p class="lq-eq-note lq-eq-note--full">@FuncionarioLiquidacionDisplay.ExplicacionComisionLarga(Model.ComisionCalculadaSobre)</p>
+        @{
+            var formulaComision = FuncionarioLiquidacionDisplay.FormulaComision(Model);
+            var formulaIva = FuncionarioLiquidacionDisplay.FormulaIvaColaborador(Model);
+        }
+        @if (!string.IsNullOrEmpty(formulaComision))
+        {
+            <p class="lq-eq-note lq-eq-note--full lq-howto-formula">@formulaComision</p>
+        }
+        @if (!string.IsNullOrEmpty(formulaIva))
+        {
+            <p class="lq-eq-note lq-eq-note--full lq-howto-formula">@formulaIva</p>
+        }
+        <p class="lq-eq-note lq-eq-note--full">@FuncionarioLiquidacionDisplay.ExplicacionIva(Model)</p>
+    </div>
+
+    <!-- Sección 2: Configuración de liquidación -->
+    <div class="func-pagos-detail-title" style="margin-top:1.1rem;"><i class="bi bi-sliders"></i> Configuración de liquidación</div>
+    <div class="lq-config-grid">
+        <div class="lq-config-item"><span>Tipo relación</span><b>@FuncionarioLiquidacionDisplay.Relacion(Model.TipoRelacionColaborador)</b></div>
+        <div class="lq-config-item"><span>Comisión sobre</span><b>@FuncionarioLiquidacionDisplay.ComisionSobre(Model.ComisionCalculadaSobre)</b></div>
+        <div class="lq-config-item"><span>% servicio</span><b>@Model.Porcentaje %</b></div>
+        <div class="lq-config-item"><span>% producto</span><b>@Model.PorcentajeProducto %</b></div>
+        <div class="lq-config-item"><span>IVA colaborador</span><b>@FuncionarioLiquidacionDisplay.Modalidad(Model.ModalidadIvaColaborador)</b></div>
+        <div class="lq-config-item"><span>Requiere factura antes de pagar</span><b>@(Model.RequiereFacturaAntesDePagar ? "Sí" : "No")</b></div>
+    </div>
+
+    <!-- Sección 3: Producción por día -->
+    @if (Model.DetalleDias.Any())
+    {
+        <div class="func-pagos-detail-title" style="margin-top:1.1rem;">
+            <i class="bi bi-calendar-week"></i>
+            Producción por día
+        </div>
+        <div class="func-day-cards lq-day-cards">
+            @foreach (var d in Model.DetalleDias)
+            {
+                <div class="func-day-card @(d.Monto > 0 ? "lq-day--active" : "lq-day--empty")">
+                    <span class="func-day-name">@d.Dia</span>
+                    <span class="func-day-count">@d.CantidadServicios</span>
+                    <span class="func-day-amount">₡ @d.Monto.ToString("N0")</span>
+                </div>
+            }
+        </div>
+    }
+
+    <!-- Productos vendidos -->
+    @if (Model.ProductosVendidos.Any())
+    {
+        <div class="func-pagos-detail-title" style="margin-top:1.1rem;">
+            <i class="bi bi-box-seam"></i>
+            Productos vendidos
+        </div>
+        <div class="func-pagos-subtable-wrap">
+            <table class="func-pagos-subtable">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Producto</th>
+                        <th>Precio</th>
+                        <th>Comisión</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var p in Model.ProductosVendidos)
+                    {
+                        <tr>
+                            <td class="func-date">@p.Fecha.ToString("dd MMM yyyy")</td>
+                            <td>@p.NombreProducto</td>
+                            <td style="font-weight:600;">₡ @p.Precio.ToString("N0")</td>
+                            <td class="func-amount--green">₡ @p.GananciaFuncionario.ToString("N0")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+
+    <!-- Sección 4: Historial de pagos -->
+    <div class="func-pagos-detail-title" style="margin-top:1.1rem;">
+        <i class="bi bi-receipt"></i>
+        Historial de pagos en este periodo
+    </div>
+    @if (Model.HistorialPagos.Any())
+    {
+        <div class="func-pagos-subtable-wrap">
+            <table class="func-pagos-subtable">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Monto</th>
+                        <th>Método</th>
+                        <th>Observación</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var p in Model.HistorialPagos)
+                    {
+                        <tr>
+                            <td class="func-date">@p.FechaPago.ToString("dd MMM yyyy HH:mm")</td>
+                            <td class="func-amount--green">₡ @p.MontoPagado.ToString("N0")</td>
+                            <td style="color:var(--private-muted-text,#64748b);">
+                                @(string.IsNullOrWhiteSpace(p.MetodoPago) ? "—" : p.MetodoPago)
+                            </td>
+                            <td style="color:var(--private-muted-text,#64748b);">
+                                @(string.IsNullOrEmpty(p.Observacion) ? "—" : p.Observacion)
+                            </td>
+                            <td style="text-align:right;white-space:nowrap;">
+                                @* Un pago de liquidación no se edita: se revierte y se vuelve a
+                                   registrar. Los pagos legacy (sin liquidación) no son reversibles. *@
+                                @if (string.Equals(p.OrigenRegistro, "LIQUIDACION", StringComparison.Ordinal))
+                                {
+                                    <button type="button"
+                                            class="lq-revert-btn"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#modalRevertirPago"
+                                            data-liquidacion="@p.ReferenciaId"
+                                            data-funcionario="@Model.Nombre"
+                                            data-monto="₡ @p.MontoPagado.ToString("N0")"
+                                            data-fecha="@p.FechaPago.ToString("dd MMM yyyy HH:mm")"
+                                            data-periodo="@p.InicioSemana.ToString("dd/MM/yyyy") al @p.FinSemana.ToString("dd/MM/yyyy")"
+                                            data-metodo="@(string.IsNullOrWhiteSpace(p.MetodoPago) ? "—" : p.MetodoPago)"
+                                            title="Revertir este pago">
+                                        <i class="bi bi-arrow-counterclockwise"></i> Revertir
+                                    </button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <p class="lq-empty-inline">
+            <i class="bi bi-inbox"></i>
+            Sin pagos registrados en este periodo.
+        </p>
+    }
+
+</div>

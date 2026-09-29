@@ -1,0 +1,214 @@
+@model LuxuryApp.Models.Calendar.ControlCitasCobrosViewModel
+@using System.Globalization
+@{
+    var cr = new CultureInfo("es-CR");
+    string Money(decimal v) => "₡" + v.ToString("#,##0.00", cr);
+    var addon = Model.HasWhatsAppAddon;
+
+    string CobroUrl(LuxuryApp.Models.Calendar.CitaCobroItemViewModel it) =>
+        Url.Action(
+            "Index",
+            "Cobros",
+            new
+            {
+                VistaTiempo = "fechas",
+                FechaInicio = it.FechaHora.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                FechaFin = it.FechaHora.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                FuncionarioId = it.FuncionarioId,
+                MostrarServicios = true,
+                MostrarProductos = true
+            }) ?? "/Cobros";
+}
+
+<p class="cc-range"><i class="bi bi-calendar3"></i> @Model.Desde.ToString("dd/MM/yyyy", cr) – @Model.Hasta.ToString("dd/MM/yyyy", cr)</p>
+
+<div class="cc-kpis">
+    <div class="cc-kpi">
+        <div class="cc-kpi-ic cc-ic-violet"><i class="bi bi-calendar-check"></i></div>
+        <div class="cc-kpi-body"><span class="cc-kpi-label">Total citas</span><span class="cc-kpi-val">@Model.Kpis.TotalCitas</span></div>
+    </div>
+    <div class="cc-kpi">
+        <div class="cc-kpi-ic cc-ic-green"><i class="bi bi-check2-circle"></i></div>
+        <div class="cc-kpi-body"><span class="cc-kpi-label">Cobradas</span><span class="cc-kpi-val cc-val-green">@Model.Kpis.Cobradas</span></div>
+    </div>
+    <div class="cc-kpi">
+        <div class="cc-kpi-ic cc-ic-amber"><i class="bi bi-clock-history"></i></div>
+        <div class="cc-kpi-body"><span class="cc-kpi-label">Pendientes</span><span class="cc-kpi-val cc-val-amber">@Model.Kpis.Pendientes</span></div>
+    </div>
+    <div class="cc-kpi">
+        <div class="cc-kpi-ic cc-ic-green"><i class="bi bi-cash-coin"></i></div>
+        <div class="cc-kpi-body"><span class="cc-kpi-label">Monto cobrado</span><span class="cc-kpi-val cc-val-green">@Money(Model.Kpis.MontoCobrado)</span></div>
+    </div>
+    <div class="cc-kpi">
+        <div class="cc-kpi-ic cc-ic-amber"><i class="bi bi-wallet2"></i></div>
+        <div class="cc-kpi-body"><span class="cc-kpi-label">Pendiente estimado</span><span class="cc-kpi-val cc-val-amber">@Money(Model.Kpis.PendienteEstimado)</span></div>
+    </div>
+    @if (addon)
+    {
+        <div class="cc-kpi">
+            <div class="cc-kpi-ic cc-ic-red"><i class="bi bi-x-circle"></i></div>
+            <div class="cc-kpi-body"><span class="cc-kpi-label">Canceladas</span><span class="cc-kpi-val cc-val-red">@Model.Kpis.Canceladas</span></div>
+        </div>
+    }
+</div>
+
+@if (Model.Items.Count == 0)
+{
+    <div class="cc-card">
+        <div class="cc-empty">
+            <i class="bi bi-calendar-x"></i>
+            <span>No hay citas que coincidan con los filtros.</span>
+        </div>
+    </div>
+}
+else
+{
+    <!-- Desktop: tabla -->
+    <div class="cc-card cc-desktop">
+        <div class="table-responsive">
+            <table class="cc-table">
+                <colgroup>
+                    <col style="width:7%">
+                    <col style="width:8%">
+                    <col style="width:16%">
+                    <col style="width:13%">
+                    <col style="width:15%">
+                    <col style="width:11%">
+                    <col style="width:11%">
+                    <col style="width:9%">
+                    <col style="width:10%">
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Hora</th>
+                        <th>Cliente</th>
+                        <th>Funcionario</th>
+                        <th>Servicio</th>
+                        <th class="cc-text-end">Monto</th>
+                        <th>Estado pago</th>
+                        <th>Método</th>
+                        <th class="cc-text-end">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var it in Model.Items)
+                    {
+                        <tr>
+                            <td>@it.FechaHora.ToString("dd/MM", cr)</td>
+                            <td>@it.FechaHora.ToString("hh:mm tt", cr)</td>
+                            <td class="cc-cell-strong">
+                                @it.Cliente
+                                @if (!string.IsNullOrWhiteSpace(it.Telefono))
+                                {
+                                    <div class="cc-cell-muted">@it.Telefono</div>
+                                }
+                            </td>
+                            <td>@it.Funcionario</td>
+                            <td class="cc-service-cell" title="@it.Servicio">@it.Servicio</td>
+                            <td class="cc-text-end cc-money">@(it.MontoMostrado.HasValue ? Money(it.MontoMostrado.Value) : "—")</td>
+                            <td>
+                                @if (it.YaCobrada)
+                                {
+                                    <span class="cc-badge-st cc-bg-ok"><i class="bi bi-check2-circle"></i> Cobrada</span>
+                                }
+                                else if (it.EsCancelada)
+                                {
+                                    <span class="cc-badge-st cc-bg-red"><i class="bi bi-x-circle"></i> Cancelada</span>
+                                }
+                                else
+                                {
+                                    <span class="cc-badge-st cc-bg-pend"><i class="bi bi-clock"></i> Pendiente</span>
+                                }
+                            </td>
+                            <td>@(string.IsNullOrEmpty(it.MetodoPago) ? "—" : it.MetodoPago)</td>
+                            <td class="cc-text-end">
+                                <div class="cc-actions">
+                                    @if (it.EsCobrable)
+                                    {
+                                        <button type="button" class="cc-act cc-act-cobrar js-cc-cobrar"
+                                                data-cita-id="@it.CitaId" data-cliente="@it.Cliente" data-servicio="@it.Servicio"
+                                                data-email="@it.CorreoCliente" data-cliente-id="@(it.ClienteId?.ToString() ?? "")"
+                                                data-precio="@(it.PrecioServicio?.ToString("0.##", CultureInfo.InvariantCulture) ?? "")">
+                                            <i class="bi bi-cash-coin"></i> Cobrar
+                                        </button>
+                                    }
+                                    @if (it.YaCobrada)
+                                    {
+                                        <a class="cc-act" href="@CobroUrl(it)" title="Ver en el módulo de cobros"><i class="bi bi-receipt"></i> Ver cobro</a>
+                                        @if (it.TieneComprobante)
+                                        {
+                                            <a class="cc-act" href="/comprobantes/@it.ComprobanteToken" target="_blank" rel="noopener"
+                                               title="@(it.ComprobanteEnviado ? "Comprobante enviado" : "Comprobante pendiente de envío")">
+                                                <i class="bi @(it.ComprobanteEnviado ? "bi-envelope-check" : "bi-envelope-exclamation")"></i>
+                                                Ver comprobante
+                                            </a>
+                                        }
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Móvil: cards -->
+    <div class="cc-cards">
+        @foreach (var it in Model.Items)
+        {
+            <div class="cc-rec">
+                <div class="cc-rec-top">
+                    <span class="cc-rec-when"><i class="bi bi-calendar3"></i> @it.FechaHora.ToString("dd/MM", cr) · @it.FechaHora.ToString("hh:mm tt", cr)</span>
+                    <span class="cc-rec-monto">@(it.MontoMostrado.HasValue ? Money(it.MontoMostrado.Value) : "—")</span>
+                </div>
+                <div class="cc-rec-cliente">@it.Cliente</div>
+                <div class="cc-rec-meta">
+                    <span><i class="bi bi-person-badge"></i> @it.Funcionario</span>
+                    <span><i class="bi bi-scissors"></i> @it.Servicio</span>
+                    @if (!string.IsNullOrWhiteSpace(it.Telefono))
+                    {
+                        <span><i class="bi bi-telephone"></i> @it.Telefono</span>
+                    }
+                </div>
+                <div class="cc-rec-badges">
+                    @if (it.YaCobrada)
+                    {
+                        <span class="cc-badge-st cc-bg-ok"><i class="bi bi-check2-circle"></i> Cobrada@(string.IsNullOrEmpty(it.MetodoPago) ? "" : " · " + it.MetodoPago)</span>
+                    }
+                    else if (it.EsCancelada)
+                    {
+                        <span class="cc-badge-st cc-bg-red"><i class="bi bi-x-circle"></i> Cancelada</span>
+                    }
+                    else
+                    {
+                        <span class="cc-badge-st cc-bg-pend"><i class="bi bi-clock"></i> Pendiente</span>
+                    }
+                </div>
+                <div class="cc-rec-foot">
+                    @if (it.EsCobrable)
+                    {
+                        <button type="button" class="cc-act cc-act-cobrar js-cc-cobrar"
+                                data-cita-id="@it.CitaId" data-cliente="@it.Cliente" data-servicio="@it.Servicio"
+                                data-email="@it.CorreoCliente" data-cliente-id="@(it.ClienteId?.ToString() ?? "")"
+                                data-precio="@(it.PrecioServicio?.ToString("0.##", CultureInfo.InvariantCulture) ?? "")">
+                            <i class="bi bi-cash-coin"></i> Cobrar
+                        </button>
+                    }
+                    @if (it.YaCobrada)
+                    {
+                        <a class="cc-act" href="@CobroUrl(it)"><i class="bi bi-receipt"></i> Ver cobro</a>
+                        @if (it.TieneComprobante)
+                        {
+                            <a class="cc-act" href="/comprobantes/@it.ComprobanteToken" target="_blank" rel="noopener">
+                                <i class="bi @(it.ComprobanteEnviado ? "bi-envelope-check" : "bi-envelope-exclamation")"></i>
+                                Ver comprobante
+                            </a>
+                        }
+                    }
+                </div>
+            </div>
+        }
+    </div>
+}

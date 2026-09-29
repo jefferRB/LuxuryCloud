@@ -1,0 +1,241 @@
+@using LuxuryApp.Models.Horarios
+@model RecurringScheduleRuleFormViewModel
+
+@{
+    ViewData["Title"] = Model.EsEdicion ? "Editar bloqueo recurrente" : "Nuevo bloqueo recurrente";
+    var hasErrors = !ViewData.ModelState.IsValid
+        && ViewData.ModelState.Values.Any(v => v.Errors.Count > 0);
+    var conflictosMensaje = ViewData["ConflictosMensaje"] as string;
+    string[] nombresDias = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/finance-modules.css" asp-append-version="true" />
+}
+
+<div class="finance-page-shell">
+
+    <div class="finance-hero">
+        <div class="finance-hero-left module-heading">
+            <span class="module-eyebrow">Agenda</span>
+            <h1 class="module-title"><i class="bi bi-clock-history module-title-icon" aria-hidden="true"></i>@ViewData["Title"]</h1>
+            <p class="module-subtitle">
+                Definí el horario, los días y a quién aplica. Los cambios rigen de hoy hacia adelante.
+            </p>
+        </div>
+    </div>
+
+    <form asp-action="@(Model.EsEdicion ? "Editar" : "Crear")" asp-route-id="@Model.Id" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="Id" />
+
+        <div class="finance-form-body">
+
+            @if (hasErrors)
+            {
+                <div class="finance-validation-summary" role="alert">
+                    <div asp-validation-summary="All"></div>
+                </div>
+            }
+
+            @if (Model.Conflictos.Any())
+            {
+                <div class="svc-alert svc-alert--danger" role="alert">
+                    <strong>@conflictosMensaje</strong>
+                    <p>
+                        Las citas existentes <strong>no se moverán ni se cancelarán</strong>. El bloqueo solo
+                        impedirá <em>nuevas</em> reservas en esos espacios. Marcá la confirmación para continuar.
+                    </p>
+
+                    <table class="finance-table">
+                        <thead>
+                            <tr>
+                                <th>Fecha y hora</th>
+                                <th>Colaborador</th>
+                                <th>Detalle</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var conflicto in Model.Conflictos.Take(25))
+                            {
+                                <tr>
+                                    <td>@conflicto.FechaTexto</td>
+                                    <td>@conflicto.FuncionarioNombre</td>
+                                    <td>@(conflicto.Detalle ?? "Cita")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+
+                    @if (Model.Conflictos.Count > 25)
+                    {
+                        <p class="svc-sub">Se muestran las primeras 25 de @Model.Conflictos.Count.</p>
+                    }
+
+                    <label class="finance-checkbox-item">
+                        <input asp-for="ConfirmarConflictos" type="checkbox" />
+                        <span>Entiendo el resultado y quiero activar el bloqueo de todas formas</span>
+                    </label>
+                </div>
+            }
+            else
+            {
+                <input type="hidden" asp-for="ConfirmarConflictos" />
+            }
+
+            <div class="finance-form-grid">
+
+                <div class="finance-form-field">
+                    <label asp-for="Nombre" class="finance-form-label">
+                        Nombre de la regla <span class="finance-required">*</span>
+                    </label>
+                    <div class="finance-input-wrap">
+                        <span class="finance-input-icon"><i class="bi bi-tag"></i></span>
+                        <input asp-for="Nombre" class="finance-form-control" autocomplete="off" />
+                    </div>
+                    <span asp-validation-for="Nombre" class="finance-field-error"></span>
+                </div>
+
+                <div class="finance-form-field">
+                    <label asp-for="EtiquetaCalendario" class="finance-form-label">Texto en el calendario</label>
+                    <div class="finance-input-wrap">
+                        <span class="finance-input-icon"><i class="bi bi-card-text"></i></span>
+                        <input asp-for="EtiquetaCalendario" class="finance-form-control" placeholder="Almuerzo" />
+                    </div>
+                    <span class="finance-historial-help">Si lo dejás vacío se usa el nombre de la regla.</span>
+                </div>
+
+                <div class="finance-form-field">
+                    <label asp-for="HoraInicio" class="finance-form-label">
+                        Hora inicial <span class="finance-required">*</span>
+                    </label>
+                    <div class="finance-input-wrap">
+                        <span class="finance-input-icon"><i class="bi bi-clock"></i></span>
+                        <input asp-for="HoraInicio" class="finance-form-control" type="time" />
+                    </div>
+                    <span asp-validation-for="HoraInicio" class="finance-field-error"></span>
+                </div>
+
+                <div class="finance-form-field">
+                    <label asp-for="HoraFin" class="finance-form-label">
+                        Hora final <span class="finance-required">*</span>
+                    </label>
+                    <div class="finance-input-wrap">
+                        <span class="finance-input-icon"><i class="bi bi-clock-fill"></i></span>
+                        <input asp-for="HoraFin" class="finance-form-control" type="time" />
+                    </div>
+                    <span asp-validation-for="HoraFin" class="finance-field-error"></span>
+                </div>
+
+                <div class="finance-form-full">
+                    <label class="finance-form-label">
+                        Días de la semana <span class="finance-required">*</span>
+                    </label>
+                    <div class="finance-checkbox-group">
+                        @for (var dia = 0; dia < 7; dia++)
+                        {
+                            <label class="finance-checkbox-item">
+                                <input type="checkbox" name="Dias" value="@dia" checked="@Model.Dias.Contains(dia)" />
+                                <span>@nombresDias[dia]</span>
+                            </label>
+                        }
+                    </div>
+                </div>
+
+                <div class="finance-form-field">
+                    <label asp-for="VigenteDesde" class="finance-form-label">
+                        Vigente desde <span class="finance-required">*</span>
+                    </label>
+                    <div class="finance-input-wrap">
+                        <span class="finance-input-icon"><i class="bi bi-calendar3"></i></span>
+                        <input asp-for="VigenteDesde" class="finance-form-control" type="date" />
+                    </div>
+                    <span asp-validation-for="VigenteDesde" class="finance-field-error"></span>
+                </div>
+
+                <div class="finance-form-field">
+                    <label asp-for="VigenteHasta" class="finance-form-label">Vigente hasta (opcional)</label>
+                    <div class="finance-input-wrap">
+                        <span class="finance-input-icon"><i class="bi bi-calendar-x"></i></span>
+                        <input asp-for="VigenteHasta" class="finance-form-control" type="date" />
+                    </div>
+                    <span asp-validation-for="VigenteHasta" class="finance-field-error"></span>
+                </div>
+
+                <div class="finance-form-field">
+                    <label asp-for="Alcance" class="finance-form-label">Aplicar a</label>
+                    <select asp-for="Alcance" class="finance-form-control" id="alcanceSelect">
+                        <option value="@((int)RecurringScheduleScope.TodosLosColaboradores)">
+                            Todos los colaboradores
+                        </option>
+                        <option value="@((int)RecurringScheduleScope.ColaboradoresSeleccionados)">
+                            Colaboradores seleccionados
+                        </option>
+                    </select>
+                </div>
+
+                <div class="finance-form-field">
+                    <label asp-for="Motivo" class="finance-form-label">Motivo o categoría</label>
+                    <div class="finance-input-wrap">
+                        <span class="finance-input-icon"><i class="bi bi-bookmark"></i></span>
+                        <input asp-for="Motivo" class="finance-form-control" placeholder="Almuerzo" />
+                    </div>
+                </div>
+
+                <div class="finance-form-full">
+                    <label class="finance-form-label">Colaboradores</label>
+                    <div class="finance-checkbox-group">
+                        @if (Model.FuncionariosDisponibles.Any())
+                        {
+                            foreach (var funcionario in Model.FuncionariosDisponibles)
+                            {
+                                <label class="finance-checkbox-item">
+                                    <input type="checkbox"
+                                           name="FuncionarioIds"
+                                           value="@funcionario.Id"
+                                           checked="@Model.FuncionarioIds.Contains(funcionario.Id)" />
+                                    <span>@funcionario.Nombre</span>
+                                </label>
+                            }
+                        }
+                        else
+                        {
+                            <p class="svc-sub">No hay colaboradores activos.</p>
+                        }
+                    </div>
+                    <span class="finance-historial-help">
+                        Solo aplica cuando elegís «Colaboradores seleccionados».
+                    </span>
+                </div>
+
+                <div class="finance-form-full">
+                    <div class="finance-checkbox-group">
+                        <label class="finance-checkbox-item">
+                            <input asp-for="IncluirNuevosColaboradores" type="checkbox" />
+                            <span>Aplicar automáticamente a los colaboradores que se agreguen después</span>
+                        </label>
+                        <label class="finance-checkbox-item">
+                            <input asp-for="Activa" type="checkbox" />
+                            <span>Regla activa</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="finance-form-footer">
+                <div class="finance-form-footer-left">
+                    <a asp-action="Index" class="finance-btn-back">
+                        <i class="bi bi-arrow-left"></i> Volver
+                    </a>
+                </div>
+                <button type="submit" class="finance-btn-save">
+                    <i class="bi bi-check2-circle"></i> Guardar
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

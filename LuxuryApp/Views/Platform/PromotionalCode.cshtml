@@ -1,0 +1,203 @@
+@model LuxuryApp.Models.Platform.PlatformPromotionalCodeDetailsViewModel
+
+@{
+    ViewData["Title"] = "Detalle del codigo";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/platform.css" asp-append-version="true" />
+}
+
+<div class="platform-shell">
+    <div class="platform-hero">
+        <div>
+            <span class="platform-eyebrow">
+                <i class="bi bi-ticket-detailed"></i>
+                Seguimiento promocional
+            </span>
+            <h1 class="platform-title">Detalle del codigo @Model.Code.Codigo</h1>
+            <p class="platform-subtitle">
+                Resumen operativo del beneficio emitido, sus restricciones y el historial de consumo vinculado al tenant beneficiado.
+            </p>
+        </div>
+        <div class="platform-toolbar">
+            <a class="btn btn-outline-dark platform-btn" asp-action="PromotionalCodes">
+                <i class="bi bi-arrow-left"></i>
+                Volver a codigos
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-md-6 col-xl-3">
+            <article class="platform-stat-card">
+                <div class="platform-stat-top">
+                    <div>
+                        <p class="platform-stat-label">Plan efectivo</p>
+                        <p class="platform-stat-value">@Model.Code.PlanName</p>
+                    </div>
+                    <span class="platform-stat-icon is-blue">
+                        <i class="bi bi-box-seam"></i>
+                    </span>
+                </div>
+                <p class="platform-stat-note">Plan comercial que se aplica cuando el codigo es consumido.</p>
+            </article>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <article class="platform-stat-card">
+                <div class="platform-stat-top">
+                    <div>
+                        <p class="platform-stat-label">Dias de acceso</p>
+                        <p class="platform-stat-value">@Model.Code.DiasGratis</p>
+                    </div>
+                    <span class="platform-stat-icon is-gold">
+                        <i class="bi bi-calendar-range"></i>
+                    </span>
+                </div>
+                <p class="platform-stat-note">Ventana temporal de acceso sin tarjeta.</p>
+            </article>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <article class="platform-stat-card">
+                <div class="platform-stat-top">
+                    <div>
+                        <p class="platform-stat-label">Usos</p>
+                        <p class="platform-stat-value">@Model.Code.UsosActuales</p>
+                    </div>
+                    <span class="platform-stat-icon is-green">
+                        <i class="bi bi-activity"></i>
+                    </span>
+                </div>
+                <p class="platform-stat-note">Capacidad total: @(Model.Code.MaxUsos?.ToString() ?? "Ilimitada").</p>
+            </article>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <article class="platform-stat-card">
+                <div class="platform-stat-top">
+                    <div>
+                        <p class="platform-stat-label">Estado</p>
+                        <p class="platform-stat-value">@(Model.Code.Activo ? "Activo" : "Inactivo")</p>
+                    </div>
+                    <span class="platform-stat-icon is-slate">
+                        <i class="bi @(Model.Code.Activo ? "bi-check-circle" : "bi-pause-circle")"></i>
+                    </span>
+                </div>
+                <p class="platform-stat-note">Expira: @(Model.Code.FechaExpiracionUtc?.ToString("yyyy-MM-dd HH:mm") ?? "Sin expiracion") UTC.</p>
+            </article>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-xl-5">
+            <section class="platform-section-card h-100">
+                <div class="platform-section-header">
+                    <div>
+                        <p class="platform-section-kicker">Configuracion del beneficio</p>
+                        <h2 class="platform-section-title">Parametros del codigo</h2>
+                    </div>
+                </div>
+
+                <div class="platform-detail-meta">
+                    <div class="platform-detail-line">
+                        <span class="platform-detail-label">Codigo</span>
+                        <span class="platform-detail-value">@Model.Code.Codigo</span>
+                    </div>
+                    <div class="platform-detail-line">
+                        <span class="platform-detail-label">Email objetivo</span>
+                        <span class="platform-detail-value">@(string.IsNullOrWhiteSpace(Model.Code.EmailObjetivo) ? "Sin restriccion" : Model.Code.EmailObjetivo)</span>
+                    </div>
+                    <div class="platform-detail-line">
+                        <span class="platform-detail-label">Solo primer registro</span>
+                        <span class="platform-detail-value">@(Model.Code.SoloPrimerRegistro ? "Si" : "No")</span>
+                    </div>
+                    <div class="platform-detail-line">
+                        <span class="platform-detail-label">Maximo de usos</span>
+                        <span class="platform-detail-value">@(Model.Code.MaxUsos?.ToString() ?? "Ilimitado")</span>
+                    </div>
+                    <div class="platform-detail-line">
+                        <span class="platform-detail-label">Notas internas</span>
+                        <span class="platform-detail-value">@(string.IsNullOrWhiteSpace(Model.NotasInternas) ? "Sin notas" : Model.NotasInternas)</span>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div class="col-xl-7">
+            <section class="platform-section-card h-100">
+                <div class="platform-section-header">
+                    <div>
+                        <p class="platform-section-kicker">Lectura rapida</p>
+                        <h2 class="platform-section-title">Resumen ejecutivo</h2>
+                        <p class="platform-section-copy">
+                            Este beneficio mantiene el acceso comercial temporal separado del billing real. El tenant beneficiado conserva sus limites multitenant y, al vencer, vuelve al flujo regular de suscripcion.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="platform-metric-list">
+                    <div class="platform-metric">
+                        <span class="platform-metric-label">Alcance comercial</span>
+                        <span class="platform-metric-value">Acceso temporal sin tarjeta</span>
+                    </div>
+                    <div class="platform-metric">
+                        <span class="platform-metric-label">Fuente de plan</span>
+                        <span class="platform-metric-value">@Model.Code.PlanName</span>
+                    </div>
+                    <div class="platform-metric">
+                        <span class="platform-metric-label">Reutilizacion</span>
+                        <span class="platform-metric-value">@(Model.Code.MaxUsos == 1 ? "Unico uso" : "Controlado por limite")</span>
+                    </div>
+                    <div class="platform-metric">
+                        <span class="platform-metric-label">Seguridad</span>
+                        <span class="platform-metric-value">Sin privilegios globales</span>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <section class="platform-section-card mt-4">
+        <div class="platform-section-header">
+            <div>
+                <p class="platform-section-kicker">Auditoria de consumo</p>
+                <h2 class="platform-section-title">Historial de redenciones</h2>
+                <p class="platform-section-copy">Registro de tenants y usuarios que ya consumieron este codigo promocional.</p>
+            </div>
+        </div>
+
+        @if (!Model.Redemptions.Any())
+        {
+            <div class="platform-empty-state">
+                Este codigo todavia no ha sido consumido.
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table platform-table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Tenant</th>
+                            <th>Email</th>
+                            <th>Fecha de consumo</th>
+                            <th>Acceso hasta</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var redemption in Model.Redemptions)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="platform-table-title">@redemption.TenantName</div>
+                                </td>
+                                <td>@redemption.EmailConsumidor</td>
+                                <td>@redemption.FechaConsumoUtc.ToString("yyyy-MM-dd HH:mm") UTC</td>
+                                <td>@(redemption.AccessEndsUtc?.ToString("yyyy-MM-dd HH:mm") ?? "-") @(redemption.AccessEndsUtc.HasValue ? "UTC" : string.Empty)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+</div>

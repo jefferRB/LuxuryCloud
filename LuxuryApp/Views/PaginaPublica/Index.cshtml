@@ -1,0 +1,583 @@
+@model LuxuryApp.Models.PublicPages.EditTenantPublicPageViewModel
+@using System.Globalization
+@using LuxuryApp.Models.PublicPages
+@using LuxuryApp.Services.PublicImages
+@inject IPublicImageProfileProvider ImageProfiles
+@{
+    ViewData["Title"] = "Pagina publica";
+    var storagePercent = Math.Min(Model.StorageUsage.PercentUsed, 100).ToString("0.#", CultureInfo.InvariantCulture);
+
+    // Las opciones del recortador salen del MISMO perfil que usa el backend para procesar,
+    // asi no hay dos definiciones de "que formatos acepta cada imagen".
+    var logoProfile = ImageProfiles.Get(TenantPublicAssetType.Logo);
+    var coverProfile = ImageProfiles.Get(TenantPublicAssetType.Cover);
+    var locationProfile = ImageProfiles.Get(TenantPublicAssetType.Location);
+    var galleryProfile = ImageProfiles.Get(TenantPublicAssetType.BusinessGallery);
+    var serviceProfile = ImageProfiles.Get(TenantPublicAssetType.ServiceMain);
+
+    string CropAspect(PublicImageProfile profile) =>
+        profile.RecommendedAspectRatio.ToString("0.######", CultureInfo.InvariantCulture);
+
+    // PNG para el logo (conserva transparencia); JPG para fotos (mas liviano al subir).
+    string ExportType(PublicImageProfile profile) =>
+        profile.PreserveTransparency ? "image/png" : "image/jpeg";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/tenant-public-page-admin.css" asp-append-version="true" />
+}
+
+<div class="tppa-shell">
+    <div class="tppa-head">
+        <div class="module-heading">
+            <span class="module-eyebrow">Sitio publico</span>
+            <h1 class="module-title"><i class="bi bi-window module-title-icon" aria-hidden="true"></i>Pagina publica del negocio</h1>
+            <p class="module-subtitle">Configura la mini landing de @Model.BusinessName. El boton principal usa el flujo existente de reservas online.</p>
+        </div>
+        <div class="tppa-head-actions">
+            @if (!string.IsNullOrWhiteSpace(Model.PublicSiteUrl))
+            {
+                <a class="tppa-btn tppa-btn-soft" href="@Model.PublicSiteUrl" target="_blank" rel="noopener">
+                    <i class="bi bi-box-arrow-up-right"></i> Abrir sitio
+                </a>
+            }
+            <a class="tppa-btn tppa-btn-soft" asp-controller="Reservas" asp-action="Configuracion">
+                <i class="bi bi-calendar-check"></i> Reservas online
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["PaginaPublicaOk"] is string okMsg && !string.IsNullOrWhiteSpace(okMsg))
+    {
+        <div class="tppa-alert tppa-alert-ok"><i class="bi bi-check2-circle"></i> @okMsg</div>
+    }
+
+    @if (TempData["PaginaPublicaError"] is string errorMsg && !string.IsNullOrWhiteSpace(errorMsg))
+    {
+        <div class="tppa-alert tppa-alert-error"><i class="bi bi-exclamation-triangle"></i> @errorMsg</div>
+    }
+
+    @if (!Model.CanUsePublicLandingPage)
+    {
+        <div class="tppa-alert tppa-alert-warn">
+            <i class="bi bi-exclamation-triangle"></i>
+            Esta funcionalidad no esta disponible para el tenant actual.
+        </div>
+    }
+
+    @if (string.IsNullOrWhiteSpace(Model.PublicSiteUrl))
+    {
+        <div class="tppa-alert tppa-alert-warn">
+            <i class="bi bi-info-circle"></i>
+            Para publicar la landing, primero configura el enlace de reservas online. Se reutiliza el mismo slug.
+        </div>
+    }
+    else
+    {
+        <div class="tppa-link-card">
+            <span>URL publica</span>
+            <code>@Model.PublicSiteUrl</code>
+            @if (!string.IsNullOrWhiteSpace(Model.BookingUrl))
+            {
+                <small>CTA de reservas: @Model.BookingUrl</small>
+            }
+            else
+            {
+                <small>Las reservas online estan desactivadas; la landing no mostrara el boton de reservar.</small>
+            }
+        </div>
+    }
+
+    <div asp-validation-summary="All" class="tppa-alert tppa-alert-error"></div>
+
+    <section class="tppa-card tppa-analytics">
+        <div class="tppa-card-head">
+            <h2><i class="bi bi-activity"></i> Actividad ultimos @Model.Analytics.Days dias</h2>
+        </div>
+        @if (Model.Analytics.HasAnyActivity)
+        {
+            <div class="tppa-metric-grid">
+                <div class="tppa-metric"><span>Visitas</span><strong>@Model.Analytics.PageViews</strong></div>
+                <div class="tppa-metric"><span>Reservar cita</span><strong>@Model.Analytics.ReserveClicks</strong></div>
+                <div class="tppa-metric"><span>Reservas por servicio</span><strong>@Model.Analytics.ServiceReserveClicks</strong></div>
+                <div class="tppa-metric"><span>WhatsApp</span><strong>@Model.Analytics.WhatsAppClicks</strong></div>
+                <div class="tppa-metric"><span>Ubicacion</span><strong>@Model.Analytics.MapsClicks</strong></div>
+            </div>
+
+            @if (Model.Analytics.TopServices.Count > 0)
+            {
+                <div class="tppa-top-services">
+                    <h3>Top servicios con clicks de reserva</h3>
+                    @foreach (var service in Model.Analytics.TopServices)
+                    {
+                        <div class="tppa-top-service-row">
+                            <span>@service.ServiceName</span>
+                            <strong>@service.Clicks</strong>
+                        </div>
+                    }
+                </div>
+            }
+        }
+        else
+        {
+            <p class="tppa-empty-state">Aun no hay actividad registrada para la pagina publica.</p>
+        }
+    </section>
+
+    <section class="tppa-card">
+        <div class="tppa-card-head">
+            <h2><i class="bi bi-images"></i> Imagenes publicas</h2>
+            <div class="tppa-usage">
+                <span data-public-image-usage-label>@Model.StorageUsage.UsedDisplay de @Model.StorageUsage.MaxDisplay usados</span>
+                <div class="tppa-usage-bar">
+                    <span data-public-image-usage-bar style="width:@storagePercent%"></span>
+                </div>
+            </div>
+        </div>
+        <div class="tppa-ajax-status" data-public-image-status hidden></div>
+
+        <div class="tppa-media-grid">
+            <div class="tppa-media-box" data-public-image-slot="logo">
+                <h3>Logo</h3>
+                <small class="tppa-hint">PNG/JPG cuadrado o rectangular; se ajusta sin recortar.</small>
+                <div class="tppa-preview-area" data-preview-area>
+                    @if (Model.LogoAsset is not null)
+                    {
+                        <img class="tppa-preview tppa-preview-logo" src="@Model.LogoAsset.Url" alt="Logo actual" />
+                        <small data-size-label>@Model.LogoAsset.SizeDisplay</small>
+                        <form asp-action="RemoveLogo" method="post" data-remove-form data-remove-target="singleton">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="tppa-btn tppa-btn-soft">Quitar logo</button>
+                        </form>
+                    }
+                    else
+                    {
+                        <div class="tppa-preview tppa-preview-empty" data-empty-preview>Sin logo</div>
+                    }
+                </div>
+                <form asp-action="UploadLogo" method="post" enctype="multipart/form-data" class="tppa-upload-form" data-public-image-upload data-upload-kind="singleton" data-crop-presets="@logoProfile.CropPresetTokens" data-crop-labels="@logoProfile.CropPresetLabels" data-crop-default="@logoProfile.DefaultPresetToken" data-crop-default-vertical="@logoProfile.VerticalPresetToken" data-crop-aspect="@CropAspect(logoProfile)" data-output-max-width="@logoProfile.OutputMaxWidth" data-output-max-height="@logoProfile.OutputMaxHeight" data-output-type="@ExportType(logoProfile)" data-preview-class="tppa-preview-logo" data-preview-alt="Logo actual">
+                    @Html.AntiForgeryToken()
+                    <label class="tppa-file-button">
+                        <span>Cambiar logo</span>
+                        <input type="file" name="file" accept="image/jpeg,image/png,image/webp" class="tppa-file" />
+                    </label>
+                    <button type="submit" class="tppa-btn tppa-btn-primary tppa-fallback-submit">Subir logo</button>
+                </form>
+            </div>
+
+            <div class="tppa-media-box" data-public-image-slot="cover">
+                <h3>Portada</h3>
+                <small class="tppa-hint">Horizontal recomendado (16:9 o 2:1). Una foto vertical se adapta con fondo sin recortarse.</small>
+                <div class="tppa-preview-area" data-preview-area>
+                    @if (Model.CoverAsset is not null)
+                    {
+                        <img class="tppa-preview tppa-preview-cover" src="@Model.CoverAsset.Url" alt="Portada actual" />
+                        <small data-size-label>@Model.CoverAsset.SizeDisplay</small>
+                        <form asp-action="RemoveCover" method="post" data-remove-form data-remove-target="singleton">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="tppa-btn tppa-btn-soft">Quitar portada</button>
+                        </form>
+                    }
+                    else
+                    {
+                        <div class="tppa-preview tppa-preview-cover tppa-preview-empty" data-empty-preview>Sin portada</div>
+                    }
+                </div>
+                <form asp-action="UploadCover" method="post" enctype="multipart/form-data" class="tppa-upload-form" data-public-image-upload data-upload-kind="singleton" data-crop-presets="@coverProfile.CropPresetTokens" data-crop-labels="@coverProfile.CropPresetLabels" data-crop-default="@coverProfile.DefaultPresetToken" data-crop-default-vertical="@coverProfile.VerticalPresetToken" data-crop-aspect="@CropAspect(coverProfile)" data-output-max-width="@coverProfile.OutputMaxWidth" data-output-max-height="@coverProfile.OutputMaxHeight" data-output-type="@ExportType(coverProfile)" data-preview-class="tppa-preview-cover" data-preview-alt="Portada actual">
+                    @Html.AntiForgeryToken()
+                    <label class="tppa-file-button">
+                        <span>Cambiar portada</span>
+                        <input type="file" name="file" accept="image/jpeg,image/png,image/webp" class="tppa-file" />
+                    </label>
+                    <button type="submit" class="tppa-btn tppa-btn-primary tppa-fallback-submit">Subir portada</button>
+                </form>
+            </div>
+
+            <div class="tppa-media-box" data-public-image-slot="location">
+                <h3>Imagen de ubicacion</h3>
+                <small class="tppa-hint">Vertical u horizontal; se adapta sin recorte agresivo.</small>
+                <div class="tppa-preview-area" data-preview-area>
+                    @if (Model.LocationAsset is not null)
+                    {
+                        <img class="tppa-preview tppa-preview-cover" src="@Model.LocationAsset.Url" alt="Imagen de ubicacion actual" />
+                        <small data-size-label>@Model.LocationAsset.SizeDisplay</small>
+                        <form asp-action="RemoveLocationImage" method="post" data-remove-form data-remove-target="singleton">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="tppa-btn tppa-btn-soft">Quitar imagen</button>
+                        </form>
+                    }
+                    else
+                    {
+                        <div class="tppa-preview tppa-preview-cover tppa-preview-empty" data-empty-preview>Sin imagen de ubicacion</div>
+                    }
+                </div>
+                <form asp-action="UploadLocationImage" method="post" enctype="multipart/form-data" class="tppa-upload-form" data-public-image-upload data-upload-kind="singleton" data-crop-presets="@locationProfile.CropPresetTokens" data-crop-labels="@locationProfile.CropPresetLabels" data-crop-default="@locationProfile.DefaultPresetToken" data-crop-default-vertical="@locationProfile.VerticalPresetToken" data-crop-aspect="@CropAspect(locationProfile)" data-output-max-width="@locationProfile.OutputMaxWidth" data-output-max-height="@locationProfile.OutputMaxHeight" data-output-type="@ExportType(locationProfile)" data-preview-class="tppa-preview-cover" data-preview-alt="Imagen de ubicacion actual">
+                    @Html.AntiForgeryToken()
+                    <label class="tppa-file-button">
+                        <span>Cambiar imagen</span>
+                        <input type="file" name="file" accept="image/jpeg,image/png,image/webp" class="tppa-file" />
+                    </label>
+                    <button type="submit" class="tppa-btn tppa-btn-primary tppa-fallback-submit">Subir imagen</button>
+                    <small class="tppa-hint">Se muestra a la derecha en la seccion de ubicacion.</small>
+                </form>
+            </div>
+        </div>
+
+        <div class="tppa-gallery-admin">
+            <div class="tppa-gallery-head">
+                <h3>Galeria del negocio</h3>
+                <small class="tppa-hint">Acepta verticales y horizontales; se muestran con su formato natural.</small>
+                <small data-gallery-counter data-gallery-max="@Model.MaxBusinessGalleryImages">@Model.BusinessGallery.Count de @Model.MaxBusinessGalleryImages imagenes</small>
+            </div>
+            <div class="tppa-thumb-grid" data-gallery-list="business" @(Model.BusinessGallery.Count == 0 ? "hidden" : null)>
+                @if (Model.BusinessGallery.Count > 0)
+                {
+                    @foreach (var image in Model.BusinessGallery)
+                    {
+                        <div class="tppa-thumb" data-asset-id="@image.Id">
+                            <img src="@image.Url" alt="Imagen de galeria" />
+                            <small data-size-label>@image.SizeDisplay</small>
+                            <form asp-action="RemoveBusinessGalleryImage" method="post" data-remove-form data-remove-target="gallery">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="assetId" value="@image.Id" />
+                                <button type="submit" class="tppa-link-button">Quitar</button>
+                            </form>
+                        </div>
+                    }
+                }
+            </div>
+            @if (Model.BusinessGallery.Count < Model.MaxBusinessGalleryImages)
+            {
+                <form asp-action="UploadBusinessGalleryImage" method="post" enctype="multipart/form-data" class="tppa-upload-form tppa-upload-inline" data-public-image-upload data-upload-kind="gallery" data-gallery-list-target="business" data-crop-presets="@galleryProfile.CropPresetTokens" data-crop-labels="@galleryProfile.CropPresetLabels" data-crop-default="@galleryProfile.DefaultPresetToken" data-crop-default-vertical="@galleryProfile.VerticalPresetToken" data-crop-aspect="@CropAspect(galleryProfile)" data-output-max-width="@galleryProfile.OutputMaxWidth" data-output-max-height="@galleryProfile.OutputMaxHeight" data-output-type="@ExportType(galleryProfile)" data-preview-alt="Imagen de galeria">
+                    @Html.AntiForgeryToken()
+                    <label class="tppa-file-button">
+                        <span>Agregar imagen</span>
+                        <input type="file" name="file" accept="image/jpeg,image/png,image/webp" class="tppa-file" />
+                    </label>
+                    <button type="submit" class="tppa-btn tppa-btn-primary tppa-fallback-submit">Subir imagen</button>
+                </form>
+            }
+        </div>
+    </section>
+
+    @if (Model.ServiceAssets.Count > 0)
+    {
+        <section class="tppa-card">
+            <h2><i class="bi bi-scissors"></i> Imagen por servicio</h2>
+            <p class="tppa-card-sub">Cada servicio muestra una sola imagen principal en un marco vertical 3:4, la proporcion normal de una foto de celular. Podes recortar la foto o dejarla completa con fondo: la tarjeta mantiene siempre el mismo tamano.</p>
+            <div class="tppa-service-media-list">
+                @foreach (var service in Model.ServiceAssets)
+                {
+                    <article class="tppa-service-media" data-public-image-slot="service-main" data-service-id="@service.ServiceId">
+                        <div class="tppa-service-media-title">
+                            <h3>@service.ServiceName</h3>
+                        </div>
+                        <div class="tppa-preview-area" data-preview-area>
+                            @if (service.MainImage is not null)
+                            {
+                                <img class="tppa-preview tppa-preview-service-main" src="@service.MainImage.Url" alt="Imagen de @service.ServiceName" />
+                                <small data-size-label>@service.MainImage.SizeDisplay</small>
+                                <form asp-action="RemoveServiceMainImage" method="post" data-remove-form data-remove-target="singleton">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="serviceId" value="@service.ServiceId" />
+                                    <button type="submit" class="tppa-btn tppa-btn-soft">Quitar imagen</button>
+                                </form>
+                            }
+                            else
+                            {
+                                <div class="tppa-preview tppa-preview-service-main tppa-preview-empty" data-empty-preview>Sin imagen</div>
+                            }
+                        </div>
+                        <form asp-action="UploadServiceMainImage" method="post" enctype="multipart/form-data" class="tppa-upload-form" data-public-image-upload data-upload-kind="singleton" data-crop-presets="@serviceProfile.CropPresetTokens" data-crop-labels="@serviceProfile.CropPresetLabels" data-crop-default="@serviceProfile.DefaultPresetToken" data-crop-default-vertical="@serviceProfile.VerticalPresetToken" data-crop-aspect="@CropAspect(serviceProfile)" data-output-max-width="@serviceProfile.OutputMaxWidth" data-output-max-height="@serviceProfile.OutputMaxHeight" data-output-type="@ExportType(serviceProfile)" data-preview-class="tppa-preview-service-main" data-preview-alt="Imagen de @service.ServiceName">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="serviceId" value="@service.ServiceId" />
+                            <label class="tppa-file-button">
+                                <span>Cambiar imagen</span>
+                                <input type="file" name="file" accept="image/jpeg,image/png,image/webp" class="tppa-file" />
+                            </label>
+                            <button type="submit" class="tppa-btn tppa-btn-primary tppa-fallback-submit">Subir imagen</button>
+                        </form>
+                    </article>
+                }
+            </div>
+        </section>
+    }
+
+    <form asp-controller="PaginaPublica" asp-action="Index" method="post" class="tppa-form">
+        @Html.AntiForgeryToken()
+
+        <section class="tppa-card">
+            <h2><i class="bi bi-toggle-on"></i> Estado</h2>
+            <label class="tppa-switch">
+                <input type="checkbox" asp-for="IsPublished" />
+                <span>
+                    <strong>Publicar pagina</strong>
+                    <small>Si esta apagado, /sitio/{slug} devuelve NotFound y no se indexa.</small>
+                </span>
+            </label>
+        </section>
+
+        <section class="tppa-card">
+            <h2><i class="bi bi-stars"></i> Hero principal</h2>
+            <div class="tppa-field">
+                <label asp-for="PublicBusinessName"></label>
+                <input asp-for="PublicBusinessName" maxlength="120" class="tppa-input" placeholder="@Model.BusinessName" />
+                <small class="tppa-hint">Aparece en la barra superior y como nombre del negocio. Si lo dejas vacio, se usa @Model.BusinessName.</small>
+                <span asp-validation-for="PublicBusinessName" class="tppa-validation"></span>
+            </div>
+            <div class="tppa-grid2">
+                <div class="tppa-field">
+                    <label asp-for="HeroTitle"></label>
+                    <input asp-for="HeroTitle" maxlength="120" class="tppa-input" placeholder="@Model.BusinessName" />
+                    <span asp-validation-for="HeroTitle" class="tppa-validation"></span>
+                </div>
+                <div class="tppa-field">
+                    <label asp-for="HeroSubtitle"></label>
+                    <input asp-for="HeroSubtitle" maxlength="180" class="tppa-input" placeholder="Barberia, salon o spa profesional" />
+                    <span asp-validation-for="HeroSubtitle" class="tppa-validation"></span>
+                </div>
+                <div class="tppa-field">
+                    <label asp-for="HeroEyebrow"></label>
+                    <input asp-for="HeroEyebrow" maxlength="80" class="tppa-input" placeholder="Estudio premium, barberia clasica, salon boutique..." />
+                    <span asp-validation-for="HeroEyebrow" class="tppa-validation"></span>
+                </div>
+            </div>
+            <div class="tppa-field">
+                <label asp-for="Description"></label>
+                <textarea asp-for="Description" maxlength="1500" rows="4" class="tppa-input"></textarea>
+                <span asp-validation-for="Description" class="tppa-validation"></span>
+            </div>
+        </section>
+
+        <section class="tppa-card">
+            <h2><i class="bi bi-telephone"></i> Contacto y redes</h2>
+            <div class="tppa-grid2">
+                <div class="tppa-field">
+                    <label asp-for="Phone"></label>
+                    <input asp-for="Phone" maxlength="30" class="tppa-input" />
+                    <span asp-validation-for="Phone" class="tppa-validation"></span>
+                </div>
+                <div class="tppa-field">
+                    <label asp-for="WhatsAppPhone"></label>
+                    <input asp-for="WhatsAppPhone" maxlength="30" class="tppa-input" placeholder="50688889999" />
+                    <span asp-validation-for="WhatsAppPhone" class="tppa-validation"></span>
+                </div>
+                <div class="tppa-field">
+                    <label asp-for="Email"></label>
+                    <input asp-for="Email" maxlength="256" class="tppa-input" />
+                    <span asp-validation-for="Email" class="tppa-validation"></span>
+                </div>
+                <div class="tppa-field">
+                    <label asp-for="Address"></label>
+                    <input asp-for="Address" maxlength="300" class="tppa-input" />
+                    <span asp-validation-for="Address" class="tppa-validation"></span>
+                </div>
+            </div>
+            @* Horario legacy en texto libre: se preserva pero se edita con el editor estructurado de abajo. *@
+            <input type="hidden" asp-for="BusinessHours" />
+            <div class="tppa-grid2">
+                <div class="tppa-field">
+                    <label asp-for="GoogleMapsUrl"></label>
+                    <input asp-for="GoogleMapsUrl" maxlength="500" class="tppa-input" placeholder="https://maps.google.com/..." />
+                    <span asp-validation-for="GoogleMapsUrl" class="tppa-validation"></span>
+                </div>
+                <div class="tppa-field">
+                    <label asp-for="WazeUrl"></label>
+                    <input asp-for="WazeUrl" maxlength="500" class="tppa-input" placeholder="https://waze.com/ul?..." />
+                    <span asp-validation-for="WazeUrl" class="tppa-validation"></span>
+                </div>
+                <div class="tppa-field">
+                    <label asp-for="InstagramUrl"></label>
+                    <input asp-for="InstagramUrl" maxlength="300" class="tppa-input" placeholder="https://instagram.com/..." />
+                    <span asp-validation-for="InstagramUrl" class="tppa-validation"></span>
+                </div>
+                <div class="tppa-field">
+                    <label asp-for="FacebookUrl"></label>
+                    <input asp-for="FacebookUrl" maxlength="300" class="tppa-input" placeholder="https://facebook.com/..." />
+                    <span asp-validation-for="FacebookUrl" class="tppa-validation"></span>
+                </div>
+                <div class="tppa-field">
+                    <label asp-for="TikTokUrl"></label>
+                    <input asp-for="TikTokUrl" maxlength="300" class="tppa-input" placeholder="https://tiktok.com/..." />
+                    <span asp-validation-for="TikTokUrl" class="tppa-validation"></span>
+                </div>
+            </div>
+        </section>
+
+        <section class="tppa-card">
+            <h2><i class="bi bi-clock"></i> Horario del negocio</h2>
+            <p class="tppa-card-sub">Marca cada dia como cerrado o define hasta dos turnos (util si cierras a mediodia). Se muestra en la landing con estado "Abierto/Cerrado".</p>
+            <span asp-validation-for="ScheduleDays" class="tppa-validation"></span>
+            @{
+                var scheduleDayNames = new[] { "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo" };
+            }
+            <div class="tppa-hours-editor">
+                @for (var dayIndex = 0; dayIndex < 7; dayIndex++)
+                {
+                    var day = dayIndex < Model.ScheduleDays.Count
+                        ? Model.ScheduleDays[dayIndex]
+                        : new LuxuryApp.Models.PublicPages.BusinessScheduleDayInput { DayIndex = dayIndex, Closed = true };
+                    var rowClosedClass = day.Closed ? " is-closed" : "";
+                    <div class="tppa-hours-row@(rowClosedClass)" data-hours-row>
+                        <input type="hidden" name="ScheduleDays[@dayIndex].DayIndex" value="@dayIndex" />
+                        <span class="tppa-hours-dayname">@scheduleDayNames[dayIndex]</span>
+                        <label class="tppa-hours-closed">
+                            <input type="checkbox" name="ScheduleDays[@dayIndex].Closed" value="true"
+                                   @(day.Closed ? "checked" : "") data-hours-closed />
+                            <span>Cerrado</span>
+                        </label>
+                        <div class="tppa-hours-times" data-hours-times>
+                            <input type="time" name="ScheduleDays[@dayIndex].Open1" value="@day.Open1" class="tppa-input tppa-time" aria-label="@scheduleDayNames[dayIndex] apertura turno 1" />
+                            <span class="tppa-hours-dash">a</span>
+                            <input type="time" name="ScheduleDays[@dayIndex].Close1" value="@day.Close1" class="tppa-input tppa-time" aria-label="@scheduleDayNames[dayIndex] cierre turno 1" />
+                            <span class="tppa-hours-plus">y</span>
+                            <input type="time" name="ScheduleDays[@dayIndex].Open2" value="@day.Open2" class="tppa-input tppa-time" aria-label="@scheduleDayNames[dayIndex] apertura turno 2" />
+                            <span class="tppa-hours-dash">a</span>
+                            <input type="time" name="ScheduleDays[@dayIndex].Close2" value="@day.Close2" class="tppa-input tppa-time" aria-label="@scheduleDayNames[dayIndex] cierre turno 2" />
+                        </div>
+                    </div>
+                }
+            </div>
+        </section>
+
+        <section class="tppa-card">
+            <h2><i class="bi bi-sliders"></i> Secciones visibles</h2>
+            <div class="tppa-switch-grid">
+                <label class="tppa-switch">
+                    <input type="checkbox" asp-for="ShowServices" />
+                    <span><strong>Mostrar servicios</strong><small>Usa servicios activos y configuracion de reservas.</small></span>
+                </label>
+                <label class="tppa-switch">
+                    <input type="checkbox" asp-for="ShowPrices" />
+                    <span><strong>Mostrar precios</strong><small>Respeta tambien el ShowPrice de servicios publicados.</small></span>
+                </label>
+                <label class="tppa-switch">
+                    <input type="checkbox" asp-for="ShowTeam" />
+                    <span><strong>Mostrar equipo</strong><small>Solo funcionarios activos y datos publicos minimos.</small></span>
+                </label>
+                <label class="tppa-switch">
+                    <input type="checkbox" asp-for="ShowLocation" />
+                    <span><strong>Mostrar ubicacion</strong><small>Direccion y enlace seguro a mapas.</small></span>
+                </label>
+                <label class="tppa-switch">
+                    <input type="checkbox" asp-for="ShowWhatsAppButton" />
+                    <span><strong>Mostrar boton WhatsApp</strong><small>Solo si hay numero configurado.</small></span>
+                </label>
+            </div>
+        </section>
+
+        <section class="tppa-card">
+            <h2><i class="bi bi-palette"></i> Color principal</h2>
+            <p class="tppa-card-sub">
+                Se aplica al boton de reservar y a los acentos de la landing. El color del texto se
+                calcula solo para que siempre se lea bien. Si lo dejas vacio se usa negro.
+            </p>
+            <div class="tppa-color-field" data-accent-field>
+                <input type="color"
+                       class="tppa-color-swatch"
+                       value="@Model.EffectiveAccentColorHex"
+                       aria-label="Elegir color principal"
+                       data-accent-picker />
+                <input asp-for="AccentColorHex"
+                       class="tppa-input tppa-color-hex"
+                       maxlength="7"
+                       spellcheck="false"
+                       autocomplete="off"
+                       placeholder="@LuxuryApp.Models.PublicPages.PublicBrandTheme.DefaultAccentHex"
+                       data-accent-hex />
+                <button type="button" class="tppa-btn tppa-btn-soft" data-accent-reset>
+                    <i class="bi bi-arrow-counterclockwise"></i> Restaurar negro
+                </button>
+                <span class="tppa-color-preview"
+                      style="background:@Model.EffectiveAccentColorHex"
+                      data-accent-preview>Reservar</span>
+            </div>
+            <span asp-validation-for="AccentColorHex" class="tppa-validation"></span>
+        </section>
+
+        <section class="tppa-card">
+            <h2><i class="bi bi-search"></i> SEO basico</h2>
+            <div class="tppa-grid2">
+                <div class="tppa-field">
+                    <label asp-for="SeoTitle"></label>
+                    <input asp-for="SeoTitle" maxlength="70" class="tppa-input" />
+                    <span asp-validation-for="SeoTitle" class="tppa-validation"></span>
+                </div>
+                <div class="tppa-field">
+                    <label asp-for="SeoDescription"></label>
+                    <input asp-for="SeoDescription" maxlength="180" class="tppa-input" />
+                    <span asp-validation-for="SeoDescription" class="tppa-validation"></span>
+                </div>
+            </div>
+        </section>
+
+        <div class="tppa-actions">
+            <button type="submit" class="tppa-btn tppa-btn-primary">
+                <i class="bi bi-save"></i> Guardar pagina publica
+            </button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/tenant-public-image-uploader.js" asp-append-version="true"></script>
+    <script>
+        (function () {
+            // Selector de color de marca: sincroniza swatch y HEX, y pinta la vista previa.
+            // El color real de la landing lo derivan los tokens del servidor (PublicBrandTheme);
+            // aca solo se decide el texto de esta muestra.
+            var accentField = document.querySelector('[data-accent-field]');
+            if (accentField) {
+                var picker = accentField.querySelector('[data-accent-picker]');
+                var hex = accentField.querySelector('[data-accent-hex]');
+                var preview = accentField.querySelector('[data-accent-preview]');
+                var reset = accentField.querySelector('[data-accent-reset]');
+                var defaultHex = '#111111';
+
+                var normalize = function (value) {
+                    var candidate = String(value || '').trim();
+                    if (candidate && candidate.charAt(0) !== '#') candidate = '#' + candidate;
+                    return /^#[0-9A-Fa-f]{6}$/.test(candidate) ? candidate.toLowerCase() : null;
+                };
+
+                var render = function (value) {
+                    var safe = normalize(value) || defaultHex;
+                    picker.value = safe;
+                    preview.style.background = safe;
+                    var r = parseInt(safe.substr(1, 2), 16);
+                    var g = parseInt(safe.substr(3, 2), 16);
+                    var b = parseInt(safe.substr(5, 2), 16);
+                    var luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+                    preview.style.color = luminance > 0.6 ? '#111111' : '#ffffff';
+                };
+
+                picker.addEventListener('input', function () {
+                    hex.value = picker.value.toLowerCase();
+                    render(hex.value);
+                });
+                hex.addEventListener('input', function () { render(hex.value); });
+                reset.addEventListener('click', function () {
+                    hex.value = '';
+                    render(defaultHex);
+                    hex.focus();
+                });
+
+                render(hex.value);
+            }
+
+            document.querySelectorAll('[data-hours-row]').forEach(function (row) {
+                var closed = row.querySelector('[data-hours-closed]');
+                var times = row.querySelector('[data-hours-times]');
+                if (!closed || !times) return;
+                var inputs = times.querySelectorAll('input[type="time"]');
+                function sync() {
+                    row.classList.toggle('is-closed', closed.checked);
+                    inputs.forEach(function (input) { input.disabled = closed.checked; });
+                }
+                closed.addEventListener('change', sync);
+                sync();
+            });
+        })();
+    </script>
+}

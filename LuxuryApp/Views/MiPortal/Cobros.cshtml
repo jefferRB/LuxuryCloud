@@ -1,0 +1,217 @@
+@model LuxuryApp.Models.Funcionarios.MisCobrosViewModel
+@using System.Globalization
+@using LuxuryApp.Models.Funcionarios
+@{
+    ViewData["Title"] = "Mis Cobros";
+    ViewData["PortalActive"] = "cobros";
+    var cr = new CultureInfo("es-CR");
+    var permsCobros = ViewData["PortalPerms"] as FuncionarioPortalPermisosSet;
+    var puedeComprobante = permsCobros?.PuedeEnviarComprobantes ?? false;
+    string Money(decimal v) => "₡" + v.ToString("#,##0.00", cr);
+    string Q(string rango, string? metodo, string? origen) =>
+        $"/MiPortal/Cobros?rango={rango}&metodo={metodo}&origen={origen}";
+    string RangoCls(string r) => Model.Rango == r ? "mpc-tab mpc-tab--on" : "mpc-tab";
+}
+
+@section Styles {
+    <style>
+        .mpc-tabs { display:inline-flex; background:rgba(148,163,184,.16); border-radius:12px; padding:.25rem; gap:.15rem; }
+        .mpc-tab { padding:.4rem .9rem; border:none; background:transparent; cursor:pointer; border-radius:9px; font-size:.82rem; font-weight:700; color:var(--private-muted-text,#64748b); text-decoration:none; transition:.15s; }
+        .mpc-tab:hover { color:var(--private-surface-text,#0f172a); }
+        .mpc-tab--on { background:var(--private-surface-bg,#fff); color:var(--private-chart-accent,#4f46e5); box-shadow:0 2px 6px rgba(15,23,42,.12); }
+        .cb-filters { display:flex; align-items:center; gap:.6rem; flex-wrap:wrap; margin-bottom:1rem; }
+        .cb-filters select { background:var(--private-input-bg,#fff); color:var(--private-input-text,#0f172a);
+            border:1px solid var(--private-input-border,rgba(15,23,42,.14)); border-radius:.6rem; padding:.4rem .6rem; font-size:.84rem; }
+        /* Fila de cobro: meta a la izquierda, monto + chips a la derecha */
+        .cb-rec-actions { display:flex; align-items:center; gap:.35rem; margin-top:.35rem; flex-wrap:wrap; justify-content:flex-end; }
+        .cb-chip { display:inline-flex; align-items:center; gap:.3rem; font-size:.7rem; font-weight:700; border-radius:999px; padding:.18rem .55rem;
+            background:rgba(148,163,184,.18); color:var(--private-surface-text,#334155); text-decoration:none; cursor:pointer; border:none; }
+        html.surface-glass .cb-chip, html.surface-dark .cb-chip { color:#cbd5e1; }
+    </style>
+}
+
+<div class="lp-hero">
+    <h1>Mis cobros</h1>
+    <p class="lp-hero-sub">Cobros que has registrado por tus servicios. No incluye la caja general del negocio.</p>
+</div>
+
+<div class="lp-metrics">
+    <div class="lp-metric">
+        <div class="lp-metric-ic lp-ic-green"><i class="bi bi-sun"></i></div>
+        <div class="lp-metric-body">
+            <span class="lp-metric-label">Cobrado hoy</span>
+            <span class="lp-metric-value lp-metric-value--green">@Money(Model.TotalHoy)</span>
+        </div>
+    </div>
+    <div class="lp-metric">
+        <div class="lp-metric-ic lp-ic-blue"><i class="bi bi-calendar-week"></i></div>
+        <div class="lp-metric-body">
+            <span class="lp-metric-label">Cobrado esta semana</span>
+            <span class="lp-metric-value lp-metric-value--green">@Money(Model.TotalSemana)</span>
+        </div>
+    </div>
+    <div class="lp-metric">
+        <div class="lp-metric-ic lp-ic-violet"><i class="bi bi-calendar-month"></i></div>
+        <div class="lp-metric-body">
+            <span class="lp-metric-label">Cobrado este mes</span>
+            <span class="lp-metric-value lp-metric-value--green">@Money(Model.TotalMes)</span>
+        </div>
+    </div>
+    <div class="lp-metric">
+        <div class="lp-metric-ic lp-ic-cyan"><i class="bi bi-receipt"></i></div>
+        <div class="lp-metric-body">
+            <span class="lp-metric-label">Cobros registrados</span>
+            <span class="lp-metric-value">@Model.CobrosRegistrados</span>
+        </div>
+    </div>
+</div>
+
+<h2 class="lp-section-title"><i class="bi bi-wallet2"></i> Por método de pago</h2>
+<div class="lp-metrics">
+    <div class="lp-metric">
+        <div class="lp-metric-ic lp-ic-green"><i class="bi bi-cash"></i></div>
+        <div class="lp-metric-body">
+            <span class="lp-metric-label">Efectivo</span>
+            <span class="lp-metric-value">@Money(Model.MetodoEfectivo)</span>
+        </div>
+    </div>
+    <div class="lp-metric">
+        <div class="lp-metric-ic lp-ic-cyan"><i class="bi bi-phone"></i></div>
+        <div class="lp-metric-body">
+            <span class="lp-metric-label">SINPE</span>
+            <span class="lp-metric-value">@Money(Model.MetodoSinpe)</span>
+        </div>
+    </div>
+    <div class="lp-metric">
+        <div class="lp-metric-ic lp-ic-violet"><i class="bi bi-credit-card"></i></div>
+        <div class="lp-metric-body">
+            <span class="lp-metric-label">Tarjeta</span>
+            <span class="lp-metric-value">@Money(Model.MetodoTarjeta)</span>
+        </div>
+    </div>
+</div>
+
+@if (Model.PuedeRegistrarManual)
+{
+    <div style="display:flex;justify-content:flex-end;margin-bottom:1rem;">
+        <button type="button" class="lp-btn js-nuevo-cobro" data-bs-toggle="modal" data-bs-target="#cobroManualModal"
+                style="background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;box-shadow:0 6px 18px rgba(22,163,74,.3);">
+            <i class="bi bi-plus-lg"></i> Nuevo cobro
+        </button>
+    </div>
+}
+
+<div class="lp-card">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+        <h2 class="lp-section-title" style="margin:0;"><i class="bi bi-cash-stack"></i> Historial</h2>
+        <div class="mpc-tabs">
+            <a href="@Q("dia", Model.Metodo, Model.Origen)" class="@RangoCls("dia")">Día</a>
+            <a href="@Q("semana", Model.Metodo, Model.Origen)" class="@RangoCls("semana")">Semana</a>
+            <a href="@Q("mes", Model.Metodo, Model.Origen)" class="@RangoCls("mes")">Mes</a>
+            <a href="@Q("todos", Model.Metodo, Model.Origen)" class="@RangoCls("todos")">Todos</a>
+        </div>
+    </div>
+
+    <form method="get" action="/MiPortal/Cobros" class="cb-filters" id="cbFilters">
+        <input type="hidden" name="rango" value="@Model.Rango" />
+        <select name="metodo" onchange="document.getElementById('cbFilters').submit()">
+            <option value="">Todos los métodos</option>
+            <option value="EFECTIVO" selected="@(Model.Metodo == "EFECTIVO")">Efectivo</option>
+            <option value="TARJETA" selected="@(Model.Metodo == "TARJETA")">Tarjeta</option>
+            <option value="SINPE" selected="@(Model.Metodo == "SINPE")">SINPE</option>
+        </select>
+        <select name="origen" onchange="document.getElementById('cbFilters').submit()">
+            <option value="">Todos los orígenes</option>
+            <option value="cita" selected="@(Model.Origen == "cita")">Desde cita</option>
+            <option value="manual" selected="@(Model.Origen == "manual")">Manual</option>
+        </select>
+    </form>
+
+    @if (Model.Cobros.Count == 0)
+    {
+        <div class="lp-empty">
+            <div class="lp-empty-ic"><i class="bi bi-cash-stack"></i></div>
+            <div class="lp-empty-title">No hay cobros en este periodo</div>
+            <p class="lp-empty-text">Prueba con otro rango o filtro, o registra un nuevo cobro.</p>
+        </div>
+    }
+    else
+    {
+        <div class="lp-list">
+            @foreach (var c in Model.Cobros)
+            {
+                <div class="lp-row">
+                    <div class="lp-row-ic @(c.DesdeCita ? "lp-ic-blue" : "lp-ic-violet")">
+                        <i class="bi @(c.DesdeCita ? "bi-calendar-check" : "bi-pencil")"></i>
+                    </div>
+                    <div class="lp-row-main">
+                        <div class="lp-row-title">@c.Cliente</div>
+                        <div class="lp-row-meta">
+                            <span><i class="bi bi-scissors"></i> @c.Servicio</span>
+                            <span><i class="bi bi-wallet2"></i> @c.MetodoPago</span>
+                            <span><i class="bi bi-clock"></i> @c.FechaCobro.ToString("dd/MM/yyyy hh:mm tt", cr)</span>
+                        </div>
+                        <div class="cb-rec-actions" style="justify-content:flex-start;">
+                            <span class="lp-badge lp-badge--muted"><i class="bi @(c.DesdeCita ? "bi-calendar-check" : "bi-pencil")"></i> @c.Origen</span>
+                            <span class="lp-badge lp-badge--ok"><i class="bi bi-check2-circle"></i> @c.Estado</span>
+                            @if (!c.TieneComprobante)
+                            {
+                                <span class="lp-badge lp-badge--muted">Sin comprobante</span>
+                            }
+                            else
+                            {
+                                @if (c.ComprobanteEnviado)
+                                {
+                                    <span class="lp-badge lp-badge--ok"><i class="bi bi-envelope-check"></i> Enviado</span>
+                                }
+                                else
+                                {
+                                    <span class="lp-badge lp-badge--pend"><i class="bi bi-envelope-exclamation"></i> Falló</span>
+                                }
+                                <a href="/comprobantes/@c.ComprobanteToken" target="_blank" rel="noopener" class="cb-chip" title="Ver comprobante"><i class="bi bi-eye"></i></a>
+                                @if (puedeComprobante)
+                                {
+                                    <form method="post" action="/MiPortal/Comprobantes/Reenviar" style="display:inline;">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="comprobanteId" value="@c.ComprobanteId" />
+                                        <button type="submit" class="cb-chip" title="Reenviar comprobante"><i class="bi bi-arrow-repeat"></i></button>
+                                    </form>
+                                }
+                            }
+                        </div>
+                    </div>
+                    <div class="lp-row-right">
+                        <span class="lp-row-amount lp-row-amount--green">@Money(c.Monto)</span>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:1rem;gap:.5rem;flex-wrap:wrap;">
+            <span class="lp-muted" style="font-size:.8rem;">Mostrando @Model.DesdeRegistro a @Model.HastaRegistro de @Model.TotalRegistros cobros</span>
+            @if (Model.TotalPaginas > 1)
+            {
+                <div style="display:flex;gap:.5rem;align-items:center;">
+                    @if (Model.Pagina > 1)
+                    {
+                        <a href="@Q(Model.Rango, Model.Metodo, Model.Origen)&pagina=@(Model.Pagina - 1)" class="lp-btn lp-btn--ghost"><i class="bi bi-chevron-left"></i></a>
+                    }
+                    <span class="lp-muted" style="font-size:.8rem;">@Model.Pagina / @Model.TotalPaginas</span>
+                    @if (Model.HayMas)
+                    {
+                        <a href="@Q(Model.Rango, Model.Metodo, Model.Origen)&pagina=@(Model.Pagina + 1)" class="lp-btn lp-btn--ghost"><i class="bi bi-chevron-right"></i></a>
+                    }
+                </div>
+            }
+        </div>
+    }
+
+    <p class="lp-muted" style="font-size:.76rem;margin:1rem 0 0;">
+        Estos cobros son los asociados a tu usuario. La caja general del negocio puede incluir otros movimientos.
+    </p>
+</div>
+
+@if (Model.PuedeRegistrarManual)
+{
+    <partial name="_PortalCobroManualModal" model="Model" />
+}

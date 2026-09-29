@@ -1,0 +1,386 @@
+@model LuxuryApp.Models.Funcionarios.MisGananciasViewModel
+@using System.Globalization
+@using LuxuryApp.Models.Funcionarios
+@{
+    ViewData["Title"] = "Mis Ganancias";
+    ViewData["PortalActive"] = "ganancias";
+    var cr = new CultureInfo("es-CR");
+    string Money(decimal v) => "₡" + v.ToString("#,##0.00", cr);
+    string Day(DateTime d) => d.ToString("yyyy-MM-dd");
+    // Navegación independiente: al cambiar semana se conserva el mes y viceversa.
+    string UrlSemana(DateTime wk) => $"/MiPortal/Ganancias?semana={Day(wk)}&mes={Day(Model.InicioMes)}&meses={Model.MesesEvolucion}";
+    string UrlMes(DateTime ms) => $"/MiPortal/Ganancias?semana={Day(Model.InicioSemana)}&mes={Day(ms)}&meses={Model.MesesEvolucion}";
+    string UrlMeses(int n) => $"/MiPortal/Ganancias?semana={Day(Model.InicioSemana)}&mes={Day(Model.InicioMes)}&meses={n}";
+}
+
+@section Styles {
+    <style>
+        .gan-hero { background:linear-gradient(135deg, rgba(var(--private-accent-alt-rgb), .16), rgba(var(--private-accent-indigo-rgb), .10));
+            border:1px solid var(--private-surface-border,rgba(15,23,42,.08)); border-radius:18px; padding:1.4rem 1.5rem; margin-bottom:1.2rem;
+            box-shadow:var(--private-card-shadow,0 10px 26px rgba(15,23,42,.08)); }
+        .gan-hero-label { font-size:.78rem; font-weight:700; color:var(--private-muted-text,#94a3b8); text-transform:uppercase; letter-spacing:.4px; display:flex; align-items:center; gap:.4rem; }
+        .gan-hero-val { font-size:2.4rem; font-weight:800; color:var(--lp-amber,#d97706); line-height:1.1; margin:.25rem 0; }
+        .gan-hero-sub { font-size:.82rem; color:var(--private-muted-text,#64748b); margin:0; }
+        .gan-chart { display:flex; align-items:flex-end; gap:.5rem; height:170px; padding:.5rem .2rem 0; }
+        .gan-bar-wrap { flex:1; display:flex; flex-direction:column; align-items:center; gap:.35rem; height:100%; justify-content:flex-end; min-width:0; }
+        .gan-bar { width:100%; max-width:34px; border-radius:7px 7px 0 0; background:linear-gradient(180deg,var(--private-accent-alt-soft),var(--private-accent-indigo)); transition:height .3s; min-height:3px; }
+        .gan-bar-day { font-size:.72rem; font-weight:700; color:var(--private-muted-text,#94a3b8); text-transform:capitalize; }
+        .gan-bar-val { font-size:.66rem; color:var(--private-muted-text,#94a3b8); white-space:nowrap; }
+        .gan-explain { background:var(--private-surface-bg,#fff); border:1px solid var(--private-surface-border,#eef1f6); border-radius:16px; padding:1.2rem 1.4rem; }
+        .gan-explain h3 { font-size:1rem; font-weight:800; margin:0 0 .6rem; display:flex; align-items:center; gap:.45rem; color:var(--private-surface-text,#0f172a); }
+        .gan-explain li { font-size:.84rem; color:var(--private-muted-text,#475569); margin-bottom:.35rem; line-height:1.45; }
+        .gan-explain b { color:var(--private-surface-text,#0f172a); }
+        .gan-period { display:flex; align-items:center; justify-content:space-between; gap:.6rem; flex-wrap:wrap; margin-bottom:.85rem; }
+        .gan-nav { display:flex; align-items:center; gap:.4rem; flex-wrap:wrap; }
+        .gan-date { background:var(--private-input-bg,#fff); color:var(--private-input-text,#0f172a);
+            border:1px solid var(--private-input-border,rgba(15,23,42,.14)); border-radius:.6rem; padding:.35rem .55rem; font-size:.82rem; }
+        .gan-date::-webkit-calendar-picker-indicator { filter:var(--gan-cal-filter, none); }
+        html.surface-glass .gan-date::-webkit-calendar-picker-indicator,
+        html.surface-dark .gan-date::-webkit-calendar-picker-indicator { filter:invert(1) opacity(.7); }
+        /* Toggle 6/12 meses (estilo pill del SaaS) */
+        .gan-rangetab { padding:.35rem .75rem; border-radius:8px; font-size:.8rem; font-weight:700; text-decoration:none;
+            color:var(--private-muted-text,#64748b); transition:.15s; }
+        .gan-rangetab:hover { color:var(--private-surface-text,#0f172a); }
+        .gan-rangetab--on { background:var(--private-surface-bg,#fff); color:var(--private-chart-accent,var(--private-accent-indigo-strong)); box-shadow:0 2px 6px rgba(15,23,42,.12); }
+    </style>
+}
+
+<div class="lp-hero">
+    <h1>Mis ganancias</h1>
+    <p class="lp-hero-sub">Producción, comisiones, pagado y pendiente de pagar.</p>
+    <div class="lp-hero-chips">
+        <span class="lp-hero-chip"><i class="bi bi-hourglass-split"></i> Pendiente estimado: <b>@Money(Model.PendienteSemana)</b></span>
+    </div>
+</div>
+
+@{ var h = Model.Hoy; }
+<!-- HOY -->
+<h2 class="lp-section-title"><i class="bi bi-sun"></i> Hoy</h2>
+<div class="lp-metrics">
+    <div class="lp-metric">
+        <div class="lp-metric-ic lp-ic-green"><i class="bi bi-scissors"></i></div>
+        <div class="lp-metric-body">
+            <span class="lp-metric-label">Producción servicios</span>
+            <span class="lp-metric-value">@Money(h.ProduccionServicios)</span>
+        </div>
+    </div>
+    @if (h.TieneProductos)
+    {
+        <div class="lp-metric">
+            <div class="lp-metric-ic lp-ic-cyan"><i class="bi bi-box-seam"></i></div>
+            <div class="lp-metric-body">
+                <span class="lp-metric-label">Producción productos</span>
+                <span class="lp-metric-value">@Money(h.ProduccionProductos)</span>
+            </div>
+        </div>
+    }
+    <div class="lp-metric">
+        <div class="lp-metric-ic lp-ic-violet"><i class="bi bi-graph-up-arrow"></i></div>
+        <div class="lp-metric-body">
+            <span class="lp-metric-label">Comisión servicios</span>
+            <span class="lp-metric-value">@Money(h.ComisionServicios)</span>
+        </div>
+    </div>
+    @if (h.TieneProductos)
+    {
+        <div class="lp-metric">
+            <div class="lp-metric-ic lp-ic-violet"><i class="bi bi-graph-up-arrow"></i></div>
+            <div class="lp-metric-body">
+                <span class="lp-metric-label">Comisión productos</span>
+                <span class="lp-metric-value">@Money(h.ComisionProductos)</span>
+            </div>
+        </div>
+    }
+    <div class="lp-metric">
+        <div class="lp-metric-ic lp-ic-green"><i class="bi bi-cash-coin"></i></div>
+        <div class="lp-metric-body">
+            <span class="lp-metric-label">Total estimado</span>
+            <span class="lp-metric-value lp-metric-value--green">@Money(h.TotalEstimado)</span>
+        </div>
+    </div>
+</div>
+
+@{ var s = Model.Semana; }
+<!-- ESTA SEMANA -->
+<div class="gan-period">
+    <h2 class="lp-section-title" style="margin:0;"><i class="bi bi-calendar-week"></i> Semana @Model.InicioSemana.ToString("dd/MM", cr) - @Model.FinSemana.ToString("dd/MM", cr)</h2>
+    <div class="gan-nav">
+        <a href="@UrlSemana(Model.SemanaAnterior)" class="lp-icon-btn" title="Semana anterior"><i class="bi bi-chevron-left"></i></a>
+        @if (!Model.EsSemanaActual)
+        {
+            <a href="/MiPortal/Ganancias?mes=@Day(Model.InicioMes)" class="lp-btn lp-btn--ghost" style="padding:.35rem .7rem;">Actual</a>
+        }
+        <input type="date" class="gan-date" value="@Day(Model.InicioSemana)"
+               onchange="if(this.value)location.href='/MiPortal/Ganancias?semana='+this.value+'&mes=@Day(Model.InicioMes)'" />
+        <a href="@UrlSemana(Model.SemanaSiguiente)" class="lp-icon-btn" title="Semana siguiente"><i class="bi bi-chevron-right"></i></a>
+    </div>
+</div>
+<div class="lp-metrics">
+    <div class="lp-metric">
+        <div class="lp-metric-ic lp-ic-green"><i class="bi bi-scissors"></i></div>
+        <div class="lp-metric-body">
+            <span class="lp-metric-label">Producción total</span>
+            <span class="lp-metric-value">@Money(s.ProduccionTotal)</span>
+        </div>
+    </div>
+    <div class="lp-metric">
+        <div class="lp-metric-ic lp-ic-violet"><i class="bi bi-graph-up-arrow"></i></div>
+        <div class="lp-metric-body">
+            <span class="lp-metric-label">Comisión estimada</span>
+            <span class="lp-metric-value">@Money(s.TotalEstimado)</span>
+        </div>
+    </div>
+    <div class="lp-metric">
+        <div class="lp-metric-ic lp-ic-blue"><i class="bi bi-wallet2"></i></div>
+        <div class="lp-metric-body">
+            <span class="lp-metric-label">Pagado esta semana</span>
+            <span class="lp-metric-value lp-metric-value--green">@Money(Model.PagadoSemana)</span>
+        </div>
+    </div>
+    <div class="lp-metric">
+        <div class="lp-metric-ic lp-ic-amber"><i class="bi bi-hourglass-split"></i></div>
+        <div class="lp-metric-body">
+            <span class="lp-metric-label">Pendiente por pagar</span>
+            <span class="lp-metric-value lp-metric-value--amber">@Money(Model.PendienteSemana)</span>
+        </div>
+    </div>
+</div>
+
+@{ var m = Model.Mes; }
+<!-- ESTE MES -->
+<div class="gan-period">
+    <h2 class="lp-section-title" style="margin:0;text-transform:capitalize;"><i class="bi bi-calendar3"></i> @Model.InicioMes.ToString("MMMM yyyy", cr)</h2>
+    <div class="gan-nav">
+        <a href="@UrlMes(Model.MesAnterior)" class="lp-icon-btn" title="Mes anterior"><i class="bi bi-chevron-left"></i></a>
+        @if (!Model.EsMesActual)
+        {
+            <a href="/MiPortal/Ganancias?semana=@Day(Model.InicioSemana)" class="lp-btn lp-btn--ghost" style="padding:.35rem .7rem;">Actual</a>
+        }
+        <input type="month" class="gan-date" value="@Model.InicioMes.ToString("yyyy-MM")"
+               onchange="if(this.value)location.href='/MiPortal/Ganancias?semana=@Day(Model.InicioSemana)&mes='+this.value+'-01'" />
+        <a href="@UrlMes(Model.MesSiguiente)" class="lp-icon-btn" title="Mes siguiente"><i class="bi bi-chevron-right"></i></a>
+    </div>
+</div>
+<div class="lp-metrics">
+    <div class="lp-metric">
+        <div class="lp-metric-ic lp-ic-green"><i class="bi bi-scissors"></i></div>
+        <div class="lp-metric-body">
+            <span class="lp-metric-label">Producción mensual</span>
+            <span class="lp-metric-value">@Money(m.ProduccionTotal)</span>
+        </div>
+    </div>
+    <div class="lp-metric">
+        <div class="lp-metric-ic lp-ic-violet"><i class="bi bi-graph-up-arrow"></i></div>
+        <div class="lp-metric-body">
+            <span class="lp-metric-label">Comisión mensual</span>
+            <span class="lp-metric-value">@Money(m.TotalEstimado)</span>
+        </div>
+    </div>
+    <div class="lp-metric">
+        <div class="lp-metric-ic lp-ic-blue"><i class="bi bi-wallet2"></i></div>
+        <div class="lp-metric-body">
+            <span class="lp-metric-label">Pagado en el mes</span>
+            <span class="lp-metric-value lp-metric-value--green">@Money(Model.PagadoMes)</span>
+        </div>
+    </div>
+    <div class="lp-metric">
+        <div class="lp-metric-ic lp-ic-amber"><i class="bi bi-hourglass-split"></i></div>
+        <div class="lp-metric-body">
+            <span class="lp-metric-label">Pendiente mensual</span>
+            <span class="lp-metric-value lp-metric-value--amber">@Money(Model.PendienteMes)</span>
+        </div>
+    </div>
+</div>
+
+@{
+    var haySemanas = Model.SemanasDelMes.Any(p => p.Comision > 0 || p.Produccion > 0);
+    var hayMeses = Model.EvolucionMensual.Any(p => p.Comision > 0 || p.Produccion > 0);
+    var hayDias = Model.DetalleDiasSemana.Any(d => d.Monto > 0);
+}
+
+<!-- GRÁFICO: GANANCIAS POR SEMANA DEL MES -->
+<div class="lp-card" style="margin-bottom:1.2rem;">
+    <h2 class="lp-section-title"><i class="bi bi-bar-chart-line"></i> Ganancias por semana del mes</h2>
+    <p class="lp-muted" style="margin:-.4rem 0 .9rem;font-size:.82rem;text-transform:none;">
+        Compara cuánto generaste en cada semana de @Model.InicioMes.ToString("MMMM", cr). Cada barra es tu comisión: <b style="color:var(--lp-green);">pagado</b> + <b style="color:var(--lp-amber);">pendiente</b>.
+    </p>
+    @if (haySemanas)
+    {
+        <div style="position:relative;height:260px;"><canvas id="ganChartSemanas"></canvas></div>
+    }
+    else
+    {
+        <div class="lp-empty">
+            <div class="lp-empty-ic"><i class="bi bi-bar-chart"></i></div>
+            <div class="lp-empty-title">Sin datos este mes</div>
+            <p class="lp-empty-text">Cuando registres servicios en @Model.InicioMes.ToString("MMMM", cr) verás aquí tus ganancias por semana.</p>
+        </div>
+    }
+</div>
+
+<!-- GRÁFICO: EVOLUCIÓN MENSUAL -->
+<div class="lp-card" style="margin-bottom:1.2rem;">
+    <div class="gan-period" style="margin-bottom:.4rem;">
+        <h2 class="lp-section-title" style="margin:0;"><i class="bi bi-graph-up"></i> Evolución mensual de ganancias</h2>
+        <div class="mpc-tabs" style="display:inline-flex;background:rgba(148,163,184,.16);border-radius:10px;padding:.2rem;gap:.1rem;">
+            <a href="@UrlMeses(6)" class="gan-rangetab @(Model.MesesEvolucion == 6 ? "gan-rangetab--on" : "")">6 meses</a>
+            <a href="@UrlMeses(12)" class="gan-rangetab @(Model.MesesEvolucion == 12 ? "gan-rangetab--on" : "")">12 meses</a>
+        </div>
+    </div>
+    <p class="lp-muted" style="margin:0 0 .9rem;font-size:.82rem;text-transform:none;">Mira cómo han cambiado tus ganancias mes a mes.</p>
+    @if (hayMeses)
+    {
+        <div style="position:relative;height:280px;"><canvas id="ganChartMeses"></canvas></div>
+    }
+    else
+    {
+        <div class="lp-empty">
+            <div class="lp-empty-ic"><i class="bi bi-graph-up"></i></div>
+            <div class="lp-empty-title">Aún no hay historial suficiente</div>
+            <p class="lp-empty-text">Necesitas al menos un mes con servicios registrados para ver tu evolución.</p>
+        </div>
+    }
+</div>
+
+<!-- GRÁFICO: PRODUCCIÓN POR DÍA -->
+<div class="lp-card" style="margin-bottom:1.2rem;">
+    <h2 class="lp-section-title"><i class="bi bi-calendar-week"></i> Producción por día de la semana</h2>
+    <p class="lp-muted" style="margin:-.4rem 0 .9rem;font-size:.82rem;text-transform:none;">Tu producción de servicios en la semana del @Model.InicioSemana.ToString("dd/MM", cr) al @Model.FinSemana.ToString("dd/MM", cr).</p>
+    @if (hayDias)
+    {
+        <div style="position:relative;height:230px;"><canvas id="ganChartDias"></canvas></div>
+    }
+    else
+    {
+        <div class="lp-empty">
+            <div class="lp-empty-ic"><i class="bi bi-calendar-week"></i></div>
+            <div class="lp-empty-title">Sin producción esta semana</div>
+            <p class="lp-empty-text">No hay servicios registrados en la semana seleccionada.</p>
+        </div>
+    }
+</div>
+
+<div class="gan-explain">
+    <h3><i class="bi bi-question-circle"></i> ¿Cómo se calcula?</h3>
+    <ul style="margin:0;padding-left:1.1rem;">
+        <li><b>Servicios:</b> monto del servicio × tu porcentaje de comisión de servicios.</li>
+        <li><b>Productos:</b> monto del producto × tu porcentaje de comisión de productos.</li>
+        <li>Respeta si el negocio <b>rebaja impuestos antes de la comisión</b>.</li>
+        <li><b>Pagado:</b> pagos realmente registrados por tu negocio.</li>
+        <li><b>Pendiente estimado:</b> comisión estimada menos lo ya pagado.</li>
+        <li>Consulta con administración para ver el detalle.</li>
+    </ul>
+</div>
+
+@section Scripts {
+    @* Chart.js (misma dependencia/CDN que el dashboard principal). *@
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Datos ya agregados en backend (reutilizan la fórmula canónica de liquidaciones).
+        // @@Json.Serialize escapa para contexto <script> de forma segura.
+        // Claves en minúscula explícitas: estables sin importar la política de nombres del serializador.
+        window.GAN_DATA = {
+            semanas: @Json.Serialize(Model.SemanasDelMes.Select(p => new { etiqueta = p.Etiqueta, comision = p.Comision, pagado = p.Pagado, pendiente = p.Pendiente, produccion = p.Produccion })),
+            meses: @Json.Serialize(Model.EvolucionMensual.Select(p => new { etiqueta = p.Etiqueta, comision = p.Comision, pagado = p.Pagado, pendiente = p.Pendiente, produccion = p.Produccion })),
+            dias: @Json.Serialize(Model.DetalleDiasSemana.Select(d => new { dia = d.Dia, monto = d.Monto, cantidad = d.CantidadServicios }))
+        };
+        (function () {
+            if (typeof Chart === "undefined" || !window.GAN_DATA) return;
+            var css = getComputedStyle(document.body);
+            var txt = (css.getPropertyValue("--private-muted-text") || "#64748b").trim();
+            var grid = "rgba(148,163,184,.18)";
+            // Verde y ambar son semanticos (montos / pendientes) y no cambian por tema.
+            // El acento si sigue al tema activo, con literal de respaldo.
+            var C_GREEN = "#16a34a", C_AMBER = "#d97706";
+            var C_VIOLET = (css.getPropertyValue("--private-accent-alt") || "#7c3aed").trim();
+            Chart.defaults.color = txt;
+
+            function money(v) {
+                return "₡" + Number(v || 0).toLocaleString("es-CR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            }
+            function shortMoney(v) {
+                v = Number(v || 0);
+                if (Math.abs(v) >= 1000000) return "₡" + (v / 1000000).toFixed(1) + "M";
+                if (Math.abs(v) >= 1000) return "₡" + Math.round(v / 1000) + "k";
+                return "₡" + v;
+            }
+            var pos = function (n) { return n < 0 ? 0 : n; };
+
+            // Gráfico apilado Pagado + Pendiente con tooltip de comisión/producción.
+            function stacked(canvasId, rows) {
+                var el = document.getElementById(canvasId);
+                if (!el) return;
+                var labels = rows.map(function (r) { return r.etiqueta; });
+                var pagado = rows.map(function (r) { return pos(r.pagado); });
+                var pend = rows.map(function (r) { return pos(r.pendiente); });
+                new Chart(el, {
+                    type: "bar",
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            { label: "Pagado", data: pagado, backgroundColor: C_GREEN, borderRadius: 6, stack: "g", maxBarThickness: 46 },
+                            { label: "Pendiente", data: pend, backgroundColor: C_AMBER, borderRadius: 6, stack: "g", maxBarThickness: 46 }
+                        ]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        interaction: { mode: "index", intersect: false },
+                        scales: {
+                            x: { stacked: true, grid: { display: false }, ticks: { color: txt } },
+                            y: { stacked: true, beginAtZero: true, grid: { color: grid }, ticks: { color: txt, callback: shortMoney } }
+                        },
+                        plugins: {
+                            legend: { labels: { color: txt, usePointStyle: true, boxWidth: 8 } },
+                            tooltip: {
+                                callbacks: {
+                                    label: function (c) { return c.dataset.label + ": " + money(c.raw); },
+                                    afterBody: function (items) {
+                                        var r = rows[items[0].dataIndex];
+                                        return ["Comisión: " + money(r.comision), "Producción: " + money(r.produccion)];
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            stacked("ganChartSemanas", window.GAN_DATA.semanas || []);
+            stacked("ganChartMeses", window.GAN_DATA.meses || []);
+
+            // Producción por día (una sola serie).
+            var elDias = document.getElementById("ganChartDias");
+            if (elDias) {
+                var dias = window.GAN_DATA.dias || [];
+                new Chart(elDias, {
+                    type: "bar",
+                    data: {
+                        labels: dias.map(function (d) { return (d.dia || "").substring(0, 3); }),
+                        datasets: [{
+                            label: "Producción", data: dias.map(function (d) { return Number(d.monto || 0); }),
+                            backgroundColor: C_VIOLET, borderRadius: 6, maxBarThickness: 40
+                        }]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        scales: {
+                            x: { grid: { display: false }, ticks: { color: txt } },
+                            y: { beginAtZero: true, grid: { color: grid }, ticks: { color: txt, callback: shortMoney } }
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function (c) {
+                                        var d = dias[c.dataIndex] || {};
+                                        return money(c.raw) + " · " + (d.cantidad || 0) + " serv.";
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        })();
+    </script>
+}

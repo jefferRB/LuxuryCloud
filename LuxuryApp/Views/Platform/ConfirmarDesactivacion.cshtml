@@ -1,0 +1,108 @@
+@model LuxuryApp.Models.Platform.DeactivateUserViewModel
+
+@{
+    ViewData["Title"] = "Desactivar usuario - Plataforma";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/platform.css" asp-append-version="true" />
+}
+
+<div class="platform-shell">
+    <div class="platform-hero">
+        <div>
+            <span class="platform-eyebrow">
+                <i class="bi bi-exclamation-octagon"></i>
+                Zona peligrosa
+            </span>
+            <h1 class="platform-title">Desactivar usuario</h1>
+            <p class="platform-subtitle">
+                El usuario no podrá iniciar sesión y sus sesiones activas se cerrarán de inmediato.
+                El historial se conserva. Esta acción queda auditada.
+            </p>
+        </div>
+        <div class="platform-toolbar">
+            <a class="btn btn-outline-dark platform-btn" asp-controller="PlatformUsers" asp-action="Usuarios">
+                <i class="bi bi-arrow-left"></i>
+                Cancelar
+            </a>
+        </div>
+    </div>
+
+    <section class="platform-section-card">
+        <div class="platform-section-header">
+            <div>
+                <p class="platform-section-kicker">Cuenta objetivo</p>
+                <h2 class="platform-section-title">@(string.IsNullOrWhiteSpace(Model.UserName) ? Model.UserEmail : Model.UserName)</h2>
+                <p class="platform-section-copy">
+                    Correo: <strong>@Model.UserEmail</strong> · Negocio: <strong>@Model.TenantName</strong>
+                </p>
+            </div>
+        </div>
+
+        @if (Model.IsPlatformSuperAdmin)
+        {
+            <div class="alert alert-warning platform-alert">
+                <i class="bi bi-shield-exclamation"></i>
+                Esta cuenta es <strong>SuperAdmin</strong>. Solo podrás desactivarla si existe otro SuperAdmin activo.
+            </div>
+        }
+
+        <div asp-validation-summary="All" class="alert alert-danger platform-alert" role="alert"></div>
+
+        <form id="deactivate-form" method="post"
+              asp-controller="PlatformUsers" asp-action="Desactivar" asp-route-userId="@Model.UserId"
+              data-expected-email="@Model.UserEmail" data-expected-tenant="@Model.TenantName">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="UserId" />
+            <input type="hidden" asp-for="TenantId" />
+
+            <div class="row g-3">
+                <div class="col-12 col-md-6">
+                    <label class="form-label" asp-for="ConfirmationEmail">Escribe el correo EXACTO del usuario</label>
+                    <input class="form-control" asp-for="ConfirmationEmail" autocomplete="off" />
+                    <span asp-validation-for="ConfirmationEmail" class="text-danger small"></span>
+                </div>
+                <div class="col-12 col-md-6">
+                    <label class="form-label" asp-for="ConfirmationTenantName">Escribe el nombre EXACTO del negocio</label>
+                    <input class="form-control" asp-for="ConfirmationTenantName" autocomplete="off" />
+                    <span asp-validation-for="ConfirmationTenantName" class="text-danger small"></span>
+                </div>
+                <div class="col-12">
+                    <label class="form-label" asp-for="Reason">Motivo (obligatorio)</label>
+                    <textarea class="form-control" asp-for="Reason" rows="2"
+                              placeholder="Ej.: solicitud del dueño, cuenta duplicada, baja del colaborador..."></textarea>
+                    <span asp-validation-for="Reason" class="text-danger small"></span>
+                </div>
+                <div class="col-12 col-md-6">
+                    <label class="form-label" asp-for="CurrentSuperAdminPassword">Tu contraseña de SuperAdmin</label>
+                    <input class="form-control" type="password" asp-for="CurrentSuperAdminPassword" autocomplete="current-password" />
+                    <span asp-validation-for="CurrentSuperAdminPassword" class="text-danger small"></span>
+                </div>
+                <div class="col-12">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" asp-for="Acknowledge" id="ack-check" />
+                        <label class="form-check-label" for="ack-check">
+                            Entiendo que este usuario no podrá ingresar al sistema.
+                        </label>
+                    </div>
+                    <span asp-validation-for="Acknowledge" class="text-danger small"></span>
+                </div>
+                <div class="col-12 d-flex gap-2">
+                    <button id="deactivate-submit" type="submit" class="btn btn-danger platform-btn" disabled>
+                        <i class="bi bi-person-x"></i>
+                        Desactivar definitivamente
+                    </button>
+                    <a class="btn btn-outline-dark platform-btn" asp-controller="PlatformUsers" asp-action="Usuarios">
+                        Cancelar
+                    </a>
+                </div>
+            </div>
+        </form>
+    </section>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/platform-users.js" asp-append-version="true"></script>
+}

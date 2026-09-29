@@ -1,0 +1,28 @@
+@{
+    var succeeded = ViewData["EmailConfirmationSucceeded"] as bool? == true;
+    ViewData["Title"] = succeeded ? "Correo confirmado" : "Confirmacion invalida";
+    ViewData["PublicBodyClass"] = "public-auth-page";
+    Layout = "_PublicLayout";
+}
+
+<section class="auth-section">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6 col-xl-5" data-aos="fade-up">
+                <div class="auth-form-card text-center">
+                    <i class="bi @(succeeded ? "bi-check-circle" : "bi-exclamation-triangle") fs-1 mb-3 d-block"></i>
+                    <span class="section-kicker">Confirmacion de correo</span>
+                    <h2>@(succeeded ? "Correo confirmado" : "Enlace no valido")</h2>
+                    <p class="text-muted mb-4">
+                        @(succeeded
+                            ? "Tu correo fue confirmado correctamente."
+                            : "El enlace no existe, expiro o ya fue utilizado. Intenta iniciar sesion o contacta soporte.")
+                    </p>
+                    <a asp-controller="Accounts" asp-action="Acceso" class="btn public-btn public-btn-primary w-100">
+                        Ir a iniciar sesion
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

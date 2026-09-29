@@ -1,0 +1,249 @@
+@using LuxuryApp.Models.Inversionistas
+@model InvestorStatementsPageViewModel
+
+@*
+    CORTES Y PAGOS.
+
+    Internamente sigue siendo InvestorStatement, pero el dueño no piensa en "estados de cuenta":
+    piensa en cortes que cerraron, en lo que le corresponde a cada inversionista y en cuánto ya
+    le pagó. La tabla se ordena con ese vocabulario y encabeza con la FECHA DE CORTE.
+*@
+
+@{
+    ViewData["Title"] = "Cortes y pagos";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/finance-modules.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/investor-settlement.css" asp-append-version="true" />
+}
+
+<div class="finance-page-shell">
+
+    <div class="finance-hero">
+        <div class="finance-hero-left module-heading">
+            <span class="module-eyebrow">Inversionistas</span>
+            <h1 class="module-title"><i class="bi bi-file-earmark-text module-title-icon" aria-hidden="true"></i>Cortes y pagos</h1>
+            <p class="module-subtitle">
+                Consultá los cortes cerrados de los inversionistas, los montos correspondientes,
+                los pagos registrados y los saldos pendientes.
+            </p>
+        </div>
+
+        <div class="finance-kpi-grid">
+            <div class="finance-kpi-card">
+                <div class="finance-kpi-icon finance-kpi-icon-green">
+                    <i class="bi bi-cash-coin"></i>
+                </div>
+                <div>
+                    <span class="finance-kpi-label">Participaciones</span>
+                    <span class="finance-kpi-value finance-kpi-value-green">
+                        ₡ @Model.TotalParticipaciones.ToString("N2")
+                    </span>
+                </div>
+            </div>
+
+            <div class="finance-kpi-card">
+                <div class="finance-kpi-icon finance-kpi-icon-blue">
+                    <i class="bi bi-check2-circle"></i>
+                </div>
+                <div>
+                    <span class="finance-kpi-label">Pagado</span>
+                    <span class="finance-kpi-value finance-kpi-value-blue">
+                        ₡ @Model.TotalPagado.ToString("N2")
+                    </span>
+                </div>
+            </div>
+
+            <div class="finance-kpi-card">
+                <div class="finance-kpi-icon finance-kpi-icon-orange">
+                    <i class="bi bi-hourglass-split"></i>
+                </div>
+                <div>
+                    <span class="finance-kpi-label">Pendiente</span>
+                    <span class="finance-kpi-value finance-kpi-value-orange">
+                        ₡ @Model.TotalPendiente.ToString("N2")
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (TempData["Mensaje"] is string mensaje)
+    {
+        <div class="svc-alert svc-alert--success" role="status">@mensaje</div>
+    }
+
+    @if (TempData["Error"] is string error)
+    {
+        <div class="svc-alert svc-alert--danger" role="alert">@error</div>
+    }
+
+    <div class="finance-filters-panel">
+        <form asp-action="Estados" method="get" class="finance-filters-grid">
+            <div class="finance-filter-group">
+                <label class="finance-filter-label">Inversionista</label>
+                <select name="inversionistaId" class="finance-filter-select">
+                    <option value="">Todos</option>
+                    @foreach (var inversionista in Model.Inversionistas)
+                    {
+                        <option value="@inversionista.Id" selected="@(Model.FiltroInversionistaId == inversionista.Id)">
+                            @inversionista.Nombre
+                        </option>
+                    }
+                </select>
+            </div>
+
+            <div class="finance-filter-group">
+                <label class="finance-filter-label">Estado</label>
+                <select name="estado" class="finance-filter-select">
+                    <option value="">Todos</option>
+                    @foreach (var estado in Enum.GetValues<InvestorStatementStatus>())
+                    {
+                        <option value="@((int)estado)" selected="@(Model.FiltroEstado == estado)">
+                            @estado
+                        </option>
+                    }
+                </select>
+            </div>
+
+            <div class="finance-filter-group">
+                <label class="finance-filter-label">Desde</label>
+                <input type="date" name="desde" class="finance-filter-input"
+                       value="@Model.FiltroDesde?.ToString("yyyy-MM-dd")" />
+            </div>
+
+            <div class="finance-filter-group">
+                <label class="finance-filter-label">Hasta</label>
+                <input type="date" name="hasta" class="finance-filter-input"
+                       value="@Model.FiltroHasta?.ToString("yyyy-MM-dd")" />
+            </div>
+
+            <div class="finance-filter-group">
+                <button type="submit" class="finance-btn-primary">
+                    <i class="bi bi-funnel"></i> Filtrar
+                </button>
+                <a asp-action="Estados" class="finance-btn-clear">Limpiar</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="finance-table-desktop">
+        <table class="finance-table">
+            <thead>
+                <tr>
+                    <th>Inversionista</th>
+                    <th>Corte</th>
+                    <th>Período</th>
+                    <th>Ganancia distribuible</th>
+                    <th>%</th>
+                    <th>Le corresponde</th>
+                    <th>Pagado</th>
+                    <th>Pendiente</th>
+                    <th>Estado</th>
+                    <th>Acción</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Estados.Any())
+                {
+                    foreach (var estado in Model.Estados)
+                    {
+                        <tr>
+                            <td>@estado.InvestorNombre</td>
+                            <td><strong>@estado.FechaCorte.ToString("dd MMM yyyy")</strong></td>
+                            <td>
+                                @estado.PeriodoInicio.ToString("dd MMM") &rarr;
+                                @estado.PeriodoFin.ToString("dd MMM yyyy")
+                            </td>
+                            <td>₡ @estado.GananciaDistribuible.ToString("N2")</td>
+                            <td>@estado.ParticipacionPorcentaje.ToString("0.##") %</td>
+                            <td class="finance-monto-income">₡ @estado.ParticipacionCalculada.ToString("N2")</td>
+                            <td>₡ @estado.TotalPagado.ToString("N2")</td>
+                            <td class="finance-monto-expense">₡ @estado.SaldoPendiente.ToString("N2")</td>
+                            <td>
+                                <span class="inv-badge inv-badge--@InvestorVisuals.CssModifier(estado.Tono)">
+                                    @InvestorVisuals.EstadoCorto(estado.Estado, estado.SaldoPendiente)
+                                </span>
+                            </td>
+                            <td>
+                                <a asp-action="Estado" asp-route-id="@estado.Id" class="finance-btn-row-edit">
+                                    <i class="bi bi-eye"></i> Ver estado
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    @* Empty state honesto: no manda a "la vista previa" (concepto que ya no es el
+                       flujo principal) y explica qué falta para que exista el primer corte. *@
+                    <tr>
+                        <td colspan="10">
+                            <div class="finance-empty-state">
+                                <div class="finance-empty-icon"><i class="bi bi-file-earmark"></i></div>
+                                <p class="finance-empty-title">Aún no hay cortes emitidos</p>
+                                <p class="finance-empty-subtitle">
+                                    Un corte aparece acá cuando su período cierra. Abrí la ficha del
+                                    inversionista para ver su ciclo en curso y la fecha de su
+                                    próximo corte.
+                                </p>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="finance-mobile-list">
+        @foreach (var estado in Model.Estados)
+        {
+            <div class="finance-mobile-card">
+                <div class="finance-mobile-card-header">
+                    <span class="finance-mobile-card-date">
+                        <i class="bi bi-person"></i> @estado.InvestorNombre
+                    </span>
+                    <span class="finance-mobile-card-monto finance-mobile-card-monto-income">
+                        ₡ @estado.ParticipacionCalculada.ToString("N2")
+                    </span>
+                </div>
+
+                <div class="finance-mobile-card-body">
+                    <div class="finance-mobile-card-name">
+                        Corte @estado.FechaCorte.ToString("dd MMM yyyy")
+                    </div>
+                    <div class="finance-mobile-card-row">
+                        <span class="finance-mobile-card-row-label">Período</span>
+                        <span class="finance-mobile-card-row-value">
+                            @estado.PeriodoInicio.ToString("dd MMM") &rarr;
+                            @estado.PeriodoFin.ToString("dd MMM yyyy")
+                        </span>
+                    </div>
+                    <div class="finance-mobile-card-row">
+                        <span class="finance-mobile-card-row-label">Estado</span>
+                        <span class="finance-mobile-card-row-value">
+                            <span class="inv-badge inv-badge--@InvestorVisuals.CssModifier(estado.Tono)">
+                                @InvestorVisuals.EstadoCorto(estado.Estado, estado.SaldoPendiente)
+                            </span>
+                        </span>
+                    </div>
+                    <div class="finance-mobile-card-row">
+                        <span class="finance-mobile-card-row-label">Pendiente</span>
+                        <span class="finance-mobile-card-row-value">₡ @estado.SaldoPendiente.ToString("N2")</span>
+                    </div>
+                </div>
+
+                <div class="finance-mobile-card-footer">
+                    <a asp-action="Estado" asp-route-id="@estado.Id" class="finance-btn-row-edit">
+                        <i class="bi bi-eye"></i> Ver
+                    </a>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="finance-actions">
+        <a asp-controller="Asociados" asp-action="Index" class="finance-btn-back"><i class="bi bi-arrow-left"></i> Volver</a>
+    </div>
+</div>

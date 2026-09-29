@@ -1,0 +1,172 @@
+﻿.dashboard-title {
+    font-weight: 600;
+    margin-bottom: 25px;
+    color: #2c2c2c;
+}
+
+.kpi-card {
+    border: none;
+    border-radius: 18px;
+    padding: 20px;
+    background: white;
+    box-shadow: 0 8px 18px rgba(0,0,0,0.05);
+    transition: 0.25s ease;
+    height: 100%;
+}
+
+    .kpi-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 14px 25px rgba(0,0,0,0.08);
+    }
+
+.kpi-icon {
+    font-size: 28px;
+    padding: 14px;
+    border-radius: 12px;
+    color: white;
+}
+
+.kpi-value {
+    font-size: 26px;
+    font-weight: 600;
+    margin-top: 10px;
+}
+
+.kpi-label {
+    font-size: 14px;
+    color: #6c757d;
+}
+
+.bg-soft-green {
+    background: #e9f9f1;
+}
+
+.bg-soft-red {
+    background: #fdeaea;
+}
+
+.bg-soft-blue {
+    background: #eaf2ff;
+}
+
+.bg-soft-dark {
+    background: #f3f3f3;
+}
+
+.bg-soft-yellow {
+    background: #fff8e5;
+}
+
+.icon-green {
+    background: #28a745;
+}
+
+.icon-red {
+    background: #dc3545;
+}
+
+.icon-blue {
+    background: var(--private-accent-bs);
+}
+
+.icon-dark {
+    background: #343a40;
+}
+
+.icon-yellow {
+    background: #ffc107;
+}
+
+/* .dashboard-wrapper no agrega padding: el contenedor ocupa el mismo ancho que el
+   resto de módulos (el del .container del layout). El padding interno sigue la
+   misma escala lateral que los heros de módulo (2rem → 1rem). */
+.dashboard-container {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(10px);
+    border-radius: 25px;
+    padding: 2rem;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.12);
+}
+
+@media (max-width: 991.98px) {
+    .dashboard-container { padding: 1.75rem; }
+}
+
+@media (max-width: 767.98px) {
+    .dashboard-container { padding: 1.25rem; }
+}
+
+@media (max-width: 575.98px) {
+    .dashboard-container { padding: 1rem; }
+}
+
+/* Estilos para top clientes en informacion */
+
+.top-client-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.top-client-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 18px;
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+    transition: all 0.2s ease;
+}
+
+    .top-client-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+    }
+
+    .top-client-item .left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+.rank {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: #e9ecef;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+    .rank.top {
+        background: linear-gradient(135deg, #ffc107, #ffca2c);
+        color: #000;
+    }
+
+.info .name {
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.info .phone {
+    font-size: 12px;
+    color: #6c757d;
+}
+
+.right {
+    text-align: right;
+}
+
+.visits {
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.label {
+    font-size: 12px;
+    color: #6c757d;
+}

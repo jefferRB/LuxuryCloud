@@ -1,0 +1,226 @@
+﻿@using LuxuryApp.Models.Asociados
+@model AssociatesIndexViewModel
+
+@{
+    ViewData["Title"] = "Asociados";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/finance-modules.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/associates.css" asp-append-version="true" />
+}
+
+<div class="finance-page-shell">
+
+    <div class="finance-hero">
+        <div class="finance-hero-left module-heading">
+            <span class="module-eyebrow">Asociados del negocio</span>
+            <h1 class="module-title"><i class="bi bi-people-fill module-title-icon" aria-hidden="true"></i>Asociados</h1>
+            <p class="module-subtitle">
+                Gestioná inversionistas, socios y colaboradores externos, sus accesos
+                y su participación en el negocio.
+            </p>
+        </div>
+
+        <div class="finance-kpi-grid">
+            <div class="finance-kpi-card">
+                <div class="finance-kpi-icon finance-kpi-icon-blue">
+                    <i class="bi bi-person-check"></i>
+                </div>
+                <div>
+                    <span class="finance-kpi-label">Asociados activos</span>
+                    <span class="finance-kpi-value finance-kpi-value-blue">@Model.TotalActivos</span>
+                </div>
+            </div>
+
+            <div class="finance-kpi-card">
+                <div class="finance-kpi-icon finance-kpi-icon-cyan">
+                    <i class="bi bi-key"></i>
+                </div>
+                <div>
+                    <span class="finance-kpi-label">Con acceso</span>
+                    <span class="finance-kpi-value finance-kpi-value-cyan">@Model.TotalConAcceso</span>
+                </div>
+            </div>
+
+            <div class="finance-kpi-card">
+                <div class="finance-kpi-icon finance-kpi-icon-violet">
+                    <i class="bi bi-pie-chart"></i>
+                </div>
+                <div>
+                    <span class="finance-kpi-label">Participación asignada</span>
+                    <span class="finance-kpi-value finance-kpi-value-violet">
+                        @Model.ParticipacionAsignada.ToString("0.##") %
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (TempData["Mensaje"] is string mensaje)
+    {
+        <div class="svc-alert svc-alert--success" role="status">@mensaje</div>
+    }
+
+    @if (TempData["Error"] is string error)
+    {
+        <div class="svc-alert svc-alert--danger" role="alert">@error</div>
+    }
+
+    @if (Model.PuedeAdministrar)
+    {
+        <div class="finance-actions">
+            <a asp-action="Crear" class="finance-btn-primary">
+                <i class="bi bi-plus-circle"></i> Nuevo asociado
+            </a>
+            <a asp-controller="Inversionistas" asp-action="Estados" class="finance-btn-secondary">
+                <i class="bi bi-file-earmark-text"></i> Cortes y pagos
+            </a>
+            <a asp-controller="Inversionistas" asp-action="Politica" class="finance-btn-secondary">
+                <i class="bi bi-sliders"></i> Cómo se calcula la ganancia
+            </a>
+        </div>
+    }
+
+    <div class="finance-form-info-box">
+        <i class="bi bi-info-circle-fill"></i>
+        <p>
+            Un asociado no es un funcionario: no tiene agenda ni producción. Puede existir solo para
+            registrar una participación o puede tener acceso limitado a LuxuryCloud. El tipo indica su
+            relación con el negocio; los permisos determinan qué módulos puede ver o administrar.
+        </p>
+    </div>
+
+    @if (Model.ParticipacionAsignada > 100m)
+    {
+        <div class="svc-alert svc-alert--danger" role="alert">
+            La participación asignada supera el 100 %. Revisá las participaciones vigentes.
+        </div>
+    }
+
+    <div class="finance-table-desktop">
+        <table class="finance-table">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Tipo</th>
+                    <th>Puesto</th>
+                    <th>Correo</th>
+                    <th>Acceso</th>
+                    <th>Participación</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.TieneAsociados)
+                {
+                    foreach (var asociado in Model.Asociados)
+                    {
+                        <tr>
+                            <td>@asociado.Nombre</td>
+                            <td>@asociado.TiposTexto</td>
+                            <td>@(string.IsNullOrWhiteSpace(asociado.Puesto) ? "—" : asociado.Puesto)</td>
+                            <td>@(string.IsNullOrWhiteSpace(asociado.Email) ? "—" : asociado.Email)</td>
+                            <td>
+                                <span class="svc-status @(asociado.EstadoAcceso == AssociateAccessState.AccesoActivo ? "svc-status--active" : "svc-status--inactive")">
+                                    <span class="svc-dot @(asociado.EstadoAcceso == AssociateAccessState.AccesoActivo ? "svc-dot--green" : "svc-dot--gray")"></span>
+                                    @asociado.AccesoTexto
+                                </span>
+                            </td>
+                            <td>
+                                @if (asociado.ParticipacionVigente.HasValue)
+                                {
+                                    <span class="finance-method-badge">@asociado.ParticipacionTexto</span>
+                                    <span class="assoc-cell-sub">@asociado.CorteTexto</span>
+                                }
+                                else
+                                {
+                                    <span class="svc-sub">—</span>
+                                }
+                            </td>
+                            <td>
+                                <span class="svc-status @(asociado.Activo ? "svc-status--active" : "svc-status--inactive")">
+                                    <span class="svc-dot @(asociado.Activo ? "svc-dot--green" : "svc-dot--gray")"></span>
+                                    @asociado.EstadoTexto
+                                </span>
+                            </td>
+                            <td>
+                                <div class="finance-actions-cell">
+                                    <a asp-action="Detalle" asp-route-id="@asociado.Id" class="finance-btn-row-edit">
+                                        <i class="bi bi-eye"></i> @(Model.PuedeAdministrar ? "Ver / editar" : "Ver")
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="8">
+                            <div class="finance-empty-state">
+                                <div class="finance-empty-icon"><i class="bi bi-people"></i></div>
+                                <p class="finance-empty-title">Todavía no hay asociados</p>
+                                <p class="finance-empty-subtitle">
+                                    Agregá inversionistas, socios o colaboradores externos y definí
+                                    qué pueden ver dentro de LuxuryCloud.
+                                </p>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="finance-mobile-list">
+        @foreach (var asociado in Model.Asociados)
+        {
+            <div class="finance-mobile-card">
+                <div class="finance-mobile-card-header">
+                    <span class="finance-mobile-card-date">
+                        <i class="bi bi-person"></i> @asociado.Nombre
+                    </span>
+                    <span class="finance-mobile-card-monto">@asociado.ParticipacionTexto</span>
+                </div>
+
+                <div class="finance-mobile-card-body">
+                    <div class="finance-mobile-card-row">
+                        <span class="finance-mobile-card-row-label">Tipo</span>
+                        <span class="finance-mobile-card-row-value">@asociado.TiposTexto</span>
+                    </div>
+                    <div class="finance-mobile-card-row">
+                        <span class="finance-mobile-card-row-label">Puesto</span>
+                        <span class="finance-mobile-card-row-value">@(string.IsNullOrWhiteSpace(asociado.Puesto) ? "—" : asociado.Puesto)</span>
+                    </div>
+                    <div class="finance-mobile-card-row">
+                        <span class="finance-mobile-card-row-label">Correo</span>
+                        <span class="finance-mobile-card-row-value">@(string.IsNullOrWhiteSpace(asociado.Email) ? "—" : asociado.Email)</span>
+                    </div>
+                    @if (asociado.ParticipacionVigente.HasValue)
+                    {
+                        <div class="finance-mobile-card-row">
+                            <span class="finance-mobile-card-row-label">Corte</span>
+                            <span class="finance-mobile-card-row-value">@asociado.CorteTexto</span>
+                        </div>
+                    }
+                    <div class="finance-mobile-card-row">
+                        <span class="finance-mobile-card-row-label">Acceso</span>
+                        <span class="finance-mobile-card-row-value">@asociado.AccesoTexto</span>
+                    </div>
+                    <div class="finance-mobile-card-row">
+                        <span class="finance-mobile-card-row-label">Estado</span>
+                        <span class="finance-mobile-card-row-value">@asociado.EstadoTexto</span>
+                    </div>
+                </div>
+
+                <div class="finance-mobile-card-footer">
+                    <a asp-action="Detalle" asp-route-id="@asociado.Id" class="finance-btn-row-edit">
+                        <i class="bi bi-eye"></i> @(Model.PuedeAdministrar ? "Ver / editar" : "Ver")
+                    </a>
+                </div>
+            </div>
+        }
+    </div>
+</div>

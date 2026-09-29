@@ -1,0 +1,199 @@
+@model LuxuryApp.Models.Identity.RegistroViewModel
+
+@{
+    ViewData["Title"] = "Registro";
+    ViewData["PublicBodyClass"] = "public-auth-page";
+    Layout = "_PublicLayout";
+    var returnUrl = ViewData["ReturnUrl"] as string;
+    var selectedPlanName = ViewData["SelectedPlanName"] as string;
+    var turnstileSiteKey = ViewData["TurnstileSiteKey"] as string;
+}
+
+<section class="auth-section">
+    <div class="container">
+        <div class="row align-items-center g-4">
+            <div class="col-lg-5" data-aos="fade-right">
+                <div class="auth-story-card">
+                    <span class="section-kicker">Onboarding comercial</span>
+                    <h1>Crea tu cuenta y deja listo el espacio de trabajo de tu negocio.</h1>
+                    <p>
+                        Registra tus datos y prepara la base para gestionar citas, clientes, ingresos y servicios desde un solo lugar.
+                    </p>
+
+                    @if (!string.IsNullOrWhiteSpace(selectedPlanName))
+                    {
+                        <div class="auth-plan-pill">
+                            <i class="bi bi-stars"></i>
+                            <span>Plan elegido: <strong>@selectedPlanName</strong></span>
+                        </div>
+                    }
+
+                    <ul class="auth-feature-list">
+                        <li class="auth-feature-item">
+                            <span class="auth-feature-icon"><i class="bi bi-rocket-takeoff"></i></span>
+                            <div class="auth-feature-copy">
+                                <strong>Inicio rápido y guiado</strong>
+                                <span>Crea tu cuenta en minutos y empieza a ordenar la operación de tu negocio.</span>
+                            </div>
+                        </li>
+                        <li class="auth-feature-item">
+                            <span class="auth-feature-icon"><i class="bi bi-bar-chart-line"></i></span>
+                            <div class="auth-feature-copy">
+                                <strong>Control para tu negocio</strong>
+                                <span>Administra clientes, agenda y finanzas desde una plataforma pensada para servicios.</span>
+                            </div>
+                        </li>
+                        <li class="auth-feature-item">
+                            <span class="auth-feature-icon"><i class="bi bi-graph-up-arrow"></i></span>
+                            <div class="auth-feature-copy">
+                                <strong>Preparado para crecer</strong>
+                                <span>Agrega funcionarios, productos y módulos conforme tu negocio los necesite.</span>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="col-lg-7 col-xl-6" data-aos="fade-left">
+                <div class="auth-form-card">
+                    <span class="section-kicker">Crear cuenta</span>
+                    <h2>Empieza con una base profesional desde el primer acceso.</h2>
+
+                    <form id="registration-form" asp-controller="Accounts" asp-action="Registro" method="post" data-prevent-double-submit>
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="returnurl" value="@returnUrl" />
+                        <input asp-for="SelectedPlanId" type="hidden" />
+                        <input asp-for="CurrentContractDocumentId" type="hidden" />
+                        <div aria-hidden="true" style="position:absolute;left:-10000px;top:auto;width:1px;height:1px;overflow:hidden;">
+                            <label asp-for="CompanyWebsite">Sitio web</label>
+                            <input asp-for="CompanyWebsite" tabindex="-1" autocomplete="off" />
+                        </div>
+
+                        <div class="text-danger auth-validation" asp-validation-summary="All"></div>
+
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label asp-for="Name" class="form-label"></label>
+                                <div class="auth-input-wrap">
+                                    <i class="bi bi-person auth-input-icon"></i>
+                                    <input asp-for="Name" class="form-control public-form-control" placeholder="Nombre completo" autocomplete="name" />
+                                </div>
+                                <span asp-validation-for="Name" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Email" class="form-label"></label>
+                                <div class="auth-input-wrap">
+                                    <i class="bi bi-envelope auth-input-icon"></i>
+                                    <input asp-for="Email" class="form-control public-form-control" placeholder="correo@negocio.com" autocomplete="email" />
+                                </div>
+                                <span asp-validation-for="Email" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="PhoneNumber" class="form-label"></label>
+                                <div class="auth-input-wrap">
+                                    <i class="bi bi-telephone auth-input-icon"></i>
+                                    <input asp-for="PhoneNumber" class="form-control public-form-control" placeholder="Teléfono" autocomplete="tel" />
+                                </div>
+                                <span asp-validation-for="PhoneNumber" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Password" class="form-label"></label>
+                                <div class="auth-input-wrap">
+                                    <i class="bi bi-lock auth-input-icon"></i>
+                                    <input asp-for="Password" type="password" class="form-control public-form-control has-pw-toggle" placeholder="Contraseña" autocomplete="new-password" />
+                                    <button type="button" class="auth-pw-toggle" data-pw-toggle aria-label="Mostrar contraseña">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                                <span asp-validation-for="Password" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="ConfirmPassword" class="form-label"></label>
+                                <div class="auth-input-wrap">
+                                    <i class="bi bi-lock auth-input-icon"></i>
+                                    <input asp-for="ConfirmPassword" type="password" class="form-control public-form-control has-pw-toggle" placeholder="Confirmar contraseña" autocomplete="new-password" />
+                                    <button type="button" class="auth-pw-toggle" data-pw-toggle aria-label="Mostrar contraseña">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                                <span asp-validation-for="ConfirmPassword" class="text-danger small"></span>
+                            </div>
+                            <div class="col-12">
+                                <label asp-for="AccessCode" class="form-label"></label>
+                                <div class="auth-input-wrap">
+                                    <i class="bi bi-tag auth-input-icon"></i>
+                                    <input asp-for="AccessCode" class="form-control public-form-control" placeholder="Opcional si recibiste un código promocional" />
+                                </div>
+                            </div>
+                        </div>
+
+                        @if (Model.HasCurrentContract)
+                        {
+                            <div class="contract-consent-card mt-4">
+                                <div class="contract-consent-header">
+                                    <span class="section-kicker">Contrato vigente</span>
+                                    <a asp-controller="Contract" asp-action="Index" target="_blank" rel="noopener" class="contract-view-link">
+                                        Ver contrato completo <i class="bi bi-arrow-up-right"></i>
+                                    </a>
+                                </div>
+                                <div class="contract-consent-copy">
+                                    <h3>@Model.CurrentContractTitle</h3>
+                                    <p>
+                                        Versión @Model.CurrentContractVersion
+                                        @if (Model.CurrentContractEffectiveFromUtc.HasValue)
+                                        {
+                                            <span>• Vigente desde @Model.CurrentContractEffectiveFromUtc.Value.ToString("yyyy-MM-dd") UTC</span>
+                                        }
+                                    </p>
+                                    <p class="contract-consent-desc">
+                                        Este contrato regula el uso de la plataforma LuxuryCloud y los servicios asociados.
+                                        Al crear tu cuenta, aceptas los términos y condiciones establecidos en el contrato.
+                                    </p>
+                                </div>
+
+                                <div class="form-check contract-check">
+                                    <input asp-for="AcceptCurrentContract" type="checkbox" class="form-check-input" value="true" required data-msg-required="Debes aceptar el contrato para crear tu cuenta." />
+                                    <label asp-for="AcceptCurrentContract" class="form-check-label">
+                                        He leído y acepto el Contrato de Uso del Servicio Luxury y los términos relacionados.
+                                    </label>
+                                </div>
+                                <span asp-validation-for="AcceptCurrentContract" class="text-danger d-block mt-2"></span>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="contract-consent-card contract-consent-card-warning mt-4">
+                                <div class="contract-consent-copy">
+                                    <span class="section-kicker">Contrato no disponible</span>
+                                    <h3>No hay una versión vigente configurada.</h3>
+                                    <p>No podemos completar el registro mientras no exista un contrato activo publicado en base de datos.</p>
+                                </div>
+                            </div>
+                        }
+
+                        @if (!string.IsNullOrWhiteSpace(turnstileSiteKey))
+                        {
+                            <div class="cf-turnstile mt-4" data-sitekey="@turnstileSiteKey"></div>
+                        }
+
+                        <button type="submit" form="registration-form" class="btn public-btn public-btn-primary w-100 mt-4" disabled="@(!Model.HasCurrentContract ? "disabled" : null)">Crear cuenta</button>
+
+                        <p class="auth-center-link">
+                            ¿Ya tienes una cuenta? <a asp-action="Acceso" asp-route-returnurl="@returnUrl">Iniciar sesión</a>
+                        </p>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    @if (!string.IsNullOrWhiteSpace(turnstileSiteKey))
+    {
+        <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+    }
+}

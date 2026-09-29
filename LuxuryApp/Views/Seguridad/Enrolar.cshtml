@@ -1,0 +1,205 @@
+@model LuxuryApp.Models.Identity.EnrolarMfaViewModel
+@using LuxuryApp.Services.Identity
+
+@{
+    ViewData["Title"] = "Verificación en dos pasos";
+    // Un funcionario configura su MFA sin salir del chrome de su portal; el resto usa el layout general.
+    var esPortalFuncionario = User.IsInRole(AppRoles.Funcionario) && !User.IsInRole(AppRoles.Administrador);
+    Layout = esPortalFuncionario ? "~/Views/Shared/_FuncionarioLayout.cshtml" : "~/Views/Shared/_Layout.cshtml";
+}
+
+@*
+    Esta pantalla sigue existiendo por sí misma y NO puede convertirse en un redirect:
+      · el portal de funcionarios enlaza acá directo, y
+      · RequireMfaEnrollmentFilter manda acá al superadmin sin TOTP (enrolamiento obligatorio).
+    Lo que cambió es sólo la presentación: usa el MISMO shell que el resto del SaaS
+    (.finance-page-shell + .finance-hero + .finance-section), así activar la doble
+    autenticación ya no se siente como salir de LuxuryCloud.
+
+    La criptografía no se toca: la clave y el otpauth vienen del ViewModel que arma
+    SeguridadController con Identity, y el QR se dibuja en el navegador. El secreto NO se
+    registra en logs y desaparece de la pantalla en cuanto el 2FA queda activo.
+*@
+
+@section Styles {
+    @* El layout de funcionarios ya carga finance-modules.css; en el general hay que pedirlo. *@
+    @if (!esPortalFuncionario)
+    {
+        <link rel="stylesheet" href="~/css/finance-modules.css" asp-append-version="true" />
+    }
+    <link rel="stylesheet" href="~/css/account-module.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/mfa-enroll.css" asp-append-version="true" />
+}
+
+<div class="finance-page-shell mfa-shell">
+
+    <div class="finance-hero">
+        <div class="finance-hero-left module-heading">
+            <span class="module-eyebrow">Seguridad de la cuenta</span>
+            <h1 class="module-title"><i class="bi bi-shield-lock module-title-icon" aria-hidden="true"></i>Verificación en dos pasos</h1>
+            <p class="module-subtitle">
+                @(Model.TwoFactorActivo
+                    ? "Tu cuenta pide un código de un solo uso además de la contraseña."
+                    : "Protegé tu cuenta con un código de un solo uso además de tu contraseña.")
+            </p>
+        </div>
+
+        <div class="mfa-hero-actions">
+            <span class="finance-status-pill @(Model.TwoFactorActivo ? "finance-status-pill--ok" : null)">
+                <i class="bi @(Model.TwoFactorActivo ? "bi-shield-check" : "bi-shield-exclamation")" aria-hidden="true"></i>
+                @(Model.TwoFactorActivo ? "Protegida" : "No activada")
+            </span>
+
+            @if (!esPortalFuncionario)
+            {
+                <a asp-controller="Accounts"
+                   asp-action="Cuenta"
+                   asp-fragment="@LuxuryApp.Models.Identity.AccountSettingsSections.Seguridad"
+                   class="finance-btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Volver a Mi cuenta
+                </a>
+            }
+        </div>
+    </div>
+
+    @if (TempData["SeguridadMensaje"] is string mensaje)
+    {
+        <div class="finance-band">
+            <div class="account-alert account-alert--ok" role="status">
+                <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+                <span>@mensaje</span>
+            </div>
+        </div>
+    }
+
+    @if (Model.TwoFactorActivo)
+    {
+        <section class="finance-section">
+            <div class="finance-section-head">
+                <h2 class="finance-section-title"><i class="bi bi-shield-check"></i> Activa en tu cuenta</h2>
+                <p class="finance-section-sub">
+                    Al iniciar sesión se te pedirá el código de tu aplicación de autenticación.
+                    Si perdés el acceso a tu teléfono, usá uno de tus códigos de recuperación.
+                </p>
+            </div>
+
+            @if (Model.PuedeDeshabilitar)
+            {
+                <form asp-controller="Seguridad" asp-action="Deshabilitar" method="post"
+                      onsubmit="return confirm('¿Deshabilitar la verificación en dos pasos? Tu cuenta quedará protegida solo por contraseña.');">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="finance-btn-secondary account-btn-danger">
+                        <i class="bi bi-shield-slash"></i> Deshabilitar verificación en dos pasos
+                    </button>
+                </form>
+            }
+            else
+            {
+                <div class="finance-callout">
+                    <i class="bi bi-info-circle-fill" aria-hidden="true"></i>
+                    <span>
+                        La verificación en dos pasos es obligatoria para cuentas de plataforma y no
+                        puede deshabilitarse.
+                    </span>
+                </div>
+            }
+        </section>
+    }
+    else
+    {
+        <section class="finance-section">
+            <div class="finance-section-head">
+                <h2 class="finance-section-title"><i class="bi bi-1-circle"></i> Instalá una aplicación de autenticación</h2>
+                <p class="finance-section-sub">
+                    Google Authenticator, Microsoft Authenticator o cualquier app compatible (TOTP).
+                </p>
+            </div>
+        </section>
+
+        <section class="finance-section">
+            <div class="finance-section-head">
+                <h2 class="finance-section-title"><i class="bi bi-2-circle"></i> Escaneá este código QR</h2>
+                <p class="finance-section-sub">
+                    Abrí la aplicación, elegí "agregar cuenta" y apuntá la cámara al código.
+                </p>
+            </div>
+
+            <div class="mfa-qr-grid">
+                <div id="mfa-qr" data-otpauth="@Model.OtpauthUri" role="img"
+                     aria-label="Código QR para configurar la verificación en dos pasos"></div>
+
+                <div class="mfa-key-block">
+                    <p class="mfa-key-label">¿No podés escanear? Ingresá esta clave manualmente:</p>
+                    <span class="mfa-key">@Model.ClaveFormateada</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="finance-section">
+            <div class="finance-section-head">
+                <h2 class="finance-section-title"><i class="bi bi-3-circle"></i> Ingresá el código que muestra la aplicación</h2>
+                <p class="finance-section-sub">
+                    Son 6 dígitos que cambian cada 30 segundos.
+                </p>
+            </div>
+
+            <form asp-controller="Seguridad" asp-action="Confirmar" method="post" class="mfa-confirm-form">
+                @Html.AntiForgeryToken()
+                <div class="account-validation-summary" asp-validation-summary="All"></div>
+
+                <div class="account-field">
+                    <label asp-for="Codigo" class="account-field-label">Código de verificación</label>
+                    <input asp-for="Codigo" class="account-input mfa-code-input" autocomplete="one-time-code"
+                           inputmode="numeric" placeholder="000000" autofocus />
+                </div>
+
+                <button type="submit" class="finance-btn-primary">
+                    <i class="bi bi-shield-check"></i> Verificar y activar
+                </button>
+            </form>
+        </section>
+    }
+
+    @*
+        Sesiones activas: se conserva acá porque el portal de funcionarios llega a esta
+        pantalla y no al menú de Mi cuenta. Es el MISMO endpoint que ofrece Mi cuenta, no una
+        segunda implementación.
+    *@
+    <section class="finance-section">
+        <div class="finance-section-head">
+            <h2 class="finance-section-title"><i class="bi bi-laptop"></i> Sesiones activas</h2>
+            <p class="finance-section-sub">
+                Si iniciaste sesión en un equipo que ya no controlás, cerrá la sesión en todos los
+                dispositivos. Tendrás que volver a iniciar sesión en cada uno, incluido este.
+            </p>
+        </div>
+
+        <form asp-controller="Seguridad" asp-action="CerrarSesionEnTodosLosDispositivos" method="post"
+              onsubmit="return confirm('¿Cerrar la sesión en todos los dispositivos? Deberás iniciar sesión de nuevo.');">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="finance-btn-secondary account-btn-danger">
+                <i class="bi bi-box-arrow-right"></i> Cerrar sesión en todos los dispositivos
+            </button>
+        </form>
+    </section>
+</div>
+
+@section Scripts {
+    @if (!Model.TwoFactorActivo)
+    {
+        <script src="~/lib/qrcodejs/qrcode.min.js"></script>
+        <script>
+            (function () {
+                var container = document.getElementById("mfa-qr");
+                if (container && window.QRCode) {
+                    new QRCode(container, {
+                        text: container.dataset.otpauth,
+                        width: 180,
+                        height: 180,
+                        correctLevel: QRCode.CorrectLevel.M
+                    });
+                }
+            })();
+        </script>
+    }
+}

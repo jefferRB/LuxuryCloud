@@ -1,0 +1,86 @@
+@model LuxuryApp.Models.Calendar.ControlCitasCobrosViewModel
+@{
+    ViewData["Title"] = "Control de citas y cobros";
+    var f = Model.Filtro;
+    string Active(string r) => f.Rango == r ? "active" : "";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/control-cobros.css" asp-append-version="true" />
+}
+
+<div class="cc-shell">
+    <div class="cc-hero">
+        <div class="cc-hero-copy module-heading">
+            <span class="module-eyebrow">Estados y cobros</span>
+            <h1 class="module-title"><i class="bi bi-cash-stack module-title-icon" aria-hidden="true"></i>Control de citas y cobros</h1>
+            <p class="module-subtitle">Revisa las citas realizadas, pendientes de cobro y montos cobrados por d&iacute;a, semana o mes.</p>
+        </div>
+        <a class="cc-back" href="/Calendar"><i class="bi bi-arrow-left"></i> Volver al calendario</a>
+    </div>
+
+    <div class="cc-filters">
+        <div class="cc-filters-row">
+            <div class="cc-field">
+                <span class="cc-field-label">Periodo</span>
+                <div class="cc-seg" id="cc-rango" role="group" aria-label="Periodo">
+                    <button type="button" class="cc-seg-btn @Active("dia")" data-rango="dia"><i class="bi bi-calendar-day"></i> D&iacute;a</button>
+                    <button type="button" class="cc-seg-btn @Active("semana")" data-rango="semana"><i class="bi bi-calendar-week"></i> Semana</button>
+                    <button type="button" class="cc-seg-btn @Active("mes")" data-rango="mes"><i class="bi bi-calendar3"></i> Mes</button>
+                </div>
+            </div>
+
+            <div class="cc-field">
+                <label class="cc-field-label" for="cc-fecha">Fecha</label>
+                <input type="date" id="cc-fecha" class="cc-input" value="@f.Fecha.ToString("yyyy-MM-dd")">
+            </div>
+
+            <div class="cc-field">
+                <label class="cc-field-label" for="cc-funcionario">Funcionario</label>
+                <select id="cc-funcionario" class="cc-select">
+                    <option value="">Todos</option>
+                    @foreach (var fn in Model.Funcionarios)
+                    {
+                        if (f.FuncionarioId == fn.Id)
+                        {
+                            <option value="@fn.Id" selected>@fn.Nombre</option>
+                        }
+                        else
+                        {
+                            <option value="@fn.Id">@fn.Nombre</option>
+                        }
+                    }
+                </select>
+            </div>
+
+            <div class="cc-field">
+                <label class="cc-field-label" for="cc-estado">Estado de pago</label>
+                <select id="cc-estado" class="cc-select">
+                    <option value="todos" selected="@(f.EstadoPago == "todos")">Todos</option>
+                    <option value="cobradas" selected="@(f.EstadoPago == "cobradas")">Cobradas</option>
+                    <option value="pendientes" selected="@(f.EstadoPago == "pendientes")">Pendientes</option>
+                    @if (Model.HasWhatsAppAddon)
+                    {
+                        <option value="canceladas" selected="@(f.EstadoPago == "canceladas")">Canceladas</option>
+                    }
+                </select>
+            </div>
+
+            <div class="cc-field cc-field-search">
+                <label class="cc-field-label" for="cc-buscar">Buscar cliente o tel&eacute;fono</label>
+                <input type="search" id="cc-buscar" class="cc-input" placeholder="Nombre o tel&eacute;fono..." value="@f.Buscar" autocomplete="off">
+            </div>
+        </div>
+    </div>
+
+    <div id="cc-results">
+        @await Html.PartialAsync("_ControlCobrosResultados", Model)
+    </div>
+</div>
+
+@await Html.PartialAsync("_RegistrarCobroModal")
+
+@section Scripts {
+    <script src="~/js/cobro-cita-modal.js" asp-append-version="true"></script>
+    <script src="~/js/control-cobros.js" asp-append-version="true"></script>
+}

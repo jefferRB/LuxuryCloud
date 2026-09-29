@@ -1,0 +1,306 @@
+/* ==========================================================
+   account-module.css — Mi cuenta
+
+   El shell, el hero, las bandas de sección, los interruptores, los callouts y
+   los botones vienen de finance-modules.css: son los MISMOS que usan Reservas,
+   Ingresos y Egresos, y por eso las cuatro pantallas tienen el mismo ancho,
+   radio, sombra y padding.
+
+   Acá sólo queda lo propio de Mi cuenta: los campos del formulario de perfil,
+   las filas de seguridad y sus alertas de guardado.
+   Usa las variables --private-* de private-layout.css.
+   ========================================================== */
+
+/* ── Hero: el correo puede ser largo y no debe romper la card ── */
+.account-kpi-email {
+    max-width: 210px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ── Campos del formulario ─────────────────────────────── */
+.account-form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1rem;
+}
+
+.account-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    min-width: 0;
+}
+
+/* Campos que no deben estirarse a todo el ancho (tarifa de IVA). */
+.account-field--narrow {
+    max-width: 16rem;
+}
+
+.account-field-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--private-surface-text, #111827);
+}
+
+.account-input-wrapper {
+    position: relative;
+}
+
+.account-input-icon {
+    position: absolute;
+    left: 0.85rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--private-muted-text, #64748b);
+    font-size: 0.9rem;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.account-input-lock {
+    position: absolute;
+    right: 0.85rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--private-muted-text, #64748b);
+    font-size: 0.85rem;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.account-input {
+    width: 100%;
+    padding: 0.62rem 0.9rem;
+    border-radius: 0.75rem;
+    border: 1px solid var(--private-input-border, rgba(15, 23, 42, 0.14));
+    background: var(--private-input-bg, rgba(255, 255, 255, 0.96));
+    color: var(--private-input-text, #111827);
+    font-size: 0.9rem;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease;
+    box-sizing: border-box;
+}
+
+/* Sólo los inputs con icono a la izquierda reservan ese espacio. */
+.account-input-wrapper .account-input {
+    padding-left: 2.35rem;
+}
+
+.account-input--locked {
+    padding-right: 2.35rem;
+}
+
+.account-input:focus {
+    outline: none;
+    border-color: rgba(var(--private-accent-soft-rgb), 0.55);
+    box-shadow: 0 0 0 0.18rem var(--private-focus-ring, rgba(37, 140, 251, 0.28));
+}
+
+.account-input:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+.account-input.input-validation-error {
+    border-color: rgba(220, 38, 38, 0.5);
+}
+
+.account-input-hint {
+    font-size: 0.75rem;
+    color: var(--private-muted-text, #64748b);
+}
+
+.account-field-error {
+    font-size: 0.75rem;
+    color: var(--private-chart-danger, #dc2626);
+}
+
+/* Input con sufijo pegado (el "%" de la tarifa de IVA). */
+.account-input-group {
+    display: flex;
+    align-items: stretch;
+}
+
+.account-input-group .account-input {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.account-input-suffix {
+    display: flex;
+    align-items: center;
+    padding: 0 0.8rem;
+    border: 1px solid var(--private-input-border, rgba(15, 23, 42, 0.14));
+    border-left: none;
+    border-top-right-radius: 0.75rem;
+    border-bottom-right-radius: 0.75rem;
+    background: var(--private-row-bg);
+    color: var(--private-muted-text, #64748b);
+    font-size: 0.85rem;
+}
+
+/* ── Resumen de validación ─────────────────────────────── */
+.account-validation-summary {
+    padding: 0.75rem 1rem;
+    border-radius: 0.75rem;
+    background: rgba(220, 38, 38, 0.1);
+    border: 1px solid rgba(220, 38, 38, 0.22);
+    color: var(--private-chart-danger, #dc2626);
+    font-size: 0.82rem;
+}
+
+/* El tag helper SIEMPRE emite el contenedor, y cuando no hay errores lo emite con
+   un <ul> vacío dentro: por eso :empty no basta y hacía falta también la clase
+   validation-summary-valid que pone ASP.NET. Sin las dos, quedaba una barra roja
+   vacía flotando en la pantalla. */
+.account-validation-summary:empty,
+.account-validation-summary.validation-summary-valid {
+    display: none;
+}
+
+.account-validation-summary ul {
+    margin: 0;
+    padding-left: 1.1rem;
+}
+
+/* ── Feedback de guardado ──────────────────────────────── */
+.account-alert {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    padding: 0.85rem 1.15rem;
+    border-radius: 0.85rem;
+    font-size: 0.85rem;
+    line-height: 1.5;
+}
+
+.account-alert .bi {
+    flex-shrink: 0;
+    margin-top: 0.1rem;
+}
+
+.account-alert--ok {
+    background: rgba(22, 163, 74, 0.12);
+    border: 1px solid rgba(22, 163, 74, 0.26);
+    color: var(--private-chart-success, #15803d);
+}
+
+.account-alert--error {
+    background: rgba(220, 38, 38, 0.1);
+    border: 1px solid rgba(220, 38, 38, 0.24);
+    color: var(--private-chart-danger, #dc2626);
+}
+
+/* ── Seguridad: fila "qué es / en qué estado / qué hacer" ── */
+.account-security-item {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem 1.15rem;
+    border-radius: 14px;
+    border: 1px solid var(--private-surface-border);
+    background: var(--private-row-bg);
+}
+
+.account-security-item-main {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.4rem;
+    flex: 1 1 320px;
+    min-width: 0;
+}
+
+.account-security-item-title {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--private-surface-text);
+}
+
+.account-security-item-title .bi {
+    color: var(--private-chart-accent, var(--private-accent));
+}
+
+.account-security-item-desc {
+    margin: 0;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    color: var(--private-muted-text, #64748b);
+    max-width: 62ch;
+}
+
+.account-security-item-desc--muted {
+    font-style: italic;
+}
+
+.account-security-item-action {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+    flex: 0 1 auto;
+}
+
+.account-security-item-action form {
+    margin: 0;
+}
+
+/* Acciones destructivas: se distinguen por color Y por el icono/texto. */
+.account-btn-danger {
+    border-color: rgba(220, 38, 38, 0.4) !important;
+    color: var(--private-chart-danger, #dc2626) !important;
+}
+
+.account-btn-danger:hover:not(:disabled) {
+    background: rgba(220, 38, 38, 0.1) !important;
+}
+
+/* ── Responsive ────────────────────────────────────────── */
+@media (max-width: 767.98px) {
+    .account-kpi-email {
+        max-width: 100%;
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+
+    .account-form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .account-field--narrow {
+        max-width: 100%;
+    }
+
+    .account-security-item {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    /* Con la fila en columna, el flex-basis de 320px se interpreta como ALTURA y
+       deja un hueco enorme entre el texto y el botón. Mismo caso que
+       .finance-hero-left y .finance-kpi-card en finance-modules.css. */
+    .account-security-item-main {
+        flex: none;
+    }
+
+    /* En móvil el botón ocupa la fila: es el objetivo táctil de la sección. */
+    .account-security-item-action,
+    .account-security-item-action form,
+    .account-security-item-action .finance-btn-primary,
+    .account-security-item-action .finance-btn-secondary {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .finance-section-actions--inline .finance-btn-primary {
+        width: 100%;
+        justify-content: center;
+    }
+}

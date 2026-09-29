@@ -1,0 +1,73 @@
+@using LuxuryApp.Models.Calendar
+@model CalendarIndexViewModel
+@{
+    var hasWhatsAppAddon = Model.HasWhatsAppAddon;
+}
+
+@* ── PANEL DERECHO: CITAS DE HOY (mismo diseño para todos los tenants) ── *@
+<div class="whatsapp-inbox-panel today-apt-panel">
+
+    <div class="whatsapp-inbox-header">
+        <div>
+            <div class="today-apt-title-row">
+                <button type="button"
+                        id="todayAppointmentsPrevBtn"
+                        class="action-icon-button today-apt-nav-btn"
+                        aria-label="Dia anterior"
+                        title="Dia anterior">
+                    <i class="bi bi-chevron-left"></i>
+                </button>
+                <h2 class="whatsapp-inbox-title" id="todayAppointmentsTitle">
+                    <span class="today-apt-mark"><i class="bi bi-calendar-check"></i></span>
+                    <span id="todayAppointmentsTitleText">Citas de hoy</span>
+                </h2>
+                <button type="button"
+                        id="todayAppointmentsNextBtn"
+                        class="action-icon-button today-apt-nav-btn"
+                        aria-label="Dia siguiente"
+                        title="Dia siguiente">
+                    <i class="bi bi-chevron-right"></i>
+                </button>
+            </div>
+            <p class="today-apt-subtitle" id="todayAppointmentsSubtitle">Clientes agendados para hoy.</p>
+        </div>
+        <div class="today-apt-header-actions">
+            <button type="button"
+                    id="todayAppointmentsTodayBtn"
+                    class="action-icon-button d-none"
+                    title="Volver a hoy">
+                Hoy
+            </button>
+            <button type="button"
+                    id="toggleTareasBtn"
+                    class="action-icon-button"
+                    onclick="toggleTareas()"
+                    title="Ocultar / mostrar lista">
+                Ocultar
+            </button>
+        </div>
+    </div>
+
+    <div class="today-apt-toolbar">
+        @if (hasWhatsAppAddon)
+        {
+            <select id="statusFiltro" class="whatsapp-inbox-filter">
+                <option value="">Todas</option>
+                <option value="confirmados">Confirmadas</option>
+                <option value="pendientes">Pendientes</option>
+                <option value="cancelados">Canceladas</option>
+                <option value="atencion">Requieren atención</option>
+            </select>
+        }
+        <select id="funcionarioFiltro" class="whatsapp-inbox-filter">
+            <option value="">Todos los funcionarios</option>
+        </select>
+    </div>
+
+    <div id="tareasContainer">
+        <ul id="listaTareas" class="whatsapp-thread-list list-group">
+            @* Se llena por JS (appointments-panel.js o whatsapp-inbox.js) *@
+        </ul>
+    </div>
+
+</div>

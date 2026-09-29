@@ -1,0 +1,374 @@
+@model LuxuryApp.Models.Reservas.BookingRequestsPageViewModel
+@using LuxuryApp.Models.Reservas
+@{
+    ViewData["Title"] = "Solicitudes de reserva";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/finance-modules.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/reservas-admin.css" asp-append-version="true" />
+}
+
+<div class="finance-page-shell reservas-panel-shell">
+
+    @* HERO — mismo lenguaje visual que Ingresos *@
+    <div class="finance-hero reservas-hero">
+        <div class="finance-hero-left module-heading">
+            <span class="module-eyebrow">Gestión de reservas</span>
+            <h1 class="module-title"><i class="bi bi-calendar-check module-title-icon" aria-hidden="true"></i>Solicitudes de reserva</h1>
+            <p class="module-subtitle">
+                Revisá las solicitudes que llegan desde tu enlace público y confirmalas o rechazalas.
+            </p>
+        </div>
+
+        <div class="reservas-hero-actions">
+            <a asp-controller="Reservas" asp-action="Configuracion" class="finance-btn-secondary">
+                <i class="bi bi-gear"></i> Configuración
+            </a>
+        </div>
+    </div>
+
+    @if (!Model.ReservasActivas)
+    {
+        <div class="reservas-aviso-band">
+            <div class="reservas-aviso">
+                <span><i class="bi bi-info-circle"></i> Las reservas online están desactivadas. Activá tu enlace para empezar a recibir solicitudes.</span>
+                <a asp-controller="Reservas" asp-action="Configuracion" class="btn-rsv btn-rsv-primary"><i class="bi bi-toggle-on"></i> Activar reservas</a>
+            </div>
+        </div>
+    }
+
+    @* Oferta comercial en un solo lugar, en vez de repetir avisos de WhatsApp en cada acción. *@
+    @if (!Model.WhatsAppActivo)
+    {
+        <div class="reservas-aviso-band">
+            <div class="reservas-wa-cta">
+                <div class="reservas-wa-cta-icon"><i class="bi bi-whatsapp"></i></div>
+                <div class="reservas-wa-cta-text">
+                    <strong>¿Querés notificar automáticamente a tus clientes?</strong>
+                    <span>Activá WhatsApp para avisarles cuando confirmás, rechazás o actualizás una reserva.</span>
+                </div>
+                <a asp-controller="WhatsApp" asp-action="Index" class="btn-rsv btn-rsv-primary">
+                    <i class="bi bi-gear"></i> Configurar WhatsApp
+                </a>
+            </div>
+        </div>
+    }
+
+    @* Filtros + tarjetas: se recargan juntos para que los contadores nunca queden desfasados. *@
+    <div id="reservasPanel">
+        <partial name="_SolicitudesList" model="Model" />
+    </div>
+</div>
+
+<!-- Modal decisión sobre el cliente. Solo se abre cuando el servidor dice que hay algo que decidir: -->
+<!-- cliente nuevo, mismo teléfono con otro nombre, o varios clientes con ese teléfono.            -->
+<div class="rsv-modal-backdrop" id="clienteModal" hidden>
+    <div class="rsv-modal">
+        <h3 id="clienteModalTitulo">Cliente de la reserva</h3>
+        <p class="rsv-dim" id="clienteModalMensaje"></p>
+        <div id="clienteModalOpciones"></div>
+        <div class="rsv-modal-actions">
+            <button type="button" class="btn-rsv btn-rsv-soft" id="clienteCancel">Cancelar</button>
+            <button type="button" class="btn-rsv btn-rsv-soft" id="clienteSinVincular">Confirmar sin registrar</button>
+            <button type="button" class="btn-rsv btn-rsv-primary" id="clienteConfirmar">Confirmar y registrar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal rechazar -->
+<div class="rsv-modal-backdrop" id="rejectModal" hidden>
+    <div class="rsv-modal">
+        <h3>Rechazar solicitud</h3>
+        @* El copy no promete WhatsApp si el negocio no contrató el complemento. *@
+        @if (Model.WhatsAppActivo)
+        {
+            <p class="rsv-dim">Indicá el motivo del rechazo. El cliente recibirá el aviso por WhatsApp si autorizó las notificaciones.</p>
+        }
+        else
+        {
+            <p class="rsv-dim">Indicá el motivo del rechazo. Quedará registrado para tu control.</p>
+        }
+        <textarea id="rejectMotivo" maxlength="300" rows="3" required
+                  aria-label="Motivo del rechazo">@BookingRejectionDefaults.MotivoPorDefecto</textarea>
+        <div class="rsv-modal-actions">
+            <button type="button" class="btn-rsv btn-rsv-soft" id="rejectCancel">Cancelar</button>
+            <button type="button" class="btn-rsv btn-rsv-reject" id="rejectConfirm">Rechazar</button>
+        </div>
+    </div>
+</div>
+
+@Html.AntiForgeryToken()
+
+@section Scripts {
+    <script>
+        (function () {
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            const panel = document.getElementById('reservasPanel');
+            const listaUrl = '@Url.Action("Lista", "Reservas")';
+            let estado = '@Model.EstadoFiltroValor';
+            let rango = '@Model.RangoFiltroValor';
+            let rejectId = null;
+            const MOTIVO_RECHAZO_POR_DEFECTO = @Html.Raw(Json.Serialize(BookingRejectionDefaults.MotivoPorDefecto));
+
+            // El servidor es la única fuente de verdad del estado activo: tras cada recarga se
+            // re-sincroniza (si el valor enviado era inválido, el backend ya aplicó su fallback).
+            function sincronizarDesdePanel() {
+                const barra = panel.querySelector('[data-estado-actual]');
+                if (!barra) return;
+                estado = barra.dataset.estadoActual;
+                rango = barra.dataset.rangoActual;
+            }
+
+            async function recargar() {
+                const url = `${listaUrl}?estado=${encodeURIComponent(estado)}&rango=${encodeURIComponent(rango)}`;
+                const resp = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                if (resp.ok) {
+                    panel.innerHTML = await resp.text();
+                    sincronizarDesdePanel();
+                }
+            }
+
+            // Aviso breve integrado en la página. Reemplaza los alert() nativos del navegador;
+            // mismo patrón de toast por módulo que ya usan Calendario (.cal-toast) y Cobros
+            // (.cc-toast), con los estilos .rsv-toast de reservas-admin.css.
+            function mostrarToast(mensaje, esAdvertencia) {
+                const toast = document.createElement('div');
+                toast.className = 'rsv-toast ' + (esAdvertencia ? 'rsv-toast-warn' : 'rsv-toast-ok');
+                toast.setAttribute('role', 'status');
+                toast.setAttribute('aria-live', 'polite');
+
+                const icono = document.createElement('i');
+                icono.className = esAdvertencia ? 'bi bi-exclamation-triangle-fill' : 'bi bi-check-circle-fill';
+                const texto = document.createElement('span');
+                texto.textContent = mensaje;
+
+                toast.appendChild(icono);
+                toast.appendChild(texto);
+                document.body.appendChild(toast);
+
+                requestAnimationFrame(function () { toast.classList.add('is-visible'); });
+                setTimeout(function () { toast.classList.remove('is-visible'); }, 4000);
+                setTimeout(function () { toast.remove(); }, 4400);
+            }
+
+            async function postAccion(url, body) {
+                const resp = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'RequestVerificationToken': token,
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: body
+                });
+                let data = {};
+                try { data = await resp.json(); } catch { }
+                return { ok: resp.ok, data };
+            }
+
+            // Delegación sobre el contenedor estable: no hay que re-enlazar nada tras recargar.
+            panel.addEventListener('click', async function (e) {
+                const tab = e.target.closest('.rsv-tab');
+                if (tab) {
+                    estado = tab.dataset.estado;
+                    recargar();
+                    return;
+                }
+
+                const confirmar = e.target.closest('[data-confirm]');
+                if (confirmar) {
+                    confirmar.disabled = true;
+                    const solicitudId = confirmar.dataset.confirm;
+
+                    // ¿Hay que preguntar algo sobre el cliente? Lo decide el servidor con la misma
+                    // regla de identidad que usa el calendario; acá solo se presenta.
+                    const preview = await consultarCliente(solicitudId);
+
+                    if (preview && !preview.puedeConfirmarDirecto) {
+                        abrirModalCliente(solicitudId, preview, confirmar);
+                        return;
+                    }
+
+                    await confirmarSolicitud(solicitudId, '', null, confirmar);
+                    return;
+                }
+
+                const rechazar = e.target.closest('[data-reject]');
+                if (rechazar) {
+                    rejectId = rechazar.dataset.reject;
+                    // Se repone el valor por defecto en cada apertura; el usuario puede editarlo.
+                    document.getElementById('rejectMotivo').value = MOTIVO_RECHAZO_POR_DEFECTO;
+                    document.getElementById('rejectModal').hidden = false;
+                }
+            });
+
+            panel.addEventListener('change', function (e) {
+                if (e.target.id === 'rangoSelect') {
+                    rango = e.target.value;
+                    recargar();
+                }
+            });
+
+            // ── Decisión sobre el cliente ─────────────────────────────────────────────
+            let clienteSolicitudId = null;
+            let clienteBoton = null;
+
+            async function consultarCliente(id) {
+                try {
+                    const resp = await fetch(`@Url.Action("ClientePrevio", "Reservas")?id=${encodeURIComponent(id)}`, {
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    });
+                    if (!resp.ok) return null;
+                    return await resp.json();
+                } catch {
+                    // Sin respuesta se confirma igual: el backend resuelve la identidad por su cuenta.
+                    return null;
+                }
+            }
+
+            async function confirmarSolicitud(id, accion, clienteId, boton) {
+                let body = `id=${encodeURIComponent(id)}`;
+                if (accion) body += `&clienteAccion=${encodeURIComponent(accion)}`;
+                if (clienteId) body += `&clienteId=${encodeURIComponent(clienteId)}`;
+
+                const { ok, data } = await postAccion('@Url.Action("Confirmar", "Reservas")', body);
+
+                if (ok && data.success) {
+                    // El servidor ya compuso el mensaje correcto: cuando el negocio no tiene
+                    // WhatsApp no menciona WhatsApp, y cuando lo tiene informa el estado real del
+                    // envío. Acá solo se elige el tono según ese estado.
+                    const esAdvertencia = data.whatsAppStatus === 'failed' || data.whatsAppStatus === 'skipped';
+                    mostrarToast(data.message || 'Cita agendada con éxito.', esAdvertencia);
+                    recargar();
+                } else {
+                    mostrarToast(data.message || 'No fue posible confirmar.', true);
+                    if (boton) boton.disabled = false;
+                }
+            }
+
+            function cerrarModalCliente() {
+                document.getElementById('clienteModal').hidden = true;
+                if (clienteBoton) clienteBoton.disabled = false;
+                clienteSolicitudId = null;
+                clienteBoton = null;
+            }
+
+            function abrirModalCliente(id, preview, boton) {
+                clienteSolicitudId = id;
+                clienteBoton = boton;
+
+                const mensaje = document.getElementById('clienteModalMensaje');
+                const opciones = document.getElementById('clienteModalOpciones');
+                const confirmarBtn = document.getElementById('clienteConfirmar');
+                const sinVincularBtn = document.getElementById('clienteSinVincular');
+                const coincidencias = Array.isArray(preview.coincidencias) ? preview.coincidencias : [];
+
+                opciones.replaceChildren();
+
+                if (preview.estado === 'ExistingPhoneMatchWithDifferentName' && coincidencias.length === 1) {
+                    mensaje.textContent =
+                        `Encontramos un cliente registrado con este teléfono: ${coincidencias[0].nombre}. ` +
+                        `La reserva llegó a nombre de: ${preview.nombreReserva}. ` +
+                        '¿Deseas vincular esta cita al cliente existente para conservar su historial?';
+                    confirmarBtn.textContent = 'Vincular cliente';
+                    confirmarBtn.dataset.accion = 'vincular';
+                    confirmarBtn.dataset.clienteId = String(coincidencias[0].id);
+                    sinVincularBtn.textContent = 'Confirmar sin vincular';
+                    confirmarBtn.disabled = false;
+                } else if (preview.estado === 'AmbiguousPhoneMatch') {
+                    mensaje.textContent =
+                        'Hay varios clientes registrados con este teléfono. Elegí a cuál corresponde la cita o confirmá sin vincular.';
+                    confirmarBtn.textContent = 'Vincular cliente';
+                    confirmarBtn.dataset.accion = 'vincular';
+                    confirmarBtn.dataset.clienteId = '';
+                    sinVincularBtn.textContent = 'Confirmar sin vincular';
+                    confirmarBtn.disabled = coincidencias.length === 0;
+
+                    coincidencias.forEach(function (cliente, indice) {
+                        const fila = document.createElement('label');
+                        fila.className = 'rsv-cliente-opcion';
+
+                        const radio = document.createElement('input');
+                        radio.type = 'radio';
+                        radio.name = 'clienteSeleccion';
+                        radio.value = String(cliente.id);
+                        radio.checked = indice === 0;
+                        radio.addEventListener('change', function () {
+                            confirmarBtn.dataset.clienteId = radio.value;
+                            confirmarBtn.disabled = false;
+                        });
+
+                        const texto = document.createElement('span');
+                        texto.textContent = `${cliente.nombre} · ${cliente.telefono}`;
+
+                        fila.appendChild(radio);
+                        fila.appendChild(texto);
+                        opciones.appendChild(fila);
+
+                        if (indice === 0) confirmarBtn.dataset.clienteId = String(cliente.id);
+                    });
+                } else {
+                    mensaje.textContent =
+                        'Este cliente aún no está registrado. ¿Deseas guardarlo en Clientes al confirmar la cita?';
+                    confirmarBtn.textContent = 'Confirmar y registrar';
+                    confirmarBtn.dataset.accion = 'registrar';
+                    confirmarBtn.dataset.clienteId = '';
+                    sinVincularBtn.textContent = 'Confirmar sin registrar';
+                    confirmarBtn.disabled = false;
+                }
+
+                document.getElementById('clienteModal').hidden = false;
+            }
+
+            document.getElementById('clienteCancel').addEventListener('click', cerrarModalCliente);
+
+            document.getElementById('clienteConfirmar').addEventListener('click', async function () {
+                if (!clienteSolicitudId) return;
+                const id = clienteSolicitudId;
+                const boton = clienteBoton;
+                const accion = this.dataset.accion || 'registrar';
+                const clienteId = accion === 'vincular' ? this.dataset.clienteId : null;
+
+                document.getElementById('clienteModal').hidden = true;
+                clienteSolicitudId = null;
+                clienteBoton = null;
+
+                await confirmarSolicitud(id, accion, clienteId, boton);
+            });
+
+            document.getElementById('clienteSinVincular').addEventListener('click', async function () {
+                if (!clienteSolicitudId) return;
+                const id = clienteSolicitudId;
+                const boton = clienteBoton;
+
+                document.getElementById('clienteModal').hidden = true;
+                clienteSolicitudId = null;
+                clienteBoton = null;
+
+                await confirmarSolicitud(id, 'sinvincular', null, boton);
+            });
+
+            document.getElementById('rejectCancel').addEventListener('click', function () {
+                document.getElementById('rejectModal').hidden = true;
+                rejectId = null;
+            });
+
+            document.getElementById('rejectConfirm').addEventListener('click', async function () {
+                if (!rejectId) return;
+                const motivo = document.getElementById('rejectMotivo').value || '';
+                this.disabled = true;
+                const { ok, data } = await postAccion('@Url.Action("Rechazar", "Reservas")', `id=${rejectId}&motivo=${encodeURIComponent(motivo)}`);
+                this.disabled = false;
+                document.getElementById('rejectModal').hidden = true;
+                if (ok && data.success) {
+                    recargar();
+                } else {
+                    mostrarToast(data.message || 'No fue posible rechazar.', true);
+                }
+                rejectId = null;
+            });
+
+            sincronizarDesdePanel();
+        })();
+    </script>
+}

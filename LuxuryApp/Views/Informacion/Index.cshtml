@@ -1,0 +1,375 @@
+@model LuxuryApp.Models.Informacion.InformacionViewModel
+@using System.Globalization
+
+@{
+    ViewData["Title"] = "Información del Negocio";
+    var esCr = CultureInfo.GetCultureInfo("es-CR");
+    var mesNombre = esCr.DateTimeFormat.GetMonthName(Model.MesSeleccionado);
+}
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+<link rel="stylesheet" href="~/css/business-info.css" asp-append-version="true">
+
+<div class="dashboard-wrapper">
+<div class="dashboard-container">
+
+    <!-- ── A. HEADER ── -->
+    <div class="binfo-header">
+
+        <div class="module-heading">
+            <span class="module-eyebrow">RESUMEN DEL NEGOCIO</span>
+            <h2 class="module-title"><i class="bi bi-bar-chart-line module-title-icon" aria-hidden="true"></i>Información del Negocio</h2>
+            <p class="module-subtitle">@mesNombre @Model.AnioSeleccionado</p>
+        </div>
+
+        <div class="binfo-header-right">
+            <a class="binfo-nav-btn"
+               asp-action="Index"
+               asp-route-mes="@(Model.MesSeleccionado == 1 ? 12 : Model.MesSeleccionado - 1)"
+               asp-route-anio="@(Model.MesSeleccionado == 1 ? Model.AnioSeleccionado - 1 : Model.AnioSeleccionado)">
+                <i class="bi bi-chevron-left"></i>
+            </a>
+
+            <form asp-action="Index" method="get" class="binfo-period-form">
+                <select name="mes" class="binfo-select" onchange="this.form.submit()">
+                    @for (int m = 1; m <= 12; m++)
+                    {
+                        <option value="@m" selected="@(m == Model.MesSeleccionado)">
+                            @esCr.DateTimeFormat.GetMonthName(m)
+                        </option>
+                    }
+                </select>
+                <select name="anio" class="binfo-select" onchange="this.form.submit()">
+                    @for (int a = Model.AnioSeleccionado - 5; a <= Model.AnioSeleccionado + 1; a++)
+                    {
+                        <option value="@a" selected="@(a == Model.AnioSeleccionado)">@a</option>
+                    }
+                </select>
+            </form>
+
+            <a class="binfo-nav-btn"
+               asp-action="Index"
+               asp-route-mes="@(Model.MesSeleccionado == 12 ? 1 : Model.MesSeleccionado + 1)"
+               asp-route-anio="@(Model.MesSeleccionado == 12 ? Model.AnioSeleccionado + 1 : Model.AnioSeleccionado)">
+                <i class="bi bi-chevron-right"></i>
+            </a>
+        </div>
+
+    </div>
+
+    <!-- ── B. ESTADÍSTICAS MENSUALES ── -->
+    <div class="binfo-section">
+        <h6 class="binfo-section-title">ESTADÍSTICAS MENSUALES DEL NEGOCIO</h6>
+
+        <!-- 4 KPIs principales -->
+        <div class="binfo-kpi-big-grid">
+
+            <div class="kpi-card binfo-kpi-big">
+                <div class="binfo-kpi-icon binfo-icon-green"><i class="bi bi-scissors"></i></div>
+                <div class="binfo-kpi-body">
+                    <span class="binfo-kpi-label">Servicios realizados este mes</span>
+                    <span class="binfo-kpi-value binfo-color-green">@Model.CantidadServiciosMes</span>
+                </div>
+            </div>
+
+            <div class="kpi-card binfo-kpi-big">
+                <div class="binfo-kpi-icon binfo-icon-blue"><i class="bi bi-box-seam"></i></div>
+                <div class="binfo-kpi-body">
+                    <span class="binfo-kpi-label">Productos vendidos este mes</span>
+                    <span class="binfo-kpi-value binfo-color-blue">@Model.CantidadProductosMes</span>
+                </div>
+            </div>
+
+            <div class="kpi-card binfo-kpi-big">
+                <div class="binfo-kpi-icon binfo-icon-purple"><i class="bi bi-person-badge"></i></div>
+                <div class="binfo-kpi-body">
+                    <span class="binfo-kpi-label">Funcionario con más citas</span>
+                    <span class="binfo-kpi-value">
+                        @(string.IsNullOrEmpty(Model.FuncionarioMasCitas) ? "—" : Model.FuncionarioMasCitas)
+                    </span>
+                </div>
+            </div>
+
+            <div class="kpi-card binfo-kpi-big">
+                <div class="binfo-kpi-icon binfo-icon-orange"><i class="bi bi-scissors"></i></div>
+                <div class="binfo-kpi-body">
+                    <span class="binfo-kpi-label">Servicio más solicitado</span>
+                    <span class="binfo-kpi-value">
+                        @(string.IsNullOrEmpty(Model.ServicioMasSolicitado) ? "—" : Model.ServicioMasSolicitado)
+                    </span>
+                </div>
+            </div>
+
+        </div>
+
+
+
+        <!-- Producto más/menos vendido del mes -->
+            <div class="binfo-kpi-big-grid">
+
+            <div class="kpi-card binfo-kpi-big">
+                <div class="binfo-kpi-icon binfo-icon-green"><i class="bi bi-box-seam"></i></div>
+                <div class="binfo-kpi-body">
+                    <span class="binfo-kpi-label">
+                        Producto más vendido del mes
+                        <span class="binfo-month-badge">@mesNombre</span>
+                    </span>
+                    <span class="binfo-kpi-value binfo-color-green">
+                        @(string.IsNullOrEmpty(Model.ProductoMasVendido) ? "—" : Model.ProductoMasVendido)
+                    </span>
+                </div>
+            </div>
+
+            <div class="kpi-card binfo-kpi-big">
+                <div class="binfo-kpi-icon binfo-icon-red"><i class="bi bi-box"></i></div>
+                <div class="binfo-kpi-body">
+                    <span class="binfo-kpi-label">
+                        Producto menos vendido del mes
+                        <span class="binfo-month-badge binfo-month-badge-danger">@mesNombre</span>
+                    </span>
+                    <span class="binfo-kpi-value binfo-color-red">
+                        @(string.IsNullOrEmpty(Model.ProductoMenosVendido) ? "—" : Model.ProductoMenosVendido)
+                    </span>
+                </div>
+            </div>
+
+            <div class="kpi-card binfo-kpi-big ">
+                <div class="binfo-kpi-icon binfo-icon-purple"><i class="bi bi-calendar-check"></i></div>
+                <div class="binfo-kpi-body">
+                    <span class="binfo-kpi-label">
+                        Citas en línea reservadas este mes
+                        <span class="binfo-month-badge">@mesNombre</span>
+                    </span>
+                    <span class="binfo-kpi-value binfo-color-purple">@Model.ReservasOnlineMes</span>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ── C. ESTADÍSTICAS GENERALES ── -->
+    <div class="binfo-section">
+        <h6 class="binfo-section-title">ESTADÍSTICAS GENERALES DEL NEGOCIO</h6>
+
+        <div class="binfo-general-grid">
+
+            <div class="kpi-card binfo-general-card">
+                <div class="binfo-general-icon binfo-icon-green"><i class="bi bi-graph-up"></i></div>
+                <div class="binfo-kpi-body">
+                    <span class="binfo-kpi-label">Mes con más citas</span>
+                    <span class="binfo-general-value binfo-color-green">
+                        @Model.MesMasCitas (@Model.TotalMesMasCitas)
+                    </span>
+                </div>
+            </div>
+
+            <div class="kpi-card binfo-general-card">
+                <div class="binfo-general-icon binfo-icon-red"><i class="bi bi-graph-down"></i></div>
+                <div class="binfo-kpi-body">
+                    <span class="binfo-kpi-label">Mes con menos citas</span>
+                    <span class="binfo-general-value binfo-color-red">
+                        @Model.MesMenosCitas (@Model.TotalMesMenosCitas)
+                    </span>
+                </div>
+            </div>
+
+            <div class="kpi-card binfo-general-card">
+                <div class="binfo-general-icon binfo-icon-blue"><i class="bi bi-calendar-week"></i></div>
+                <div class="binfo-kpi-body">
+                    <span class="binfo-kpi-label">Día más ocupado</span>
+                    <span class="binfo-general-value binfo-color-blue">
+                        @Model.DiaMasOcupado (@Model.TotalDiaMasOcupado)
+                    </span>
+                </div>
+            </div>
+
+            <div class="kpi-card binfo-general-card">
+                <div class="binfo-general-icon binfo-icon-neutral"><i class="bi bi-calendar-x"></i></div>
+                <div class="binfo-kpi-body">
+                    <span class="binfo-kpi-label">Día menos ocupado</span>
+                    <span class="binfo-general-value">
+                        @Model.DiaMasLibre (@Model.TotalDiaMasLibre)
+                    </span>
+                </div>
+            </div>
+
+            <div class="kpi-card binfo-general-card">
+                <div class="binfo-general-icon binfo-icon-yellow"><i class="bi bi-clock"></i></div>
+                <div class="binfo-kpi-body">
+                    <span class="binfo-kpi-label">Hora más ocupada</span>
+                    <span class="binfo-general-value binfo-color-yellow">@Model.HoraMasOcupada</span>
+                </div>
+            </div>
+
+            <div class="kpi-card binfo-general-card">
+                <div class="binfo-general-icon binfo-icon-neutral"><i class="bi bi-clock-history"></i></div>
+                <div class="binfo-kpi-body">
+                    <span class="binfo-kpi-label">Hora menos ocupada</span>
+                    <span class="binfo-general-value">@Model.HoraMasLibre</span>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ── D. GRÁFICOS ── -->
+    <div class="binfo-section">
+        <h6 class="binfo-section-title">GRÁFICOS</h6>
+
+        <!-- Fila 1: Citas por Mes + Citas de la Semana -->
+        <div class="binfo-charts-grid">
+
+            <div class="kpi-card binfo-chart-card">
+                <div class="binfo-chart-header">
+                    <h6 class="binfo-chart-title">Citas por Mes</h6>
+                </div>
+                <div class="binfo-chart-wrap">
+                    <canvas id="chartMes"></canvas>
+                </div>
+            </div>
+
+            <div class="kpi-card binfo-chart-card">
+                <div class="binfo-chart-header">
+                    <h6 class="binfo-chart-title">Citas de la Semana</h6>
+                    <div class="binfo-week-nav">
+                        <button class="binfo-nav-btn-sm" onclick="cambiarSemana(-7)" type="button" title="Semana anterior">
+                            <i class="bi bi-chevron-left"></i>
+                        </button>
+                        <span id="textoSemana" class="binfo-week-text">Semana actual</span>
+                        <button class="binfo-nav-btn-sm" onclick="cambiarSemana(7)" type="button" title="Semana siguiente">
+                            <i class="bi bi-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="binfo-chart-wrap">
+                    <canvas id="chartSemana"></canvas>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Fila 2: Citas por Funcionario + Servicios más solicitados -->
+        <div class="binfo-charts-grid">
+
+            <div class="kpi-card binfo-chart-card">
+                <div class="binfo-chart-header">
+                    <h6 class="binfo-chart-title">Citas por Funcionario</h6>
+                </div>
+                <div class="binfo-chart-wrap">
+                    <canvas id="chartFuncionarios"></canvas>
+                </div>
+            </div>
+
+            <div class="kpi-card binfo-chart-card">
+                <div class="binfo-chart-header">
+                    <h6 class="binfo-chart-title">Servicios más solicitados</h6>
+                </div>
+                <div class="binfo-chart-wrap">
+                    <canvas id="chartServicios"></canvas>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Fila 3: Productos vendidos (desglose) + Servicios por Mes -->
+        <div class="binfo-charts-grid">
+
+            <div class="kpi-card binfo-chart-card">
+                <div class="binfo-chart-header">
+                    <h6 class="binfo-chart-title">Productos vendidos</h6>
+                </div>
+                <div class="binfo-chart-wrap--dynamic" id="chartProductosWrap">
+                    <canvas id="chartProductos"></canvas>
+                    <div class="binfo-chart-empty" id="chartProductosEmpty">
+                        <i class="bi bi-box-seam binfo-empty-icon"></i>
+                        <span>No hay productos vendidos en este mes.</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="kpi-card binfo-chart-card">
+                <div class="binfo-chart-header">
+                    <h6 class="binfo-chart-title">Servicios por Mes</h6>
+                </div>
+                <div class="binfo-chart-wrap">
+                    <canvas id="chartServiciosMes"></canvas>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Fila 4: Productos Vendidos por Mes (ancho completo) -->
+        <div class="binfo-charts-grid">
+
+            <div class="kpi-card binfo-chart-card binfo-chart-full">
+                <div class="binfo-chart-header">
+                    <h6 class="binfo-chart-title">Productos Vendidos por Mes</h6>
+                </div>
+                <div class="binfo-chart-wrap">
+                    <canvas id="chartProductosMes"></canvas>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ── E. TOP CLIENTES ── -->
+    <div class="binfo-section">
+
+        <div class="binfo-top-header">
+            <h4 class="binfo-top-title">🏆 Top Clientes</h4>
+            <form method="get" class="d-flex align-items-center gap-2">
+                <input type="hidden" name="mes" value="@Model.MesSeleccionado" />
+                <input type="hidden" name="anio" value="@Model.AnioSeleccionado" />
+                <select name="top" class="binfo-select" onchange="this.form.submit()">
+                    <option value="5"  selected="@(Model.TopCantidad == 5)">Top 5</option>
+                    <option value="10" selected="@(Model.TopCantidad == 10)">Top 10</option>
+                    <option value="20" selected="@(Model.TopCantidad == 20)">Top 20</option>
+                    <option value="50" selected="@(Model.TopCantidad == 50)">Top 50</option>
+                </select>
+            </form>
+        </div>
+
+        @{ int pos = 1; }
+        <div class="top-client-list">
+            @foreach (var c in Model.TopClientes)
+            {
+                <div class="top-client-item">
+                    <div class="left">
+                        <div class="rank @(pos <= 3 ? "top" : "")">@pos</div>
+                        <div class="info">
+                            <div class="name">@c.Nombre</div>
+                            <div class="phone">📞 @c.Telefono</div>
+                        </div>
+                    </div>
+                    <div class="right">
+                        <span class="visits">@c.TotalVisitas</span>
+                        <span class="label">visitas</span>
+                    </div>
+                </div>
+                pos++;
+            }
+        </div>
+
+    </div>
+
+</div>
+</div>
+
+@section Scripts {
+    <script>
+        window.dashboardData = {
+            citasMes:           @Html.Raw(Json.Serialize(Model.CitasPorMes)),
+            semanaDias:         @Html.Raw(Json.Serialize(Model.SemanaDias)),
+            semanaCitas:        @Html.Raw(Json.Serialize(Model.SemanaCitas)),
+            funcionariosLabels: @Html.Raw(Json.Serialize(Model.FuncionariosNombres)),
+            funcionariosData:   @Html.Raw(Json.Serialize(Model.FuncionariosCitas)),
+            serviciosLabels:    @Html.Raw(Json.Serialize(Model.ServiciosNombres)),
+            serviciosData:      @Html.Raw(Json.Serialize(Model.ServiciosCantidad)),
+            productosLabels:    @Html.Raw(Json.Serialize(Model.ProductosVendidosNombres)),
+            productosData:      @Html.Raw(Json.Serialize(Model.ProductosVendidosCantidad)),
+            productosPorMes:    @Html.Raw(Json.Serialize(Model.ProductosVendidosPorMes))
+        };
+    </script>
+    <script src="~/js/dashboard.js" asp-append-version="true"></script>
+}

@@ -1,0 +1,69 @@
+@model LuxuryApp.Models.Identity.VerificarCodigoViewModel
+
+@{
+    ViewData["Title"] = "Verificación en dos pasos";
+    ViewData["PublicBodyClass"] = "public-auth-page";
+    Layout = "_PublicLayout";
+}
+
+<section class="auth-section">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-6 col-xl-5">
+                <div class="auth-form-card">
+                    <span class="section-kicker">Verificación en dos pasos</span>
+                    <h2>Ingresa el código de tu aplicación.</h2>
+                    <p class="text-muted">
+                        Abre tu aplicación de autenticación e ingresa el código de 6 dígitos de LuxuryCloud.
+                    </p>
+
+                    <form asp-controller="Accounts" asp-action="VerificarCodigo" method="post" data-prevent-double-submit>
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" asp-for="ReturnUrl" />
+                        <input type="hidden" asp-for="RememberMe" />
+
+                        <div class="text-danger auth-validation" asp-validation-summary="All"></div>
+
+                        <div class="mb-3">
+                            <label asp-for="Codigo" class="form-label"></label>
+                            <div class="auth-input-wrap">
+                                <i class="bi bi-shield-lock auth-input-icon"></i>
+                                <input asp-for="Codigo" class="form-control public-form-control"
+                                       autocomplete="one-time-code" inputmode="numeric"
+                                       placeholder="000000" autofocus />
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn public-btn public-btn-primary w-100">Verificar</button>
+                    </form>
+
+                    <hr class="my-4" />
+
+                    <details>
+                        <summary class="text-muted" style="cursor: pointer;">
+                            ¿Perdiste el acceso a tu aplicación? Usa un código de recuperación.
+                        </summary>
+                        <form asp-controller="Accounts" asp-action="UsarCodigoRecuperacion" method="post"
+                              class="mt-3" data-prevent-double-submit>
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="ReturnUrl" value="@Model.ReturnUrl" />
+
+                            <div class="mb-3">
+                                <label class="form-label" for="codigo-recuperacion">Código de recuperación</label>
+                                <div class="auth-input-wrap">
+                                    <i class="bi bi-key auth-input-icon"></i>
+                                    <input id="codigo-recuperacion" name="Codigo"
+                                           class="form-control public-form-control" autocomplete="off" />
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn public-btn public-btn-primary w-100">
+                                Usar código de recuperación
+                            </button>
+                        </form>
+                    </details>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

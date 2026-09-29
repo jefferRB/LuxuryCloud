@@ -1,0 +1,117 @@
+/* ==========================================================
+   mfa-enroll.css — Verificación en dos pasos (/Seguridad/Enrolar)
+
+   Reemplaza el <style> inline que tenía la vista (colores fijos que no seguían
+   el tema claro/oscuro/glass). El shell, las secciones, los botones y los
+   callouts vienen de finance-modules.css; acá sólo está lo propio del QR y del
+   campo de código.
+   ========================================================== */
+
+.mfa-hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+/* ── QR + clave manual ─────────────────────────────────── */
+.mfa-qr-grid {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 1.25rem;
+}
+
+/* El QR SIEMPRE se dibuja sobre blanco: los lectores necesitan el contraste
+   real, así que este fondo no sigue el tema a propósito. */
+#mfa-qr {
+    padding: 12px;
+    background: #fff;
+    border: 1px solid var(--private-surface-border, #e5e7eb);
+    border-radius: 12px;
+    line-height: 0;
+    flex: 0 0 auto;
+}
+
+#mfa-qr img,
+#mfa-qr canvas {
+    display: block;
+    max-width: 100%;
+    height: auto;
+}
+
+.mfa-key-block {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-width: 0;
+    flex: 1 1 240px;
+}
+
+.mfa-key-label {
+    margin: 0;
+    font-size: 0.82rem;
+    color: var(--private-muted-text, #6b7280);
+}
+
+.mfa-key {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 1rem;
+    letter-spacing: 1px;
+    background: var(--private-row-bg, #f8fafc);
+    border: 1px dashed var(--private-input-border, #cbd5e1);
+    border-radius: 10px;
+    padding: 10px 14px;
+    color: var(--private-surface-text, #111827);
+    user-select: all;
+    overflow-wrap: anywhere;
+}
+
+/* ── Campo del código ──────────────────────────────────── */
+.mfa-confirm-form {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.mfa-code-input {
+    max-width: 220px;
+    font-size: 1.25rem;
+    letter-spacing: 6px;
+    text-align: center;
+    padding-left: 0.9rem;
+}
+
+/* ── Responsive ────────────────────────────────────────── */
+@media (max-width: 767.98px) {
+    .mfa-qr-grid {
+        flex-direction: column;
+    }
+
+    /* Con el grid en columna el flex-basis de 240px se lee como ALTURA y abre un
+       hueco enorme entre la clave manual y el paso 3. Mismo caso que
+       .finance-kpi-card y .finance-hero-left en finance-modules.css. */
+    .mfa-key-block {
+        flex: none;
+    }
+
+    /* El QR se escala al ancho disponible en vez de desbordar. */
+    #mfa-qr {
+        align-self: center;
+        max-width: 100%;
+    }
+
+    .mfa-code-input {
+        max-width: 100%;
+    }
+
+    .mfa-confirm-form .finance-btn-primary,
+    .mfa-confirm-form {
+        width: 100%;
+    }
+
+    .mfa-confirm-form .finance-btn-primary {
+        justify-content: center;
+    }
+}

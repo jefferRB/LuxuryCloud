@@ -1,0 +1,247 @@
+/*
+ * Centro de Notificaciones (burbuja flotante abajo-derecha).
+ * Usa las variables --private-* del layout privado para adaptarse a todos los temas
+ * (claro, marble, futurista/glass, negro) sin colores fijos que rompan la apariencia.
+ * z-index por debajo del backdrop/modal de Bootstrap para no tapar modales importantes.
+ */
+
+.lux-notif {
+    --lux-notif-accent: var(--private-chart-accent, var(--private-accent));
+    --lux-notif-danger: var(--private-chart-danger, #dc2626);
+    --lux-notif-z: 1040;
+
+    position: fixed;
+    right: 18px;
+    bottom: 18px;
+    z-index: var(--lux-notif-z);
+    font-size: 0.92rem;
+}
+
+/* ---- Burbuja ---- */
+.lux-notif__bubble {
+    position: relative;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    border: 1px solid var(--private-surface-border, rgba(15, 23, 42, 0.12));
+    background: var(--private-surface-bg-strong, #ffffff);
+    color: var(--private-surface-text, #111827);
+    box-shadow: var(--private-card-shadow, 0 10px 26px rgba(15, 23, 42, 0.18));
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.lux-notif__bubble:hover {
+    transform: translateY(-2px);
+    border-color: var(--lux-notif-accent);
+    box-shadow: var(--private-panel-shadow, 0 16px 40px rgba(15, 23, 42, 0.24));
+}
+
+.lux-notif__bubble:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 4px var(--private-focus-ring, rgba(37, 140, 251, 0.28));
+}
+
+.lux-notif__bubble i {
+    font-size: 1.32rem;
+    line-height: 1;
+}
+
+/* ---- Badge de no leídas ---- */
+.lux-notif__badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: var(--lux-notif-danger);
+    color: #ffffff;
+    font-size: 0.7rem;
+    font-weight: 700;
+    line-height: 20px;
+    text-align: center;
+    box-shadow: 0 0 0 2px var(--private-surface-bg-strong, #ffffff);
+    pointer-events: none;
+}
+
+.lux-notif__badge[hidden] {
+    display: none;
+}
+
+/* ---- Panel ---- */
+.lux-notif__panel {
+    position: absolute;
+    right: 0;
+    bottom: 62px;
+    width: 360px;
+    max-width: calc(100vw - 24px);
+    max-height: min(70vh, 540px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: 16px;
+    border: 1px solid var(--private-surface-border, rgba(15, 23, 42, 0.12));
+    background: var(--private-surface-bg-strong, #ffffff);
+    color: var(--private-surface-text, #111827);
+    box-shadow: var(--private-panel-shadow, 0 16px 40px rgba(15, 23, 42, 0.24));
+    transform-origin: bottom right;
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+    pointer-events: none;
+    transition: opacity 0.16s ease, transform 0.16s ease;
+}
+
+.lux-notif.is-open .lux-notif__panel {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+}
+
+.lux-notif__header {
+    padding: 14px 16px 10px;
+    border-bottom: 1px solid var(--private-surface-border, rgba(15, 23, 42, 0.08));
+}
+
+.lux-notif__title {
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.lux-notif__subtitle {
+    margin: 2px 0 0;
+    font-size: 0.78rem;
+    color: var(--private-muted-text, #64748b);
+}
+
+/* ---- Lista ---- */
+.lux-notif__list {
+    list-style: none;
+    margin: 0;
+    padding: 6px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    flex: 1 1 auto;
+}
+
+.lux-notif__item {
+    display: flex;
+    gap: 10px;
+    padding: 10px;
+    border-radius: 12px;
+    text-decoration: none;
+    color: inherit;
+    transition: background 0.12s ease;
+}
+
+.lux-notif__item + .lux-notif__item {
+    margin-top: 2px;
+}
+
+.lux-notif__item:hover {
+    background: var(--private-row-hover-bg, rgba(var(--private-accent-rgb), 0.08));
+}
+
+a.lux-notif__item:focus-visible {
+    outline: none;
+    background: var(--private-row-hover-bg, rgba(var(--private-accent-rgb), 0.08));
+    box-shadow: 0 0 0 2px var(--private-focus-ring, rgba(37, 140, 251, 0.28)) inset;
+}
+
+.lux-notif__item.is-unread {
+    background: var(--private-row-bg, rgba(var(--private-accent-rgb), 0.06));
+}
+
+.lux-notif__icon {
+    flex: 0 0 auto;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.05rem;
+    background: color-mix(in srgb, var(--lux-notif-accent) 16%, transparent);
+    color: var(--lux-notif-accent);
+}
+
+.lux-notif__icon--danger {
+    background: color-mix(in srgb, var(--lux-notif-danger) 16%, transparent);
+    color: var(--lux-notif-danger);
+}
+
+.lux-notif__body {
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.lux-notif__item-title {
+    font-weight: 600;
+    font-size: 0.88rem;
+    margin: 0;
+}
+
+.lux-notif__item-message {
+    margin: 2px 0 0;
+    font-size: 0.82rem;
+    color: var(--private-muted-text, #64748b);
+    word-break: break-word;
+}
+
+.lux-notif__time {
+    display: block;
+    margin-top: 4px;
+    font-size: 0.72rem;
+    color: var(--private-muted-text, #94a3b8);
+}
+
+/* ---- Estado vacío ---- */
+.lux-notif__empty {
+    padding: 28px 18px;
+    text-align: center;
+    color: var(--private-muted-text, #64748b);
+}
+
+.lux-notif__empty i {
+    font-size: 1.8rem;
+    opacity: 0.6;
+}
+
+.lux-notif__empty p {
+    margin: 8px 0 0;
+    font-size: 0.86rem;
+}
+
+.lux-notif__empty strong {
+    display: block;
+    color: var(--private-surface-text, #111827);
+    font-size: 0.92rem;
+}
+
+/* ---- Responsive: en móvil ocupa casi todo el ancho ---- */
+@media (max-width: 540px) {
+    .lux-notif {
+        right: 12px;
+        bottom: 12px;
+    }
+
+    .lux-notif__panel {
+        width: calc(100vw - 24px);
+        max-height: 68vh;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .lux-notif__bubble,
+    .lux-notif__panel {
+        transition: none;
+    }
+}

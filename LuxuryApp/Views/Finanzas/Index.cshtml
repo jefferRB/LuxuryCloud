@@ -1,0 +1,98 @@
+﻿@model IEnumerable<LuxuryApp.Models.Funcionarios.Funcionario>
+
+<div class="card border-0 shadow-lg">
+    <div class="card-header bg-dark text-white py-3">
+        <h5 class="m-0">
+            <i class="fas fa-user-tie me-2"></i>Funcionarios
+        </h5>
+    </div>
+
+    <div class="d-flex justify-content-between mt-3 mx-3 mb-3">
+
+        <a asp-action="Create" class="btn btn-dark text-white">
+            <i class="fas fa-user-plus me-1"></i>Nuevo Funcionario
+        </a>
+
+    </div>
+
+    <div class="mt-3 ms-3">
+        <span class="private-module-count">
+            <strong>Funcionarios registrados:</strong> @Model.Count()
+        </span>
+    </div>
+
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4">Nombre</th>
+                        <th>Puesto</th>
+                        <th>% Ganancia</th>
+                        <th>Color</th>
+                        <th>Fecha Ingreso</th>
+                        <th>Estado</th>
+                        <th class="text-center">Acciones</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    @if (Model.Any())
+                    {
+                        foreach (var f in Model)
+                        {
+                            <tr>
+                                <td class="ps-4 fw-semibold">@f.Nombre</td>
+
+                                <td>@f.Puesto</td>
+
+                                <td>@f.PorcentajeGanancia %</td>
+
+                                <td>
+                                    <span class="badge"
+                                          style="background-color:@f.ColorCalendario;">
+                                        @f.ColorCalendario
+                                    </span>
+                                </td>
+
+                                <td>@f.FechaIngreso.ToString("dd/MM/yyyy")</td>
+
+                                <td>
+                                    @if (f.Activo)
+                                    {
+                                        <span class="badge bg-success">Activo</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger">Inactivo</span>
+                                    }
+                                </td>
+
+                                <td class="text-center">
+
+                                    <a asp-action="Editar"
+                                       asp-route-id="@f.IdFuncionario"
+                                       class="btn btn-sm btn-dark">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="7" class="text-center py-4 text-muted">
+                                No hay funcionarios registrados
+                            </td>
+                        </tr>
+                    }
+
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
